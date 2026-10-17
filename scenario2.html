@@ -251,11 +251,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <g><path class="cy s-emerald" d="M455 600 L455 670 A75.0 10 0 0 0 605 670 L605 600 A75.0 10 0 0 1 455 600 Z"/>
 <ellipse class="cyt s-emerald" cx="530.0" cy="600" rx="75.0" ry="10"/>
 <text class="bt" x="530" y="631.0" text-anchor="middle" dominant-baseline="central">SeaweedFS</text>
-<text class="bs" x="530" y="651.0" text-anchor="middle" dominant-baseline="central">PACS bucket · distributed</text></g>
-<g><path class="cy s-emerald" d="M215 600 L215 670 A75.0 10 0 0 0 365 670 L365 600 A75.0 10 0 0 1 215 600 Z"/>
-<ellipse class="cyt s-emerald" cx="290.0" cy="600" rx="75.0" ry="10"/>
-<text class="bt" x="290" y="631.0" text-anchor="middle" dominant-baseline="central">Research bucket</text>
-<text class="bs" x="290" y="651.0" text-anchor="middle" dominant-baseline="central">labels + datasets</text></g>
+<text class="bs" x="530" y="651.0" text-anchor="middle" dominant-baseline="central">PACS + research buckets</text></g>
 <g><path class="cy s-emerald" d="M695 600 L695 670 A75.0 10 0 0 0 845 670 L845 600 A75.0 10 0 0 1 695 600 Z"/>
 <ellipse class="cyt s-emerald" cx="770.0" cy="600" rx="75.0" ry="10"/>
 <text class="bt" x="770" y="631.0" text-anchor="middle" dominant-baseline="central">OpenLDAP</text>
@@ -315,7 +311,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <path class="a flow" data-g="triage" d="M905 356 L950 356 L950 565 L1010 565 L1010 586" marker-end="url(#ar)"/>
 <!-- flow 3: annotation and training -->
 <path class="a flow" data-g="ai" d="M690 368 L690 421" marker-end="url(#ar)" marker-start="url(#ar)"/>
-<path class="a flow" data-g="ai" d="M676 500 L430 500 A10 10 0 0 0 410 500 L330 500 L330 586" marker-end="url(#ar)" marker-start="url(#ar)"/>
+<path class="a flow" data-g="ai" d="M490 364 L490 586" marker-end="url(#ar)"/>
 <path class="a flow" data-g="ai" d="M880 475 L940 475 A10 10 0 0 1 960 475 L1036 475" marker-end="url(#ar)"/>
 <path class="a flow" data-g="ai" d="M1250 475 L1466 475" marker-end="url(#ar)"/>
 <path class="a loop" data-g="ai" d="M1500 430 L1500 412 L960 412 A10 10 0 0 0 940 412 L780 412 L780 421" marker-end="url(#ar)"/>
@@ -355,12 +351,12 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="lb" x="954" y="274" text-anchor="middle" dominant-baseline="central">mask back</text>
 <rect class="pill" x="1030" y="555" width="120" height="20" rx="7"/>
 <text class="lb" x="1090" y="565" text-anchor="middle" dominant-baseline="central">result metadata</text>
-<rect class="pill" x="425" y="428" width="250" height="34" rx="7"/>
-<text class="lb" x="550" y="438" text-anchor="middle" dominant-baseline="central">PACS state</text>
-<text class="lb" x="550" y="452" text-anchor="middle" dominant-baseline="central">S3 pixels · LDAP configuration · SQL index</text>
-<rect class="pill" x="470" y="506" width="75" height="34" rx="7"/>
-<text class="lb" x="476" y="516" text-anchor="start" dominant-baseline="central">labels,</text>
-<text class="lb" x="476" y="530" text-anchor="start" dominant-baseline="central">datasets</text>
+<rect class="pill" x="222" y="428" width="190" height="34" rx="7"/>
+<text class="lb" x="317" y="438" text-anchor="middle" dominant-baseline="central">PACS state: S3 pixels,</text>
+<text class="lb" x="317" y="452" text-anchor="middle" dominant-baseline="central">LDAP configuration, SQL index</text>
+<rect class="pill" x="498" y="490" width="150" height="34" rx="7"/>
+<text class="lb" x="573" y="500" text-anchor="middle" dominant-baseline="central">copies of labels</text>
+<text class="lb" x="573" y="514" text-anchor="middle" dominant-baseline="central">+ frozen datasets</text>
 <rect class="pill" x="884" y="482" width="60" height="34" rx="7"/>
 <text class="lb" x="914" y="492" text-anchor="middle" dominant-baseline="central">labeled</text>
 <text class="lb" x="914" y="506" text-anchor="middle" dominant-baseline="central">dataset</text>
@@ -437,7 +433,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tr><td class="k">Orthanc</td><td>Gateway next to the GPU; de-identified copies for research</td><td>Also crops, resamples, encrypts and stores and forwards one tensor per study to site 2</td></tr>
 <tr><td class="k">GPU inference</td><td>Main site</td><td>Site 2, receives one encrypted, de-identified tensor per study</td></tr>
 <tr><td class="k">Model training and registry</td><td>Main site</td><td>Site 2, on de-identified labeled data</td></tr>
-<tr><td class="k">Annotation</td><td colspan="2">Unchanged: main site, reads de-identified copies from the gateway over DICOMweb; labels and frozen datasets go to the SeaweedFS research bucket (one shared gateway for now, see <a href="index.html#flow-ai">scenario 1</a>)</td></tr>
+<tr><td class="k">Annotation</td><td colspan="2">Unchanged: main site, reads images and saves labels through the gateway over DICOMweb; the gateway copies labels and frozen datasets to the SeaweedFS research bucket (one shared gateway for now, see <a href="index.html#flow-ai">scenario 1</a>)</td></tr>
 <tr><td class="k">Data, backup, cloud</td><td colspan="2">Unchanged</td></tr>
 <tr><td class="k">New link</td><td>None</td><td>N8: private line between the sites (leased line or private WAN), mTLS, round trip 2 to 35 ms. Independent of the internet; does not use the egress firewall.</td></tr>
 </tbody></table></div>
