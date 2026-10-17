@@ -250,12 +250,12 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="grpt" x="452" y="568">PACS state · each store has its own HA</text>
 <g><path class="cy s-emerald" d="M455 600 L455 670 A75.0 10 0 0 0 605 670 L605 600 A75.0 10 0 0 1 455 600 Z"/>
 <ellipse class="cyt s-emerald" cx="530.0" cy="600" rx="75.0" ry="10"/>
-<text class="bt" x="530" y="631.0" text-anchor="middle" dominant-baseline="central">MinIO</text>
+<text class="bt" x="530" y="631.0" text-anchor="middle" dominant-baseline="central">SeaweedFS</text>
 <text class="bs" x="530" y="651.0" text-anchor="middle" dominant-baseline="central">PACS bucket · distributed</text></g>
 <g><path class="cy s-emerald" d="M215 600 L215 670 A75.0 10 0 0 0 365 670 L365 600 A75.0 10 0 0 1 215 600 Z"/>
 <ellipse class="cyt s-emerald" cx="290.0" cy="600" rx="75.0" ry="10"/>
-<text class="bt" x="290" y="631.0" text-anchor="middle" dominant-baseline="central">MinIO · research</text>
-<text class="bs" x="290" y="651.0" text-anchor="middle" dominant-baseline="central">de-identified + labels</text></g>
+<text class="bt" x="290" y="631.0" text-anchor="middle" dominant-baseline="central">Research bucket</text>
+<text class="bs" x="290" y="651.0" text-anchor="middle" dominant-baseline="central">SeaweedFS · de-identified</text></g>
 <g><path class="cy s-emerald" d="M695 600 L695 670 A75.0 10 0 0 0 845 670 L845 600 A75.0 10 0 0 1 695 600 Z"/>
 <ellipse class="cyt s-emerald" cx="770.0" cy="600" rx="75.0" ry="10"/>
 <text class="bt" x="770" y="631.0" text-anchor="middle" dominant-baseline="central">OpenLDAP</text>
@@ -349,7 +349,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="lb" x="673" y="244" text-anchor="middle" dominant-baseline="central">selected series · retried</text>
 <rect class="pill" x="766" y="236" width="114" height="34" rx="7"/>
 <text class="lb" x="772" y="246" text-anchor="start" dominant-baseline="central">SEG + SR</text>
-<text class="lb" x="772" y="260" text-anchor="start" dominant-baseline="central">STOW-RS · write-only</text>
+<text class="lb" x="772" y="260" text-anchor="start" dominant-baseline="central">C-STORE to PACS</text>
 <rect class="pill" x="1428" y="220" width="201" height="20" rx="7"/>
 <text class="lb" x="1528" y="230" text-anchor="middle" dominant-baseline="central">priority flag · HL7 ORU / FHIR</text>
 <rect class="pill" x="912" y="250" width="84" height="34" rx="7"/>
@@ -435,11 +435,11 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <thead><tr><th>Part</th><th>Scenario 1</th><th>Scenario 2</th></tr></thead>
 <tbody>
 <tr><td class="k">Clinical path</td><td colspan="2">Unchanged: CT sends straight to the PACS, the viewer reads while series arrive.</td></tr>
-<tr><td class="k">PACS → AI</td><td colspan="2">Unchanged: the PACS pushes selected series to Orthanc; the AI has no credentials to read the PACS.</td></tr>
+<tr><td class="k">PACS → AI</td><td colspan="2">Unchanged: the PACS pushes selected series to Orthanc; the AI has no PACS credentials.</td></tr>
 <tr><td class="k">Orthanc</td><td>Gateway next to the GPU; de-identified copies for research</td><td>Also crops, resamples, encrypts and stores and forwards one tensor per study to site 2</td></tr>
 <tr><td class="k">GPU inference</td><td>Main site</td><td>Site 2, receives one encrypted, de-identified tensor per study</td></tr>
 <tr><td class="k">Model training and registry</td><td>Main site</td><td>Site 2, on de-identified labeled data</td></tr>
-<tr><td class="k">Annotation</td><td colspan="2">Unchanged: main site, reads de-identified copies that the gateway writes to the MinIO research bucket</td></tr>
+<tr><td class="k">Annotation</td><td colspan="2">Unchanged: main site, reads de-identified copies that the gateway writes to the SeaweedFS research bucket</td></tr>
 <tr><td class="k">Data, backup, cloud</td><td colspan="2">Unchanged</td></tr>
 <tr><td class="k">New link</td><td>None</td><td>N8: private line between the sites (leased line or private WAN), mTLS, round trip 2 to 35 ms. Independent of the internet; does not use the egress firewall.</td></tr>
 </tbody></table></div>
@@ -447,11 +447,11 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <h2 class="sec" id="flow-triage"><span class="n">3</span>AI triage through the gateway</h2>
 <ol class="flow f-tri">
 <li><b class="t">The PACS pushes the relevant series</b>Same export rule as scenario 1, including earlier studies of the same patient when the AI needs them.<br><span class="pr">DICOM C-STORE export</span></li>
-<li><b class="t">The gateway de-identifies</b>Patient identity is removed from tags and from text burned into the images. If the gateway cannot do this safely, it blocks the study: the study gets "no AI result" and nothing leaves the site.</li>
+<li><b class="t">The gateway de-identifies</b>Patient identity is removed from the tags, and instances that may carry text burned into the pixels (localizers, Secondary Captures, anything flagged with Burned In Annotation) are rejected; pixel redaction can be added later as a plugin step, as described in <a href="index.html#flow-ai">scenario 1</a>. If the gateway cannot do this safely, it blocks the study: the study gets "no AI result" and nothing leaves the site.</li>
 <li><b class="t">The gateway prepares one tensor</b>It crops and resamples the volume to exactly what the model needs, using the same steps as in training, and encrypts the result.</li>
 <li><b class="t">Store and forward over N8</b>The tensor is kept on the gateway until site 2 confirms receipt, so a link outage shorter than the deadline does not lose work. Once the deadline passes, the job is dropped and the tensor deleted.<br><span class="pr">gRPC over mTLS · N8</span></li>
 <li><b class="t">Site 2 runs the model</b>The inference service returns a mask. It never sees who the patient is.</li>
-<li><b class="t">The gateway maps the result back</b>The mask is placed back onto the original study, then stored in the PACS as DICOM SEG + SR through a write-only account. The priority flag goes to HIS/RIS.<br><span class="pr">STOW-RS · HL7 ORU / FHIR</span></li>
+<li><b class="t">The gateway maps the result back</b>The mask is placed back onto the original study, then sent to the PACS as DICOM SEG + SR by C-STORE. The priority flag goes to HIS/RIS.<br><span class="pr">C-STORE · HL7 ORU / FHIR</span></li>
 </ol>
 <div class="callout"><b>Why one tensor and not slice by slice.</b> The model reads the 3D volume in overlapping windows, in no fixed order. Fetching slices on demand over the link would multiply the number of round trips by hundreds; one tensor needs a single round trip.</div>
 
@@ -474,7 +474,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <p>The viewer always distinguishes three states: AI not run yet, AI failed or timed out ("no AI result"), and AI done and waiting for confirmation.</p>
 
 <h2 class="sec" id="ha"><span class="n">6</span>High availability</h2>
-<p>PACS, PACS state and the backup path are as in <a href="index.html#ha">scenario 1</a>. The gateway is active-standby with its buffer on local NVMe; a failover starts with an empty buffer that is refilled by re-export from dcm4chee. If export volume outgrows one node, the gateway moves to active-active with a shared PostgreSQL index and shared object storage (MinIO or SeaweedFS).</p>
+<p>PACS, PACS state and the backup path are as in <a href="index.html#ha">scenario 1</a>. The gateway is active-standby with its buffer on local NVMe; a failover starts with an empty buffer that is refilled by re-export from dcm4chee. If export volume outgrows one node, the gateway moves to active-active with a shared PostgreSQL index and shared object storage (SeaweedFS).</p>
 
 <footer>Intracerebral hemorrhage AI system · Scenario 2 architecture · <a href="index.html">Scenario 1</a>. Ports, products, VLAN numbers, deadlines and link figures are reference values to be confirmed with the hospital's IT, clinical and legal teams.</footer>
 </div>
