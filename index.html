@@ -253,7 +253,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <g><path class="cy s-emerald" d="M215 600 L215 670 A75.0 10 0 0 0 365 670 L365 600 A75.0 10 0 0 1 215 600 Z"/>
 <ellipse class="cyt s-emerald" cx="290.0" cy="600" rx="75.0" ry="10"/>
 <text class="bt" x="290" y="631.0" text-anchor="middle" dominant-baseline="central">Research bucket</text>
-<text class="bs" x="290" y="651.0" text-anchor="middle" dominant-baseline="central">SeaweedFS · de-identified</text></g>
+<text class="bs" x="290" y="651.0" text-anchor="middle" dominant-baseline="central">labels + datasets</text></g>
 <g><path class="cy s-emerald" d="M695 600 L695 670 A75.0 10 0 0 0 845 670 L845 600 A75.0 10 0 0 1 695 600 Z"/>
 <ellipse class="cyt s-emerald" cx="770.0" cy="600" rx="75.0" ry="10"/>
 <text class="bt" x="770" y="631.0" text-anchor="middle" dominant-baseline="central">OpenLDAP</text>
@@ -311,7 +311,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <path class="a ai" data-g="triage" d="M1325 325 L1730 325 L1730 201" marker-end="url(#ar)"/>
 <path class="a flow" data-g="triage" d="M1250 364 L1250 565 L1010 565 L1010 586" marker-end="url(#ar)"/>
 <!-- flow 3: annotation and training -->
-<path class="a flow" data-g="ai" d="M455 340 L430 340 A10 10 0 0 0 410 340 L260 340 L260 586" marker-end="url(#ar)"/>
+<path class="a flow" data-g="ai" d="M530 361 L530 392 L700 392 L700 421" marker-end="url(#ar)" marker-start="url(#ar)"/>
 <path class="a flow" data-g="ai" d="M676 500 L430 500 A10 10 0 0 0 410 500 L330 500 L330 586" marker-end="url(#ar)" marker-start="url(#ar)"/>
 <path class="a flow" data-g="ai" d="M880 475 L956 475" marker-end="url(#ar)"/>
 <path class="a flow" data-g="ai" d="M1170 475 L1240 475 A10 10 0 0 1 1260 475 L1411 475" marker-end="url(#ar)"/>
@@ -330,10 +330,10 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <path class="a rest" data-g="restore" d="M1790 708 L1790 620 L1569 620" marker-end="url(#ar)"/>
 
 <!-- labels -->
+<rect class="pill" x="540" y="382" width="150" height="20" rx="7"/>
+<text class="lb" x="615" y="392" text-anchor="middle" dominant-baseline="central">DICOMweb · de-identified</text>
 <rect class="pill" x="610" y="352" width="78" height="20" rx="7"/>
 <text class="lb" x="649" y="362" text-anchor="middle" dominant-baseline="central">SEG + SR</text>
-<rect class="pill" x="270" y="300" width="140" height="20" rx="7"/>
-<text class="lb" x="340" y="310" text-anchor="middle" dominant-baseline="central">de-identified copy</text>
 <rect class="pill" x="370" y="172" width="78" height="34" rx="7"/>
 <text class="lb" x="409" y="182" text-anchor="middle" dominant-baseline="central">C-STORE</text>
 <text class="lb" x="409" y="196" text-anchor="middle" dominant-baseline="central">:11112 direct</text>
@@ -359,8 +359,8 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="lb" x="550" y="438" text-anchor="middle" dominant-baseline="central">PACS state</text>
 <text class="lb" x="550" y="452" text-anchor="middle" dominant-baseline="central">S3 pixels · LDAP configuration · SQL index</text>
 <rect class="pill" x="470" y="506" width="75" height="34" rx="7"/>
-<text class="lb" x="476" y="516" text-anchor="start" dominant-baseline="central">images in,</text>
-<text class="lb" x="476" y="530" text-anchor="start" dominant-baseline="central">labels out</text>
+<text class="lb" x="476" y="516" text-anchor="start" dominant-baseline="central">labels,</text>
+<text class="lb" x="476" y="530" text-anchor="start" dominant-baseline="central">datasets</text>
 <rect class="pill" x="890" y="440" width="56" height="34" rx="7"/>
 <text class="lb" x="918" y="450" text-anchor="middle" dominant-baseline="central">labeled</text>
 <text class="lb" x="918" y="464" text-anchor="middle" dominant-baseline="central">dataset</text>
@@ -434,7 +434,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
   <div class="card c-blue"><div class="v tc-blue">VLAN 10–20</div><h4>Clinical</h4><p>What doctors use every day: scanners, the PACS (dcm4chee), the radiologist viewer, single sign-on, and HIS/RIS. The path from scanner to viewer stays inside this layer.</p></div>
   <div class="card c-violet"><div class="v tc-violet">VLAN 30</div><h4>AI inference</h4><p>The gateway (Orthanc) and the AI inference service. The gateway is the only receiver of PACS exports and returns a hemorrhage mask, a report and a priority flag. Runs 24/7 but is best-effort: if it stops, doctors read in normal order.</p></div>
   <div class="card c-pink"><div class="v tc-pink">VLAN 40</div><h4>AI research</h4><p>Annotation, model training and the model registry. Works only with de-identified data and has no path to the clinical systems.</p></div>
-  <div class="card c-emerald"><div class="v tc-emerald">VLAN 50 / 80</div><h4>Data</h4><p>The state behind the PACS (SeaweedFS for image files, OpenLDAP for configuration, PostgreSQL for the index), a separate SeaweedFS bucket for research, and the backup gateway. VLAN 80 carries heavy storage traffic.</p></div>
+  <div class="card c-emerald"><div class="v tc-emerald">VLAN 50 / 80</div><h4>Data</h4><p>The state behind the PACS (SeaweedFS for image files, OpenLDAP for configuration, PostgreSQL for the index), a separate SeaweedFS bucket for labels and frozen research datasets, and the backup gateway. VLAN 80 carries heavy storage traffic.</p></div>
   <div class="card c-cyan"><div class="v tc-cyan">Outside the hospital</div><h4>Cloud</h4><p>Storage only: encrypted, write-protected buckets that hold studies and database backups, moving to cheaper tiers as they age.</p></div>
 </div>
 
@@ -449,12 +449,12 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tr><td class="k">Identity (Keycloak)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Single sign-on with multi-factor login</td><td>Logs users into the viewer and other clinical tools</td></tr>
 <tr><td class="k">HIS / RIS</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Hospital and Radiology Information Systems: orders, patient records, worklists</td><td>Sends orders to the PACS worklist and receives the AI priority flag</td></tr>
 <tr><td class="k">HL7 / FHIR</td><td>n/a</td><td>Standards for exchanging clinical messages and records</td><td>How orders reach the PACS and how the AI flag reaches HIS/RIS</td></tr>
-<tr><td class="k">Gateway (Orthanc)</td><td><span class="pilltag tc-violet">AI inference</span></td><td>A lightweight DICOM server, active-standby, buffering on local NVMe</td><td>The single receiver of PACS exports and the only AI-side system that talks to the PACS: it also returns AI results to the PACS by C-STORE. Keeps series close to the GPU so the AI can read them as often as it needs, and writes de-identified copies of selected cases to the research bucket (fail-closed: if it cannot de-identify a study, nothing is written; instances that may carry text burned into the pixels are rejected, and pixel redaction can be added later as a plugin step)</td></tr>
+<tr><td class="k">Gateway (Orthanc)</td><td><span class="pilltag tc-violet">AI inference</span></td><td>A lightweight DICOM server, active-standby, buffering on local NVMe</td><td>The single receiver of PACS exports and the only AI-side system that talks to the PACS: it also returns AI results to the PACS by C-STORE. Keeps series close to the GPU so the AI can read them as often as it needs, and keeps de-identified copies of selected cases and serves them to annotation over DICOMweb (fail-closed: if it cannot de-identify a study, nothing is written; instances that may carry text burned into the pixels are rejected, and pixel redaction can be added later as a plugin step)</td></tr>
 <tr><td class="k">AI inference service</td><td><span class="pilltag tc-violet">AI inference</span></td><td>Abstract block, implementation to be decided</td><td>Turns the series from the gateway into a hemorrhage mask, a report and a priority flag</td></tr>
 <tr><td class="k">Annotation</td><td><span class="pilltag tc-pink">AI research</span></td><td>Abstract block, tool to be decided</td><td>Clinicians label or correct hemorrhage regions, starting from AI-generated drafts</td></tr>
 <tr><td class="k">Model training</td><td><span class="pilltag tc-pink">AI research</span></td><td>Abstract block, stack to be decided</td><td>Trains and evaluates models on the labeled dataset</td></tr>
 <tr><td class="k">Model registry</td><td><span class="pilltag tc-pink">AI research</span></td><td>A versioned store of trained models with their metrics and status</td><td>The only handoff between research and inference; inference loads only validated versions</td></tr>
-<tr><td class="k">SeaweedFS</td><td><span class="pilltag tc-emerald">Data</span></td><td>Self-hosted, distributed object storage with an S3-compatible interface (Apache 2.0 licence). Chosen over MinIO, whose community edition is no longer maintained</td><td>Two separate buckets: the PACS bucket holds the clinical image files (last 90 days on-premise); the research bucket holds de-identified copies and labels and is writable only by the gateway and the research layer. Both are copied to the cloud</td></tr>
+<tr><td class="k">SeaweedFS</td><td><span class="pilltag tc-emerald">Data</span></td><td>Self-hosted, distributed object storage with an S3-compatible interface (Apache 2.0 licence). Chosen over MinIO, whose community edition is no longer maintained</td><td>Two separate buckets: the PACS bucket holds the clinical image files (last 90 days on-premise); the research bucket holds labels and frozen, versioned research datasets and is writable only by the research layer. Both are copied to the cloud</td></tr>
 <tr><td class="k">OpenLDAP</td><td><span class="pilltag tc-emerald">Data</span></td><td>Replicated directory service</td><td>Holds the dcm4chee configuration shared by all PACS nodes</td></tr>
 <tr><td class="k">PostgreSQL primary / standby</td><td><span class="pilltag tc-emerald">Data</span></td><td>Relational database in a high-availability pair (Patroni handles automatic failover). The pair protects against server failure, not against bad data, which is why cloud backups are still needed</td><td>Stores the PACS index and pending PACS work, plus label metadata and AI results in separate databases</td></tr>
 <tr><td class="k">Backup gateway</td><td><span class="pilltag tc-emerald">Data</span></td><td>Server running pgBackRest (database backups) and rclone (file copies)</td><td>Collects database backups and new studies and sends them to the cloud</td></tr>
@@ -479,7 +479,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <p>This is the path shown in violet. The PACS decides what the AI receives and pushes it; the AI never reaches into the PACS.</p>
 <ol class="flow f-tri">
 <li><b class="t">The PACS pushes the relevant series</b>An export rule in dcm4chee selects the series the AI needs and sends them to the AI buffer. The same rule can also send earlier studies of the same patient from the archive, not only the newest one.<br><span class="pr">DICOM C-STORE export</span></li>
-<li><b class="t">The gateway keeps them near the GPU</b>Orthanc stores the series on local NVMe and hands them to the AI inference service. For cases selected for research, it also writes a de-identified copy to the SeaweedFS research bucket (Flow 3), so the PACS exports each series only once.</li>
+<li><b class="t">The gateway keeps them near the GPU</b>Orthanc stores the series on local NVMe and hands them to the AI inference service. For cases selected for research, it also keeps a de-identified copy and serves it to annotation (Flow 3), so the PACS exports each series only once.</li>
 <li><b class="t">AI analyzes the scan</b>The inference service runs the current validated model and produces the hemorrhage mask, a structured report and a priority flag.</li>
 <li><b class="t">Results go back</b>The mask (DICOM SEG) and report (SR) go back to the gateway, which sends them to the PACS by C-STORE, so the AI service never connects to the PACS. The priority flag goes to HIS/RIS, and result details are saved in the AI results database.<br><span class="pr">C-STORE · HL7 ORU / FHIR · PostgreSQL :5432</span></li>
 </ol>
@@ -499,21 +499,22 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tbody>
 <tr><td class="k">PACS (dcm4chee)</td><td>N+1 nodes behind a load balancer</td><td>dcm4chee is stateless and cluster-safe, so any node can serve any request. Pending work is persisted in PostgreSQL and is picked up by the remaining nodes. A request that was in progress on the failed node is retried by its client (the scanner re-sends, the viewer re-requests).</td></tr>
 <tr><td class="k">PACS state</td><td>Each store has its own HA</td><td>PostgreSQL fails over with Patroni, OpenLDAP is replicated, and SeaweedFS is distributed across nodes. The PACS is only as available as these three stores.</td></tr>
-<tr><td class="k">Gateway (Orthanc)</td><td>Active-standby, local NVMe</td><td>The standby takes over with an empty buffer. The buffer is rebuilt by re-exporting the needed series from dcm4chee. No clinical data is lost, because the PACS remains the source of truth, and research copies are unaffected because they already live in SeaweedFS.</td></tr>
+<tr><td class="k">Gateway (Orthanc)</td><td>Active-standby, local NVMe</td><td>The standby takes over with an empty buffer. The buffer is rebuilt by re-exporting the needed series from dcm4chee. No clinical data is lost, because the PACS remains the source of truth, de-identified copies for annotation are lost with the buffer and re-created by re-export, while labels and frozen datasets stay safe in the research bucket.</td></tr>
 </tbody></table></div>
 <div class="callout"><b>When one Orthanc node is not enough.</b> If the export volume grows beyond what a single node can handle, switch the buffer to active-active: several Orthanc nodes sharing one PostgreSQL index and shared object storage (SeaweedFS) instead of local NVMe.</div>
 
 <h2 class="sec" id="flow-ai"><span class="n">7</span>Flow 3 · Annotation and model development</h2>
 <p>This is the path shown in pink. It is not time-critical and repeats over weeks and months to keep improving the model.</p>
 <ol class="flow f-ai">
-<li><b class="t">De-identified data is prepared</b>The gateway removes patient identifiers from the selected cases and writes them to the SeaweedFS research bucket. Annotators never see patient identity, and research never reads the PACS bucket.<br><span class="pr">gateway → S3 PUT · research bucket</span></li>
-<li><b class="t">Clinicians annotate</b>The annotation tool shows each scan with a draft mask from the current model. Clinicians correct the draft instead of drawing from scratch. Labels are saved to the same research bucket.<br><span class="pr">S3 GET images · S3 PUT labels</span></li>
-<li><b class="t">A labeled dataset is frozen</b>A versioned set of images and labels is handed to model training, so every model can be traced to the exact data it learned from.</li>
+<li><b class="t">De-identified data is prepared</b>The gateway removes patient identifiers from the selected cases and keeps the de-identified copies, which annotation tools read over DICOMweb. Annotators never see patient identity and never reach the PACS.<br><span class="pr">DICOMweb · de-identified studies on the gateway</span></li>
+<li><b class="t">Clinicians annotate</b>The annotation tool shows each scan with a draft mask from the current model. Clinicians correct the draft instead of drawing from scratch. Labels are saved to the research bucket.<br><span class="pr">DICOMweb images · S3 PUT labels</span></li>
+<li><b class="t">A labeled dataset is frozen</b>A versioned set of images and labels is frozen in the research bucket and handed to model training, so every model can be traced to the exact data it learned from.</li>
 <li><b class="t">The model is trained and evaluated</b>Training produces a candidate model with its metrics and publishes it to the model registry.</li>
 <li><b class="t">The model is validated</b>Clinicians and the AI team review the candidate on a held-out test set. Only an approved version is marked validated.</li>
 <li><b class="t">Both sides pick up the new model</b>The inference service loads the validated version for patient care. Annotation uses the latest model for better drafts, which closes the annotation loop.</li>
 </ol>
 <div class="callout amber"><b>Burned-in text.</b> Text burned into the pixels is not removed by Orthanc, which only edits DICOM tags. The gateway therefore rejects every instance that may carry it: localizers, Secondary Captures, and any instance flagged with Burned In Annotation. The model needs only axial thin-slice series, which normally carry no burned-in text. Pixel-level redaction (optical character recognition, for example Microsoft Presidio, or masking fixed regions per scanner model) can be added later as an extra step in the gateway's Python plugin, when research needs other image types.</div>
+<div class="callout amber"><b>One gateway for inference and annotation, for now.</b> To keep the system simple, annotation reads de-identified studies from the same Orthanc gateway that feeds the AI. This has known costs: annotation load competes with inference for the gateway's disk and network, the research network must be allowed to reach the gateway (DICOMweb read of de-identified studies only), and the de-identified copies on local NVMe are lost on failover (they are re-created by re-export; labels and frozen datasets are safe in the research bucket). If isolation between inference and annotation becomes necessary, a separate research Orthanc storing into the research bucket can be added later without changing the PACS export rule.</div>
 <div class="callout"><b>Why research is separate from inference:</b> research changes constantly and uses heavy GPU jobs, while inference must be stable and always available for emergencies. They share nothing except the gateway that feeds both, the model registry, and the research bucket.</div>
 
 <h2 class="sec" id="flow-backup"><span class="n">8</span>Flow 4 · Backup and replication to cloud</h2>
@@ -551,7 +552,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <thead><tr><th>Block</th><th>Inputs</th><th>Outputs</th><th>Requirements</th></tr></thead>
 <tbody>
 <tr><td class="k tc-violet">AI inference service</td><td>Series pushed by the PACS into the gateway; validated model from the registry</td><td>DICOM SEG + SR to the gateway, which forwards them to the PACS; priority flag to HIS/RIS; result metadata to PostgreSQL</td><td>24/7, dedicated GPU, no internet access, no PACS credentials</td></tr>
-<tr><td class="k tc-pink">Annotation</td><td>De-identified images from the SeaweedFS research bucket; draft masks from the current model</td><td>Labels saved to the research bucket; label records</td><td>Clinician-friendly 3D editing, versioned labels, audit of who labeled what</td></tr>
+<tr><td class="k tc-pink">Annotation</td><td>De-identified studies from the gateway over DICOMweb; draft masks from the current model</td><td>Labels saved to the research bucket; label records</td><td>Clinician-friendly 3D editing, versioned labels, audit of who labeled what</td></tr>
 <tr><td class="k tc-pink">Model training</td><td>A versioned labeled dataset</td><td>Candidate model, metrics and documentation to the registry</td><td>GPU access, reproducible runs, no path to clinical systems</td></tr>
 <tr><td class="k tc-pink">Model registry</td><td>Candidate models from training</td><td>Validated models to inference; latest model to annotation</td><td>Version history, approval status, traceability to the dataset</td></tr>
 </tbody></table></div>
