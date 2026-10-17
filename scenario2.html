@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICH Architecture Overview · Scenario 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7fc;--card:#ffffff;--text:#1c1f3a;--muted:#5b6080;--border:#d9deef;--pill:#ffffff;
+--blue:#1d4ed8;--blue-s:#e6efff;--blue-h:#d3e2ff;
+--violet:#6d28d9;--violet-s:#f1ecff;--violet-h:#e2d8ff;
+--pink:#be185d;--pink-s:#fdedf5;--pink-h:#fbd5e8;
+--emerald:#047857;--emerald-s:#e5f8ef;--emerald-h:#c8f0dd;
+--amber:#b45309;--amber-s:#fff5e1;--amber-h:#fde5b3;
+--cyan:#0e7490;--cyan-s:#e3f8fc;--cyan-h:#c2eef7;
+--slate:#475569;--slate-s:#f1f3f8;--slate-h:#e0e5ef;
+--rose:#e11d48;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0e1124;--card:#171b34;--text:#eceefb;--muted:#a3a8c8;--border:#2c3257;--pill:#171b34;
+--blue:#93c5fd;--blue-s:#14213f;--blue-h:#1b3160;--violet:#c4b5fd;--violet-s:#1d1838;--violet-h:#33255f;
+--pink:#f9a8d4;--pink-s:#2a1324;--pink-h:#4a1a3a;--emerald:#6ee7b7;--emerald-s:#0f2a24;--emerald-h:#0f3b2e;
+--amber:#fcd34d;--amber-s:#2c210b;--amber-h:#42300a;--cyan:#67e8f9;--cyan-s:#0f2a33;--cyan-h:#123b46;
+--slate:#cbd5e1;--slate-s:#1a1f36;--slate-h:#2a3150;--rose:#fb7185;}}
+:root[data-theme="dark"]{--bg:#0e1124;--card:#171b34;--text:#eceefb;--muted:#a3a8c8;--border:#2c3257;--pill:#171b34;
+--blue:#93c5fd;--blue-s:#14213f;--blue-h:#1b3160;--violet:#c4b5fd;--violet-s:#1d1838;--violet-h:#33255f;
+--pink:#f9a8d4;--pink-s:#2a1324;--pink-h:#4a1a3a;--emerald:#6ee7b7;--emerald-s:#0f2a24;--emerald-h:#0f3b2e;
+--amber:#fcd34d;--amber-s:#2c210b;--amber-h:#42300a;--cyan:#67e8f9;--cyan-s:#0f2a33;--cyan-h:#123b46;
+--slate:#cbd5e1;--slate-s:#1a1f36;--slate-h:#2a3150;--rose:#fb7185;}
+
+.bg{fill:var(--card)}
+.h1{fill:var(--text);font-size:22px;font-weight:700}
+.h2{fill:var(--muted);font-size:14px}
+.lane{stroke:none}
+.f-slate{fill:var(--slate-s)}.f-blue{fill:var(--blue-s)}.f-violet{fill:var(--violet-s)}.f-pink{fill:var(--pink-s)}.f-emerald{fill:var(--emerald-s)}.f-amber{fill:var(--amber-s)}.f-cyan{fill:var(--cyan-s)}
+.h-slate{fill:var(--slate-h)}.h-blue{fill:var(--blue-h)}.h-violet{fill:var(--violet-h)}.h-pink{fill:var(--pink-h)}.h-emerald{fill:var(--emerald-h)}.h-amber{fill:var(--amber-h)}.h-cyan{fill:var(--cyan-h)}
+.t-slate{fill:var(--slate)}.t-blue{fill:var(--blue)}.t-violet{fill:var(--violet)}.t-pink{fill:var(--pink)}.t-emerald{fill:var(--emerald)}.t-amber{fill:var(--amber)}.t-cyan{fill:var(--cyan)}
+.lt{font-size:16px;font-weight:700}.ls{font-size:12.5px;font-weight:600;opacity:.85}
+.frame{fill:none;stroke:var(--border);stroke-width:1}
+.bx,.cy,.cyt{fill:var(--card);stroke-width:1.6}
+.cyt{fill:var(--card)}
+.s-slate{stroke:var(--slate)}.s-blue{stroke:var(--blue)}.s-violet{stroke:var(--violet)}.s-pink{stroke:var(--pink)}.s-emerald{stroke:var(--emerald)}.s-amber{stroke:var(--amber)}.s-cyan{stroke:var(--cyan)}
+.bt{fill:var(--text);font-size:13.5px;font-weight:700}
+.bs{fill:var(--muted);font-size:11.5px}
+.abs{stroke-width:2;stroke-dasharray:8 5}
+.af-violet{fill:var(--violet-s)}.af-pink{fill:var(--pink-s)}
+.big{font-size:16px}
+.tagbg{stroke:none}.tagt{font-size:10.5px;font-weight:700;letter-spacing:.04em}
+.grp{fill:none;stroke:var(--emerald);stroke-width:1.3;stroke-dasharray:6 4}
+.grpt{fill:var(--emerald);font-size:12px;font-weight:700}
+.a.loop{stroke:var(--violet);stroke-width:1.8;stroke-dasharray:3 4}
+.lbv{fill:var(--violet);font-size:11px;font-weight:600}
+.note{fill:var(--muted);font-size:12.5px;font-style:italic}
+.a{fill:none;stroke-linejoin:round;stroke-linecap:round}
+.a.crit{stroke:var(--rose);stroke-width:2.4}
+.a.ai{stroke:var(--violet);stroke-width:2.2}
+.a.flow{stroke:var(--muted);stroke-width:1.6}
+.a.bak{stroke:var(--amber);stroke-width:2.8}
+.a.rest{stroke:var(--cyan);stroke-width:2;stroke-dasharray:7 5}
+.a.life{stroke:var(--cyan);stroke-width:2;stroke-dasharray:2 4}
+.pill{fill:var(--pill);stroke:var(--border);stroke-width:.8;opacity:.96}
+.lb{fill:var(--text);font-size:11px;font-weight:500}
+.lbc{fill:var(--cyan);font-size:11px;font-weight:600}
+.boundary{stroke:var(--cyan);stroke-width:2.5;stroke-dasharray:12 6}
+.btag{fill:var(--cyan);font-size:12px;font-weight:700}
+.legend{fill:var(--bg);stroke:var(--border)}
+.lgh{fill:var(--text);font-size:15px;font-weight:700}
+.lgt{fill:var(--text);font-size:13px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.page{max-width:1180px;margin:0 auto;padding:32px 16px 80px}
+.hero{background:linear-gradient(135deg,#4338ca,#0e7490);color:#fff;border-radius:22px;padding:38px 36px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-90px;top:-90px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hero .eyebrow{font-size:13px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;opacity:.85;position:relative}
+.hero h1{font-size:32px;line-height:1.25;margin:10px 0 12px;position:relative}
+.hero p{font-size:17px;max-width:860px;opacity:.93;margin:0;position:relative}
+.hero a{color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;position:relative}
+.chips span{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600}
+nav.toc{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 22px;margin:24px 0}
+nav.toc b{color:var(--violet)}
+nav.toc ol{margin:8px 0 0;padding-left:22px;columns:2;column-gap:36px}
+nav.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border)}
+nav.toc a:hover{color:var(--violet)}
+h2.sec{font-size:24px;margin:54px 0 14px;display:flex;align-items:center;gap:12px;line-height:1.3}
+h2.sec .n{flex:none;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#0e7490);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
+p{margin:8px 0}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.86em;background:var(--slate-s);border:1px solid var(--border);padding:1px 6px;border-radius:6px}
+.figure{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;margin:16px 0}
+.figscroll{overflow-x:auto;border-radius:12px}
+#arch{display:block;width:100%;min-width:1100px;height:auto}
+#arch .a[data-g]{transition:opacity .25s}
+#arch[data-focus] .a[data-g]{opacity:.1}
+#arch[data-focus="clinical"] .a[data-g="clinical"],#arch[data-focus="triage"] .a[data-g="triage"],#arch[data-focus="ai"] .a[data-g="ai"],#arch[data-focus="backup"] .a[data-g="backup"],#arch[data-focus="restore"] .a[data-g="restore"]{opacity:1}
+.focusbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 4px 12px}
+.focusbar span{font-size:14px;color:var(--muted);margin-right:4px}
+.focusbar button{font:inherit;font-size:14px;font-weight:600;padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer}
+.focusbar button[aria-pressed="true"]{background:var(--text);color:var(--card);border-color:var(--text)}
+.figcap{font-size:14px;color:var(--muted);margin:10px 4px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;border-top-width:5px}
+.card h4{margin:0 0 4px;font-size:17px}
+.card .v{font-size:13px;font-weight:700;margin-bottom:6px}
+.card p{font-size:15px;color:var(--text)}
+.c-slate{border-top-color:var(--slate)}.c-blue{border-top-color:var(--blue)}.c-violet{border-top-color:var(--violet)}.c-pink{border-top-color:var(--pink)}.c-emerald{border-top-color:var(--emerald)}.c-amber{border-top-color:var(--amber)}.c-cyan{border-top-color:var(--cyan)}
+.tc-slate{color:var(--slate)}.tc-blue{color:var(--blue)}.tc-violet{color:var(--violet)}.tc-pink{color:var(--pink)}.tc-emerald{color:var(--emerald)}.tc-amber{color:var(--amber)}.tc-cyan{color:var(--cyan)}.tc-rose{color:var(--rose)}
+.tbl{overflow-x:auto;margin:14px 0;border:1px solid var(--border);border-radius:16px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:11px 15px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--slate-s);font-weight:700;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.k{font-weight:700;white-space:nowrap}
+.pilltag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--slate-s);border:1px solid var(--border);white-space:nowrap}
+ol.flow{list-style:none;counter-reset:f;padding:0;margin:14px 0;position:relative}
+ol.flow>li{counter-increment:f;position:relative;padding:14px 18px 14px 66px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin:10px 0}
+ol.flow>li::before{content:counter(f);position:absolute;left:16px;top:14px;width:32px;height:32px;border-radius:10px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--fc)}
+ol.flow>li b.t{display:block}
+ol.flow>li .pr{display:inline-block;margin-top:4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--muted);background:var(--slate-s);border:1px solid var(--border);border-radius:8px;padding:1px 8px}
+.f-clin{--fc:var(--rose)}.f-tri{--fc:var(--violet)}.f-ai{--fc:var(--pink)}.f-bak{--fc:var(--amber)}.f-rest{--fc:var(--cyan)}
+.callout{border-left:5px solid var(--violet);background:var(--violet-s);padding:14px 18px;border-radius:0 12px 12px 0;margin:18px 0}
+.callout.amber{border-left-color:var(--amber);background:var(--amber-s)}
+.callout.cyan{border-left-color:var(--cyan);background:var(--cyan-s)}
+.callout.rose{border-left-color:var(--rose);background:var(--blue-s)}
+.callout ul{margin:6px 0 0;padding-left:20px}
+.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:14px 0}
+.timeline div{border-radius:12px;padding:12px 14px;border-top:5px solid}
+.timeline b{display:block;font-size:15px}.timeline span{font-size:13px;color:var(--muted)}
+.t1{background:var(--emerald-s);border-color:var(--emerald)!important}.t2{background:var(--amber-s);border-color:var(--amber)!important}.t3{background:var(--cyan-s);border-color:var(--cyan)!important}.t4{background:var(--slate-s);border-color:var(--slate)!important}
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
+@media (max-width:700px){.hero{padding:26px 20px}.hero h1{font-size:25px}nav.toc ol{columns:1}.timeline{grid-template-columns:1fr 1fr}ol.flow>li{padding-left:58px}}
+.site{fill:var(--card);fill-opacity:.55;stroke:var(--slate);stroke-width:2;stroke-dasharray:10 5}
+.sitet{fill:var(--slate);font-size:12.5px;font-weight:700}
+</style></head><body>
+<div class="page">
+<header class="hero">
+  <div class="eyebrow">Intracerebral hemorrhage AI system · Deployment scenario 2 · <a href="index.html">see scenario 1</a></div>
+  <h1>GPUs at a second site: clinical work stays home, only de-identified tensors travel</h1>
+  <p>The hospital owns GPUs, but they sit at a second campus. Everything clinical stays at the main site exactly as in scenario 1. The AI buffer becomes a gateway: it de-identifies, crops and resamples each study, then stores and forwards one encrypted tensor to site 2 over a private link. Site 2 never sees patient identity and never reaches the PACS.</p>
+  <div class="chips"><span>Clinical path unchanged</span><span>Gateway de-identifies before data leaves</span><span>One tensor per study over N8</span><span>Site 2 down: "no AI result", care continues</span></div>
+</header>
+
+<nav class="toc"><b>Contents</b><ol>
+<li><a href="#diagram">Architecture diagram</a></li>
+<li><a href="#changes">What changes from scenario 1</a></li>
+<li><a href="#flow-triage">AI triage through the gateway</a></li>
+<li><a href="#site2">Site 2 and the N8 link</a></li>
+<li><a href="#failure">Failure behaviour</a></li>
+<li><a href="#ha">High availability</a></li>
+</ol></nav>
+
+<h2 class="sec" id="diagram"><span class="n">1</span>Architecture diagram</h2>
+<p>Lanes are network layers; the dashed grey frame is site 2. A box keeps its layer colour wherever it runs, so the frame shows <i>where</i> it runs and the colour shows <i>what</i> it is. Use the buttons to highlight one flow at a time.</p>
+<div class="figure">
+  <div class="focusbar" role="group" aria-label="Highlight a flow">
+    <span>Highlight:</span>
+    <button type="button" data-f="" aria-pressed="true">All flows</button>
+    <button type="button" data-f="clinical" aria-pressed="false">1 · Clinical path</button>
+    <button type="button" data-f="triage" aria-pressed="false">2 · AI triage</button>
+    <button type="button" data-f="ai" aria-pressed="false">3 · Annotation &amp; training</button>
+    <button type="button" data-f="backup" aria-pressed="false">4 · Backup &amp; replication</button>
+    <button type="button" data-f="restore" aria-pressed="false">5 · Restore</button>
+  </div>
+  <div class="figscroll"><svg id="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1840 1110" role="img" aria-labelledby="ttl dsc">
+<title id="ttl">ICH AI system architecture, Scenario 2</title>
+<desc id="dsc">Same clinical, data and cloud layers as scenario 1. The PACS pushes selected series to an AI gateway at the main site, which de-identifies, crops, resamples and encrypts them and forwards one tensor per study over the private N8 link to GPU inference at site 2. Model training and the model registry also run at site 2 on de-identified data. Masks return to the gateway, which maps them back and stores results in the PACS.</desc>
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1.5 1L8.5 5L1.5 9" fill="none" stroke="context-stroke" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="bg" x="0" y="0" width="1840" height="1110"/>
+<text class="h1" x="20" y="34">Intracerebral hemorrhage AI system · Scenario 2 architecture</text>
+<text class="h2" x="20" y="58">GPUs at a second site · clinical path unchanged · the gateway de-identifies and forwards one encrypted tensor per study over the private N8 link</text>
+<rect class="lane f-blue" x="20" y="80" width="1800" height="170"/>
+<rect class="lh h-blue" x="20" y="80" width="150" height="170"/>
+<text class="lt t-blue" x="34" y="155" dominant-baseline="central">Clinical</text>
+<text class="ls t-blue" x="34" y="175" dominant-baseline="central">VLAN 10–20</text>
+<rect class="lane f-violet" x="20" y="250" width="1800" height="150"/>
+<rect class="lh h-violet" x="20" y="250" width="150" height="150"/>
+<text class="lt t-violet" x="34" y="315" dominant-baseline="central">AI inference</text>
+<text class="ls t-violet" x="34" y="335" dominant-baseline="central">VLAN 30</text>
+<rect class="lane f-pink" x="20" y="400" width="1800" height="150"/>
+<rect class="lh h-pink" x="20" y="400" width="150" height="150"/>
+<text class="lt t-pink" x="34" y="465" dominant-baseline="central">AI research</text>
+<text class="ls t-pink" x="34" y="485" dominant-baseline="central">VLAN 40</text>
+<rect class="lane f-emerald" x="20" y="550" width="1800" height="190"/>
+<rect class="lh h-emerald" x="20" y="550" width="150" height="190"/>
+<text class="lt t-emerald" x="34" y="635" dominant-baseline="central">Data</text>
+<text class="ls t-emerald" x="34" y="655" dominant-baseline="central">VLAN 50 / 80</text>
+<rect class="lane f-cyan" x="20" y="740" width="1800" height="190"/>
+<rect class="lh h-cyan" x="20" y="740" width="150" height="190"/>
+<text class="lt t-cyan" x="34" y="825" dominant-baseline="central">Cloud</text>
+<text class="ls t-cyan" x="34" y="845" dominant-baseline="central">storage only</text>
+<rect class="frame" x="20" y="80" width="1800" height="850" rx="0"/>
+<line class="boundary" x1="20" y1="740" x2="1820" y2="740"/>
+
+<!-- clinical lane -->
+<g><rect class="bx s-blue" x="215" y="133" width="150" height="64" rx="12"/>
+<text class="bt" x="290" y="156" text-anchor="middle" dominant-baseline="central">CT / MRI</text>
+<text class="bs" x="290" y="176" text-anchor="middle" dominant-baseline="central">modality</text></g>
+<g><rect class="bx s-blue" x="455" y="133" width="150" height="64" rx="12"/>
+<rect class="tagbg h-blue" x="458" y="124" width="104" height="18" rx="9"/>
+<text class="tagt t-blue" x="510" y="133" text-anchor="middle" dominant-baseline="central">N+1 · LB</text>
+<text class="bt" x="530" y="160" text-anchor="middle" dominant-baseline="central">PACS · dcm4chee</text>
+<text class="bs" x="530" y="180" text-anchor="middle" dominant-baseline="central">archive + DICOMweb</text></g>
+<g><rect class="bx s-blue" x="935" y="133" width="150" height="64" rx="12"/>
+<text class="bt" x="1010" y="156" text-anchor="middle" dominant-baseline="central">Radiologist viewer</text>
+<text class="bs" x="1010" y="176" text-anchor="middle" dominant-baseline="central">OHIF · reads + confirms</text></g>
+<g><rect class="bx s-blue" x="1175" y="133" width="150" height="64" rx="12"/>
+<text class="bt" x="1250" y="156" text-anchor="middle" dominant-baseline="central">Identity</text>
+<text class="bs" x="1250" y="176" text-anchor="middle" dominant-baseline="central">Keycloak SSO + MFA</text></g>
+<g><rect class="bx s-blue" x="1655" y="133" width="150" height="64" rx="12"/>
+<text class="bt" x="1730" y="156" text-anchor="middle" dominant-baseline="central">HIS / RIS</text>
+<text class="bs" x="1730" y="176" text-anchor="middle" dominant-baseline="central">orders, worklist</text></g>
+
+
+<!-- site 2 frame -->
+<rect class="site" x="1000" y="264" width="700" height="278" rx="16"/>
+<rect class="tagbg h-slate" x="1012" y="255" width="172" height="18" rx="9"/>
+<text class="tagt t-slate" x="1098" y="264" text-anchor="middle" dominant-baseline="central">N8 PRIVATE LINK · mTLS</text>
+<text class="sitet" x="1688" y="286" text-anchor="end">SITE 2 · GPUs only · de-identified data only</text>
+
+<!-- AI inference lane: gateway at the main site -->
+<g><rect class="bx s-violet" x="455" y="286" width="450" height="78" rx="12"/>
+<rect class="tagbg h-violet" x="458" y="277" width="112" height="18" rx="9"/>
+<text class="tagt t-violet" x="514" y="286" text-anchor="middle" dominant-baseline="central">ACTIVE-STANDBY</text>
+<text class="bt big" x="680" y="311" text-anchor="middle" dominant-baseline="central">AI gateway · Orthanc</text>
+<text class="bs" x="680" y="333" text-anchor="middle" dominant-baseline="central">buffer · de-identify (fail-closed) · crop / resample · encrypt</text>
+<text class="bs" x="680" y="349" text-anchor="middle" dominant-baseline="central">store and forward to site 2 · de-identified copies for research</text></g>
+<!-- site 2: inference -->
+<g><rect class="abs s-violet af-violet" x="1040" y="292" width="360" height="72" rx="14"/>
+<text class="bt big" x="1220" y="313" text-anchor="middle" dominant-baseline="central">AI inference service · GPU</text>
+<text class="bs" x="1220" y="335" text-anchor="middle" dominant-baseline="central">Input: one encrypted tensor  →  Output: mask</text>
+<text class="bs" x="1220" y="351" text-anchor="middle" dominant-baseline="central">Internals to be decided</text></g>
+
+<!-- AI research lane -->
+<g><rect class="abs s-pink af-pink" x="680" y="425" width="200" height="100" rx="14"/>
+<rect class="tagbg h-pink" x="735.2" y="433" width="135" height="18" rx="9"/>
+<text class="tagt t-pink" x="803" y="442" text-anchor="middle" dominant-baseline="central">IMPLEMENTATION TBD</text>
+<text class="bt big" x="780.0" y="469" text-anchor="middle" dominant-baseline="central">Annotation</text>
+<text class="bs" x="780.0" y="491" text-anchor="middle" dominant-baseline="central">main site · de-identified data</text>
+<text class="bs" x="780.0" y="507" text-anchor="middle" dominant-baseline="central">AI drafts from current model</text>
+</g>
+<g><rect class="abs s-pink af-pink" x="1040" y="425" width="210" height="100" rx="14"/>
+<rect class="tagbg h-pink" x="1105.2" y="433" width="135" height="18" rx="9"/>
+<text class="tagt t-pink" x="1173" y="442" text-anchor="middle" dominant-baseline="central">IMPLEMENTATION TBD</text>
+<text class="bt big" x="1145.0" y="469" text-anchor="middle" dominant-baseline="central">Model training</text>
+<text class="bs" x="1145.0" y="491" text-anchor="middle" dominant-baseline="central">site 2 GPUs</text>
+<text class="bs" x="1145.0" y="507" text-anchor="middle" dominant-baseline="central">Tools to be decided</text>
+</g>
+<g><path class="cy s-pink" d="M1470 440 L1470 510 A75.0 10 0 0 0 1620 510 L1620 440 A75.0 10 0 0 1 1470 440 Z"/>
+<ellipse class="cyt s-pink" cx="1545.0" cy="440" rx="75.0" ry="10"/>
+<text class="bt" x="1545" y="471.0" text-anchor="middle" dominant-baseline="central">Model registry</text>
+<text class="bs" x="1545" y="491.0" text-anchor="middle" dominant-baseline="central">approved versions</text></g>
+
+<!-- data lane -->
+<rect class="grp" x="440" y="578" width="660" height="114" rx="14"/>
+<text class="grpt" x="452" y="568">PACS state · each store has its own HA</text>
+<g><path class="cy s-emerald" d="M455 600 L455 670 A75.0 10 0 0 0 605 670 L605 600 A75.0 10 0 0 1 455 600 Z"/>
+<ellipse class="cyt s-emerald" cx="530.0" cy="600" rx="75.0" ry="10"/>
+<text class="bt" x="530" y="631.0" text-anchor="middle" dominant-baseline="central">MinIO</text>
+<text class="bs" x="530" y="651.0" text-anchor="middle" dominant-baseline="central">PACS bucket · distributed</text></g>
+<g><path class="cy s-emerald" d="M215 600 L215 670 A75.0 10 0 0 0 365 670 L365 600 A75.0 10 0 0 1 215 600 Z"/>
+<ellipse class="cyt s-emerald" cx="290.0" cy="600" rx="75.0" ry="10"/>
+<text class="bt" x="290" y="631.0" text-anchor="middle" dominant-baseline="central">MinIO · research</text>
+<text class="bs" x="290" y="651.0" text-anchor="middle" dominant-baseline="central">de-identified + labels</text></g>
+<g><path class="cy s-emerald" d="M695 600 L695 670 A75.0 10 0 0 0 845 670 L845 600 A75.0 10 0 0 1 695 600 Z"/>
+<ellipse class="cyt s-emerald" cx="770.0" cy="600" rx="75.0" ry="10"/>
+<text class="bt" x="770" y="631.0" text-anchor="middle" dominant-baseline="central">OpenLDAP</text>
+<text class="bs" x="770" y="651.0" text-anchor="middle" dominant-baseline="central">PACS configuration</text></g>
+<g><path class="cy s-emerald" d="M935 600 L935 670 A75.0 10 0 0 0 1085 670 L1085 600 A75.0 10 0 0 1 935 600 Z"/>
+<ellipse class="cyt s-emerald" cx="1010.0" cy="600" rx="75.0" ry="10"/>
+<text class="bt" x="1010" y="631.0" text-anchor="middle" dominant-baseline="central">PostgreSQL primary</text>
+<text class="bs" x="1010" y="651.0" text-anchor="middle" dominant-baseline="central">PACS index, AI results</text></g>
+<g><path class="cy s-emerald" d="M1175 600 L1175 670 A75.0 10 0 0 0 1325 670 L1325 600 A75.0 10 0 0 1 1175 600 Z"/>
+<ellipse class="cyt s-emerald" cx="1250.0" cy="600" rx="75.0" ry="10"/>
+<text class="bt" x="1250" y="631.0" text-anchor="middle" dominant-baseline="central">PostgreSQL standby</text>
+<text class="bs" x="1250" y="651.0" text-anchor="middle" dominant-baseline="central">Patroni failover</text></g>
+<g><rect class="bx s-amber" x="1415" y="608" width="150" height="64" rx="12"/>
+<text class="bt" x="1490" y="631" text-anchor="middle" dominant-baseline="central">Backup gateway</text>
+<text class="bs" x="1490" y="651" text-anchor="middle" dominant-baseline="central">pgBackRest · rclone</text></g>
+<g><rect class="bx s-amber" x="1655" y="708" width="150" height="64" rx="12"/>
+<text class="bt" x="1730" y="731" text-anchor="middle" dominant-baseline="central">Egress firewall</text>
+<text class="bs" x="1730" y="751" text-anchor="middle" dominant-baseline="central">443 out only · IPsec VPN</text></g>
+
+<!-- cloud lane -->
+<g><rect class="bx s-cyan" x="215" y="803" width="150" height="64" rx="12"/>
+<text class="bt" x="290" y="826" text-anchor="middle" dominant-baseline="central">KMS</text>
+<text class="bs" x="290" y="846" text-anchor="middle" dominant-baseline="central">hospital-held keys</text></g>
+<g><rect class="bx s-cyan" x="455" y="803" width="150" height="64" rx="12"/>
+<text class="bt" x="530" y="826" text-anchor="middle" dominant-baseline="central">Object Lock</text>
+<text class="bs" x="530" y="846" text-anchor="middle" dominant-baseline="central">WORM + versioning</text></g>
+<g><path class="cy s-cyan" d="M935 810 L935 880 A75.0 10 0 0 0 1085 880 L1085 810 A75.0 10 0 0 1 935 810 Z"/>
+<ellipse class="cyt s-cyan" cx="1010.0" cy="810" rx="75.0" ry="10"/>
+<text class="bt" x="1010" y="841.0" text-anchor="middle" dominant-baseline="central">DICOM · Standard</text>
+<text class="bs" x="1010" y="861.0" text-anchor="middle" dominant-baseline="central">0 – 90 days</text></g>
+<g><path class="cy s-cyan" d="M1175 810 L1175 880 A75.0 10 0 0 0 1325 880 L1325 810 A75.0 10 0 0 1 1175 810 Z"/>
+<ellipse class="cyt s-cyan" cx="1250.0" cy="810" rx="75.0" ry="10"/>
+<text class="bt" x="1250" y="841.0" text-anchor="middle" dominant-baseline="central">Infrequent Access</text>
+<text class="bs" x="1250" y="861.0" text-anchor="middle" dominant-baseline="central">DICOM · 90 days – 1 year</text></g>
+<g><path class="cy s-cyan" d="M1415 810 L1415 880 A75.0 10 0 0 0 1565 880 L1565 810 A75.0 10 0 0 1 1415 810 Z"/>
+<ellipse class="cyt s-cyan" cx="1490.0" cy="810" rx="75.0" ry="10"/>
+<text class="bt" x="1490" y="841.0" text-anchor="middle" dominant-baseline="central">DICOM · Archive</text>
+<text class="bs" x="1490" y="861.0" text-anchor="middle" dominant-baseline="central">1 – 10 years</text></g>
+<g><path class="cy s-cyan" d="M1655 810 L1655 880 A75.0 10 0 0 0 1805 880 L1805 810 A75.0 10 0 0 1 1655 810 Z"/>
+<ellipse class="cyt s-cyan" cx="1730.0" cy="810" rx="75.0" ry="10"/>
+<text class="bt" x="1730" y="841.0" text-anchor="middle" dominant-baseline="central">PG backup bucket</text>
+<text class="bs" x="1730" y="861.0" text-anchor="middle" dominant-baseline="central">only DB backup · 35 days</text></g>
+
+
+<!-- flow 1: clinical -->
+<path class="a crit" data-g="clinical" d="M365 165 L451 165" marker-end="url(#ar)"/>
+<path class="a crit" data-g="clinical" d="M605 165 L931 165" marker-end="url(#ar)"/>
+<path class="a flow" data-g="clinical" d="M1089 165 L1171 165" marker-end="url(#ar)" marker-start="url(#ar)"/>
+<path class="a flow" data-g="clinical" d="M1730 133 L1730 105 L590 105 L590 129" marker-end="url(#ar)"/>
+<path class="a flow" data-g="clinical" d="M470 197 L470 212 L420 212 L420 640 L436 640" marker-end="url(#ar)"/>
+<!-- flow 2: AI triage -->
+<path class="a ai" data-g="triage" d="M590 197 L590 282" marker-end="url(#ar)"/>
+<path class="a ai" data-g="triage" d="M760 286 L760 185 L609 185" marker-end="url(#ar)"/>
+<path class="a ai" data-g="triage" d="M890 286 L890 230 L1730 230 L1730 201" marker-end="url(#ar)"/>
+<path class="a ai" data-g="triage" d="M905 315 L1036 315" marker-end="url(#ar)"/>
+<path class="a ai" data-g="triage" d="M1040 342 L909 342" marker-end="url(#ar)"/>
+<path class="a flow" data-g="triage" d="M905 356 L950 356 L950 565 L1010 565 L1010 586" marker-end="url(#ar)"/>
+<!-- flow 3: annotation and training -->
+<path class="a flow" data-g="ai" d="M455 340 L430 340 A10 10 0 0 0 410 340 L260 340 L260 586" marker-end="url(#ar)"/>
+<path class="a flow" data-g="ai" d="M676 500 L430 500 A10 10 0 0 0 410 500 L330 500 L330 586" marker-end="url(#ar)" marker-start="url(#ar)"/>
+<path class="a flow" data-g="ai" d="M880 475 L940 475 A10 10 0 0 1 960 475 L1036 475" marker-end="url(#ar)"/>
+<path class="a flow" data-g="ai" d="M1250 475 L1466 475" marker-end="url(#ar)"/>
+<path class="a loop" data-g="ai" d="M1500 430 L1500 412 L960 412 A10 10 0 0 0 940 412 L780 412 L780 421" marker-end="url(#ar)"/>
+<path class="a flow" data-g="ai" d="M1590 430 L1590 328 L1404 328" marker-end="url(#ar)"/>
+<!-- flow 4: backup -->
+<path class="a flow" data-g="backup" d="M1085 635 L1171 635" marker-end="url(#ar)"/>
+<path class="a bak" data-g="backup" d="M1010 680 L1010 705 L1470 705 L1470 676" marker-end="url(#ar)"/>
+<path class="a bak" data-g="backup" d="M530 680 L530 722 L1510 722 L1510 676" marker-end="url(#ar)"/>
+<path class="a bak" data-g="backup" d="M1565 650 L1700 650 L1700 704" marker-end="url(#ar)"/>
+<path class="a bak" data-g="backup" d="M1730 772 L1730 796" marker-end="url(#ar)"/>
+<path class="a bak" data-g="backup" d="M1680 772 L1680 786 L1010 786 L1010 796" marker-end="url(#ar)"/>
+<path class="a life" data-g="backup" d="M1085 835 L1171 835" marker-end="url(#ar)"/>
+<path class="a life" data-g="backup" d="M1325 835 L1411 835" marker-end="url(#ar)"/>
+<!-- flow 5: restore -->
+<path class="a rest" data-g="restore" d="M1790 708 L1790 620 L1569 620" marker-end="url(#ar)"/>
+
+<!-- labels -->
+<rect class="pill" x="270" y="300" width="140" height="20" rx="7"/>
+<text class="lb" x="340" y="310" text-anchor="middle" dominant-baseline="central">de-identified copy</text>
+<rect class="pill" x="370" y="172" width="78" height="34" rx="7"/>
+<text class="lb" x="409" y="182" text-anchor="middle" dominant-baseline="central">C-STORE</text>
+<text class="lb" x="409" y="196" text-anchor="middle" dominant-baseline="central">:11112 direct</text>
+<rect class="pill" x="648" y="155" width="240" height="20" rx="7"/>
+<text class="lb" x="768" y="165" text-anchor="middle" dominant-baseline="central">QIDO / WADO-RS · while series arrive</text>
+<rect class="pill" x="1100" y="172" width="60" height="20" rx="7"/>
+<text class="lb" x="1130" y="182" text-anchor="middle" dominant-baseline="central">OIDC</text>
+<rect class="pill" x="1035" y="95" width="250" height="20" rx="7"/>
+<text class="lb" x="1160" y="105" text-anchor="middle" dominant-baseline="central">HL7 ADT / ORM · orders → worklist</text>
+<rect class="pill" x="598" y="220" width="150" height="34" rx="7"/>
+<text class="lb" x="673" y="230" text-anchor="middle" dominant-baseline="central">C-STORE export (push)</text>
+<text class="lb" x="673" y="244" text-anchor="middle" dominant-baseline="central">selected series · retried</text>
+<rect class="pill" x="766" y="236" width="114" height="34" rx="7"/>
+<text class="lb" x="772" y="246" text-anchor="start" dominant-baseline="central">SEG + SR</text>
+<text class="lb" x="772" y="260" text-anchor="start" dominant-baseline="central">STOW-RS · write-only</text>
+<rect class="pill" x="1428" y="220" width="201" height="20" rx="7"/>
+<text class="lb" x="1528" y="230" text-anchor="middle" dominant-baseline="central">priority flag · HL7 ORU / FHIR</text>
+<rect class="pill" x="912" y="250" width="84" height="34" rx="7"/>
+<text class="lb" x="954" y="260" text-anchor="middle" dominant-baseline="central">tensor out</text>
+<text class="lb" x="954" y="274" text-anchor="middle" dominant-baseline="central">mask back</text>
+<rect class="pill" x="1030" y="555" width="120" height="20" rx="7"/>
+<text class="lb" x="1090" y="565" text-anchor="middle" dominant-baseline="central">result metadata</text>
+<rect class="pill" x="425" y="428" width="250" height="34" rx="7"/>
+<text class="lb" x="550" y="438" text-anchor="middle" dominant-baseline="central">PACS state</text>
+<text class="lb" x="550" y="452" text-anchor="middle" dominant-baseline="central">S3 pixels · LDAP configuration · SQL index</text>
+<rect class="pill" x="470" y="506" width="75" height="34" rx="7"/>
+<text class="lb" x="476" y="516" text-anchor="start" dominant-baseline="central">images in,</text>
+<text class="lb" x="476" y="530" text-anchor="start" dominant-baseline="central">labels out</text>
+<rect class="pill" x="884" y="482" width="60" height="34" rx="7"/>
+<text class="lb" x="914" y="492" text-anchor="middle" dominant-baseline="central">labeled</text>
+<text class="lb" x="914" y="506" text-anchor="middle" dominant-baseline="central">dataset</text>
+<rect class="pill" x="1330" y="465" width="56" height="20" rx="7"/>
+<text class="lb" x="1358" y="475" text-anchor="middle" dominant-baseline="central">publish</text>
+<rect class="pill" x="700" y="380" width="200" height="20" rx="7"/>
+<text class="lbv" x="800" y="390" text-anchor="middle" dominant-baseline="central">current model · AI-assisted drafts</text>
+<rect class="pill" x="1460" y="360" width="122" height="20" rx="7"/>
+<text class="lb" x="1521" y="370" text-anchor="middle" dominant-baseline="central">validated model only</text>
+<rect class="pill" x="1090" y="642" width="81" height="34" rx="7"/>
+<text class="lb" x="1130" y="652" text-anchor="middle" dominant-baseline="central">streaming</text>
+<text class="lb" x="1130" y="666" text-anchor="middle" dominant-baseline="central">replication</text>
+<rect class="pill" x="1130" y="695" width="230" height="20" rx="7"/>
+<text class="lb" x="1245" y="705" text-anchor="middle" dominant-baseline="central">pgBackRest TLS · WAL + base backups</text>
+<rect class="pill" x="640" y="712" width="120" height="20" rx="7"/>
+<text class="lb" x="700" y="722" text-anchor="middle" dominant-baseline="central">rclone copy · S3</text>
+<rect class="pill" x="1575" y="640" width="112" height="20" rx="7"/>
+<text class="lb" x="1631" y="650" text-anchor="middle" dominant-baseline="central">HTTPS 443 out</text>
+<rect class="pill" x="1600" y="590" width="130" height="20" rx="7"/>
+<text class="lbc" x="1665" y="600" text-anchor="middle" dominant-baseline="central">restore (approved)</text>
+<rect class="pill" x="1290" y="776" width="110" height="20" rx="7"/>
+<text class="lb" x="1345" y="786" text-anchor="middle" dominant-baseline="central">S3 PUT · DICOM</text>
+<rect class="pill" x="1087" y="842" width="86" height="34" rx="7"/>
+<text class="lbc" x="1130" y="852" text-anchor="middle" dominant-baseline="central">lifecycle</text>
+<text class="lbc" x="1130" y="866" text-anchor="middle" dominant-baseline="central">after 90 days</text>
+<rect class="pill" x="1327" y="842" width="86" height="34" rx="7"/>
+<text class="lbc" x="1370" y="852" text-anchor="middle" dominant-baseline="central">lifecycle</text>
+<text class="lbc" x="1370" y="866" text-anchor="middle" dominant-baseline="central">after 1 year</text>
+<text class="btag" x="190" y="762">Hospital boundary ▲ · ▼ Cloud: only the egress firewall crosses this line</text>
+
+<!-- legend -->
+<rect class="legend" x="20" y="950" width="1800" height="140" rx="14"/>
+<text class="lgh" x="40" y="978">Legend</text>
+<path class="a crit" d="M40 1008 L84 1008" marker-end="url(#ar)"/>
+<text class="lgt" x="96" y="1008" dominant-baseline="central">Clinical critical path</text>
+<path class="a ai" d="M290 1008 L334 1008" marker-end="url(#ar)"/>
+<text class="lgt" x="346" y="1008" dominant-baseline="central">AI triage, best-effort</text>
+<path class="a flow" d="M540 1008 L584 1008" marker-end="url(#ar)"/>
+<text class="lgt" x="596" y="1008" dominant-baseline="central">Internal data flow</text>
+<path class="a bak" d="M790 1008 L834 1008" marker-end="url(#ar)"/>
+<text class="lgt" x="846" y="1008" dominant-baseline="central">Backup, one-way</text>
+<path class="a rest" d="M1040 1008 L1084 1008" marker-end="url(#ar)"/>
+<text class="lgt" x="1096" y="1008" dominant-baseline="central">Restore on demand</text>
+<path class="a life" d="M1290 1008 L1334 1008" marker-end="url(#ar)"/>
+<text class="lgt" x="1346" y="1008" dominant-baseline="central">Cloud lifecycle tiering</text>
+<path class="a loop" d="M1540 1008 L1584 1008" marker-end="url(#ar)"/>
+<text class="lgt" x="1596" y="1008" dominant-baseline="central">Annotation loop</text>
+<rect class="bx s-slate" x="40" y="1036" width="54" height="32" rx="9"/><text class="lgt" x="106" y="1052" dominant-baseline="central">Component</text>
+<rect class="abs s-violet af-violet" x="230" y="1036" width="54" height="32" rx="9"/><text class="lgt" x="296" y="1052" dominant-baseline="central">Abstract block (TBD)</text>
+<path class="cy s-slate" d="M480 1040 L480 1064 A27 6 0 0 0 534 1064 L534 1040 A27 6 0 0 1 480 1040 Z"/><ellipse class="cyt s-slate" cx="507" cy="1040" rx="27" ry="6"/>
+<text class="lgt" x="546" y="1052" dominant-baseline="central">Data store</text>
+<rect class="site" x="660" y="1036" width="54" height="32" rx="9"/>
+<text class="lgt" x="726" y="1052" dominant-baseline="central">Site 2 (reached over N8)</text>
+<rect class="lh h-blue" x="960" y="1042" width="20" height="20" rx="5"/>
+<text class="lgt" x="988" y="1052" dominant-baseline="central">Clinical</text>
+<rect class="lh h-violet" x="1086" y="1042" width="20" height="20" rx="5"/>
+<text class="lgt" x="1114" y="1052" dominant-baseline="central">AI inference</text>
+<rect class="lh h-pink" x="1244" y="1042" width="20" height="20" rx="5"/>
+<text class="lgt" x="1272" y="1052" dominant-baseline="central">AI research</text>
+<rect class="lh h-emerald" x="1394" y="1042" width="20" height="20" rx="5"/>
+<text class="lgt" x="1422" y="1052" dominant-baseline="central">Data</text>
+<rect class="lh h-cyan" x="1488" y="1042" width="20" height="20" rx="5"/>
+<text class="lgt" x="1516" y="1052" dominant-baseline="central">Cloud</text>
+</svg></div>
+  <p class="figcap">Ports, products and VLAN numbers are reference values. The clinical, data, backup and restore parts are identical to <a href="index.html">scenario 1</a>; this page only explains what differs.</p>
+</div>
+
+<h2 class="sec" id="changes"><span class="n">2</span>What changes from scenario 1</h2>
+<div class="tbl"><table>
+<thead><tr><th>Part</th><th>Scenario 1</th><th>Scenario 2</th></tr></thead>
+<tbody>
+<tr><td class="k">Clinical path</td><td colspan="2">Unchanged: CT sends straight to the PACS, the viewer reads while series arrive.</td></tr>
+<tr><td class="k">PACS → AI</td><td colspan="2">Unchanged: the PACS pushes selected series to Orthanc; the AI has no credentials to read the PACS.</td></tr>
+<tr><td class="k">Orthanc</td><td>Gateway next to the GPU; de-identified copies for research</td><td>Also crops, resamples, encrypts and stores and forwards one tensor per study to site 2</td></tr>
+<tr><td class="k">GPU inference</td><td>Main site</td><td>Site 2, receives one encrypted, de-identified tensor per study</td></tr>
+<tr><td class="k">Model training and registry</td><td>Main site</td><td>Site 2, on de-identified labeled data</td></tr>
+<tr><td class="k">Annotation</td><td colspan="2">Unchanged: main site, reads de-identified copies that the gateway writes to the MinIO research bucket</td></tr>
+<tr><td class="k">Data, backup, cloud</td><td colspan="2">Unchanged</td></tr>
+<tr><td class="k">New link</td><td>None</td><td>N8: private line between the sites (leased line or private WAN), mTLS, round trip 2 to 35 ms. Independent of the internet; does not use the egress firewall.</td></tr>
+</tbody></table></div>
+
+<h2 class="sec" id="flow-triage"><span class="n">3</span>AI triage through the gateway</h2>
+<ol class="flow f-tri">
+<li><b class="t">The PACS pushes the relevant series</b>Same export rule as scenario 1, including earlier studies of the same patient when the AI needs them.<br><span class="pr">DICOM C-STORE export</span></li>
+<li><b class="t">The gateway de-identifies</b>Patient identity is removed from tags and from text burned into the images. If the gateway cannot do this safely, it blocks the study: the study gets "no AI result" and nothing leaves the site.</li>
+<li><b class="t">The gateway prepares one tensor</b>It crops and resamples the volume to exactly what the model needs, using the same steps as in training, and encrypts the result.</li>
+<li><b class="t">Store and forward over N8</b>The tensor is kept on the gateway until site 2 confirms receipt, so a link outage shorter than the deadline does not lose work. Once the deadline passes, the job is dropped and the tensor deleted.<br><span class="pr">gRPC over mTLS · N8</span></li>
+<li><b class="t">Site 2 runs the model</b>The inference service returns a mask. It never sees who the patient is.</li>
+<li><b class="t">The gateway maps the result back</b>The mask is placed back onto the original study, then stored in the PACS as DICOM SEG + SR through a write-only account. The priority flag goes to HIS/RIS.<br><span class="pr">STOW-RS · HL7 ORU / FHIR</span></li>
+</ol>
+<div class="callout"><b>Why one tensor and not slice by slice.</b> The model reads the 3D volume in overlapping windows, in no fixed order. Fetching slices on demand over the link would multiply the number of round trips by hundreds; one tensor needs a single round trip.</div>
+
+<h2 class="sec" id="site2"><span class="n">4</span>Site 2 and the N8 link</h2>
+<div class="grid">
+  <div class="card c-slate"><div class="v tc-slate">Site 2</div><h4>GPUs only</h4><p>Runs GPU inference, model training and the model registry. Holds no identifiable data, has no route to the PACS, the archive database or the identity key table.</p></div>
+  <div class="card c-violet"><div class="v tc-violet">N8</div><h4>Private link</h4><p>Leased line or private WAN, round trip 2 to 35 ms, mutually authenticated TLS. Carries only encrypted tensors and masks, labeled de-identified training data, and validated models coming back.</p></div>
+  <div class="card c-amber"><div class="v tc-amber">Internet</div><h4>Not involved</h4><p>N8 does not go through the egress firewall. An internet outage affects only the cloud copy, never the AI.</p></div>
+</div>
+
+<h2 class="sec" id="failure"><span class="n">5</span>Failure behaviour</h2>
+<div class="tbl"><table>
+<thead><tr><th>Failure</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td class="k">Site 2 or N8 is down</td><td>Every call has a timeout and a circuit breaker. When the deadline passes (120 s, or 90 s for emergency cases) the study shows "no AI result" and is read in normal order. The job is dropped: it is not sent when the link returns, and no late result or alert ever arrives. The clinical path is not affected.</td></tr>
+<tr><td class="k">Gateway cannot de-identify a study</td><td>The study is blocked and shows "no AI result". Nothing leaves the site.</td></tr>
+<tr><td class="k">Gateway node fails</td><td>The standby takes over with an empty buffer; the series are re-exported from the PACS.</td></tr>
+<tr><td class="k">Internet is down</td><td>No effect on the AI. Only the cloud copy waits.</td></tr>
+</tbody></table></div>
+<p>The viewer always distinguishes three states: AI not run yet, AI failed or timed out ("no AI result"), and AI done and waiting for confirmation.</p>
+
+<h2 class="sec" id="ha"><span class="n">6</span>High availability</h2>
+<p>PACS, PACS state and the backup path are as in <a href="index.html#ha">scenario 1</a>. The gateway is active-standby with its buffer on local NVMe; a failover starts with an empty buffer that is refilled by re-export from dcm4chee. If export volume outgrows one node, the gateway moves to active-active with a shared PostgreSQL index and shared object storage (MinIO or SeaweedFS).</p>
+
+<footer>Intracerebral hemorrhage AI system · Scenario 2 architecture · <a href="index.html">Scenario 1</a>. Ports, products, VLAN numbers, deadlines and link figures are reference values to be confirmed with the hospital's IT, clinical and legal teams.</footer>
+</div>
+<script>
+(function(){
+  var svg=document.getElementById("arch");
+  var btns=document.querySelectorAll(".focusbar button");
+  btns.forEach(function(b){
+    b.addEventListener("click",function(){
+      var f=b.getAttribute("data-f");
+      if(f) svg.setAttribute("data-focus",f); else svg.removeAttribute("data-focus");
+      btns.forEach(function(x){x.setAttribute("aria-pressed",x===b?"true":"false");});
+    });
+  });
+})();
+</script>
+</body></html>
