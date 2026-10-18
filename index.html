@@ -124,7 +124,18 @@ ol.flow>li .pr{display:inline-block;margin-top:4px;font-family:ui-monospace,Menl
 .t1{background:var(--emerald-s);border-color:var(--emerald)!important}.t2{background:var(--amber-s);border-color:var(--amber)!important}.t3{background:var(--cyan-s);border-color:var(--cyan)!important}.t4{background:var(--slate-s);border-color:var(--slate)!important}
 footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
 @media (max-width:700px){.hero{padding:26px 20px}.hero h1{font-size:25px}nav.toc ol{columns:1}.timeline{grid-template-columns:1fr 1fr}ol.flow>li{padding-left:58px}}
-</style></head><body>
+</style>
+<link rel="stylesheet" href="assets/site.css">
+<script>try{var t=localStorage.getItem("ich-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+</head><body>
+<header class="topbar"><div class="topbar-in">
+  <a class="brand" href="index.html"><span class="logo">ICH</span><span class="brand-t">ICH AI system · architecture</span></a>
+  <nav class="scen" aria-label="Deployment scenario">
+    <a href="index.html" aria-current="page"><b>Scenario 1</b><span>All on-premise</span></a>
+    <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
+  </nav>
+  <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
+</div><div class="progress"><span></span></div></header>
 <div class="page">
 <header class="hero">
   <div class="eyebrow">Intracerebral hemorrhage AI system · Deployment scenario 1 · <a href="scenario2.html">see scenario 2</a></div>
@@ -133,8 +144,10 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
   <div class="chips"><span>5 network layers</span><span>CT sends straight to PACS</span><span>PACS pushes to AI, AI never pulls</span><span>One door out to the cloud</span></div>
 </header>
 
+<div class="layout">
 <nav class="toc"><b>Contents</b><ol>
 <li><a href="#diagram">Architecture diagram</a></li>
+<li><a href="#sequence">Sequence diagrams</a></li>
 <li><a href="#layers">The five layers</a></li>
 <li><a href="#components">Component glossary</a></li>
 <li><a href="#flow-clinical">Flow 1 · CT to diagnosis</a></li>
@@ -146,19 +159,21 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <li><a href="#abstract">AI blocks: interfaces to be implemented</a></li>
 <li><a href="#principles">Design principles</a></li>
 </ol></nav>
+<main>
 
 <h2 class="sec" id="diagram"><span class="n">1</span>Architecture diagram</h2>
-<p>Layers run top to bottom, from the clinical systems down to the cloud. Use the buttons to highlight one flow at a time.</p>
+<p>Layers run top to bottom, from the clinical systems down to the cloud. Use the buttons, or click any arrow label, to highlight one flow at a time. Zoom in or expand the diagram to read the labels; drag to pan.</p>
 <div class="figure">
   <div class="focusbar" role="group" aria-label="Highlight a flow">
     <span>Highlight:</span>
     <button type="button" data-f="" aria-pressed="true">All flows</button>
-    <button type="button" data-f="clinical" aria-pressed="false">1 · Clinical path</button>
-    <button type="button" data-f="triage" aria-pressed="false">2 · AI triage</button>
-    <button type="button" data-f="ai" aria-pressed="false">3 · Annotation &amp; training</button>
-    <button type="button" data-f="backup" aria-pressed="false">4 · Backup &amp; replication</button>
-    <button type="button" data-f="restore" aria-pressed="false">5 · Restore</button>
+    <button type="button" data-f="clinical" data-sec="flow-clinical" data-desc="Red: the scanner sends straight to the PACS and the viewer reads while series arrive. This is the only path a doctor waits on." aria-pressed="false">1 · Clinical path</button>
+    <button type="button" data-f="triage" data-sec="flow-triage" data-desc="Violet: the PACS pushes selected series once to the Orthanc gateway; the AI reads from the gateway and its results return through it. Best-effort, never on the critical path." aria-pressed="false">2 · AI triage</button>
+    <button type="button" data-f="ai" data-sec="flow-ai" data-desc="Annotation reads de-identified studies from the gateway; labels and frozen datasets go to the research bucket, and only validated models reach inference." aria-pressed="false">3 · Annotation &amp; training</button>
+    <button type="button" data-f="backup" data-sec="flow-backup" data-desc="Amber: one-way copies of studies and database backups leave through the single egress firewall to Object-Locked cloud buckets." aria-pressed="false">4 · Backup &amp; replication</button>
+    <button type="button" data-f="restore" data-sec="flow-restore" data-desc="Cyan: data comes back from the cloud only when needed, with approval, through the backup gateway." aria-pressed="false">5 · Restore</button>
   </div>
+  <p class="focuscap" aria-live="polite"></p>
   <div class="figscroll"><svg id="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1840 1110" role="img" aria-labelledby="ttl dsc">
 <title id="ttl">ICH AI system architecture, Scenario 1</title>
 <desc id="dsc">Swimlane architecture with clinical, AI inference, AI research, data and cloud lanes. CT sends studies directly to the dcm4chee PACS, which the viewer reads while series are still arriving. The PACS pushes selected series once to an Orthanc gateway, which feeds the AI service and writes de-identified copies to a research bucket; results return through the gateway to the PACS and a priority flag to HIS/RIS. Data stores replicate one way through the backup gateway and a single egress point to cloud storage tiers.</desc>
@@ -326,65 +341,65 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <path class="a rest" data-g="restore" d="M1790 708 L1790 620 L1569 620" marker-end="url(#ar)"/>
 
 <!-- labels -->
-<rect class="pill" x="540" y="382" width="150" height="20" rx="7"/>
-<text class="lb" x="615" y="392" text-anchor="middle" dominant-baseline="central">DICOMweb · images, labels</text>
-<rect class="pill" x="610" y="352" width="78" height="20" rx="7"/>
-<text class="lb" x="649" y="362" text-anchor="middle" dominant-baseline="central">SEG + SR</text>
-<rect class="pill" x="370" y="172" width="78" height="34" rx="7"/>
+<g data-g="ai"><rect class="pill" x="540" y="382" width="150" height="20" rx="7"/>
+<text class="lb" x="615" y="392" text-anchor="middle" dominant-baseline="central">DICOMweb · images, labels</text></g>
+<g data-g="triage"><rect class="pill" x="610" y="352" width="78" height="20" rx="7"/>
+<text class="lb" x="649" y="362" text-anchor="middle" dominant-baseline="central">SEG + SR</text></g>
+<g data-g="clinical"><rect class="pill" x="370" y="172" width="78" height="34" rx="7"/>
 <text class="lb" x="409" y="182" text-anchor="middle" dominant-baseline="central">C-STORE</text>
-<text class="lb" x="409" y="196" text-anchor="middle" dominant-baseline="central">:11112 direct</text>
-<rect class="pill" x="648" y="155" width="240" height="20" rx="7"/>
-<text class="lb" x="768" y="165" text-anchor="middle" dominant-baseline="central">QIDO / WADO-RS · while series arrive</text>
-<rect class="pill" x="1100" y="172" width="60" height="20" rx="7"/>
-<text class="lb" x="1130" y="182" text-anchor="middle" dominant-baseline="central">OIDC</text>
-<rect class="pill" x="1035" y="95" width="250" height="20" rx="7"/>
-<text class="lb" x="1160" y="105" text-anchor="middle" dominant-baseline="central">HL7 ADT / ORM · orders → worklist</text>
-<rect class="pill" x="598" y="220" width="150" height="34" rx="7"/>
+<text class="lb" x="409" y="196" text-anchor="middle" dominant-baseline="central">:11112 direct</text></g>
+<g data-g="clinical"><rect class="pill" x="648" y="155" width="240" height="20" rx="7"/>
+<text class="lb" x="768" y="165" text-anchor="middle" dominant-baseline="central">QIDO / WADO-RS · while series arrive</text></g>
+<g data-g="clinical"><rect class="pill" x="1100" y="172" width="60" height="20" rx="7"/>
+<text class="lb" x="1130" y="182" text-anchor="middle" dominant-baseline="central">OIDC</text></g>
+<g data-g="clinical"><rect class="pill" x="1035" y="95" width="250" height="20" rx="7"/>
+<text class="lb" x="1160" y="105" text-anchor="middle" dominant-baseline="central">HL7 ADT / ORM · orders → worklist</text></g>
+<g data-g="triage"><rect class="pill" x="598" y="220" width="150" height="34" rx="7"/>
 <text class="lb" x="673" y="230" text-anchor="middle" dominant-baseline="central">C-STORE export (push)</text>
-<text class="lb" x="673" y="244" text-anchor="middle" dominant-baseline="central">selected series · retried</text>
-<rect class="pill" x="436" y="228" width="136" height="34" rx="7"/>
+<text class="lb" x="673" y="244" text-anchor="middle" dominant-baseline="central">selected series · retried</text></g>
+<g data-g="triage"><rect class="pill" x="436" y="228" width="136" height="34" rx="7"/>
 <text class="lb" x="504" y="238" text-anchor="middle" dominant-baseline="central">results: SEG + SR</text>
-<text class="lb" x="504" y="252" text-anchor="middle" dominant-baseline="central">C-STORE to PACS</text>
-<rect class="pill" x="610" y="300" width="78" height="20" rx="7"/>
-<text class="lb" x="649" y="310" text-anchor="middle" dominant-baseline="central">series</text>
-<rect class="pill" x="1428" y="315" width="201" height="20" rx="7"/>
-<text class="lb" x="1528" y="325" text-anchor="middle" dominant-baseline="central">priority flag · HL7 ORU / FHIR</text>
-<rect class="pill" x="1258" y="510" width="128" height="20" rx="7"/>
-<text class="lb" x="1322" y="520" text-anchor="middle" dominant-baseline="central">result metadata</text>
-<rect class="pill" x="222" y="428" width="190" height="34" rx="7"/>
+<text class="lb" x="504" y="252" text-anchor="middle" dominant-baseline="central">C-STORE to PACS</text></g>
+<g data-g="triage"><rect class="pill" x="610" y="300" width="78" height="20" rx="7"/>
+<text class="lb" x="649" y="310" text-anchor="middle" dominant-baseline="central">series</text></g>
+<g data-g="triage"><rect class="pill" x="1428" y="315" width="201" height="20" rx="7"/>
+<text class="lb" x="1528" y="325" text-anchor="middle" dominant-baseline="central">priority flag · HL7 ORU / FHIR</text></g>
+<g data-g="triage"><rect class="pill" x="1258" y="510" width="128" height="20" rx="7"/>
+<text class="lb" x="1322" y="520" text-anchor="middle" dominant-baseline="central">result metadata</text></g>
+<g data-g="clinical"><rect class="pill" x="222" y="428" width="190" height="34" rx="7"/>
 <text class="lb" x="317" y="438" text-anchor="middle" dominant-baseline="central">PACS state: S3 pixels,</text>
-<text class="lb" x="317" y="452" text-anchor="middle" dominant-baseline="central">LDAP configuration, SQL index</text>
-<rect class="pill" x="498" y="490" width="150" height="34" rx="7"/>
+<text class="lb" x="317" y="452" text-anchor="middle" dominant-baseline="central">LDAP configuration, SQL index</text></g>
+<g data-g="ai"><rect class="pill" x="498" y="490" width="150" height="34" rx="7"/>
 <text class="lb" x="573" y="500" text-anchor="middle" dominant-baseline="central">copies of labels</text>
-<text class="lb" x="573" y="514" text-anchor="middle" dominant-baseline="central">+ frozen datasets</text>
-<rect class="pill" x="890" y="440" width="56" height="34" rx="7"/>
+<text class="lb" x="573" y="514" text-anchor="middle" dominant-baseline="central">+ frozen datasets</text></g>
+<g data-g="ai"><rect class="pill" x="890" y="440" width="56" height="34" rx="7"/>
 <text class="lb" x="918" y="450" text-anchor="middle" dominant-baseline="central">labeled</text>
-<text class="lb" x="918" y="464" text-anchor="middle" dominant-baseline="central">dataset</text>
-<rect class="pill" x="1290" y="453" width="56" height="20" rx="7"/>
-<text class="lb" x="1318" y="463" text-anchor="middle" dominant-baseline="central">publish</text>
-<rect class="pill" x="840" y="404" width="340" height="20" rx="7"/>
-<text class="lbv" x="1010" y="414" text-anchor="middle" dominant-baseline="central">current model · AI-assisted drafts (annotation loop)</text>
-<rect class="pill" x="1329" y="378" width="138" height="20" rx="7"/>
-<text class="lb" x="1398" y="388" text-anchor="middle" dominant-baseline="central">validated model only</text>
-<rect class="pill" x="1090" y="642" width="81" height="34" rx="7"/>
+<text class="lb" x="918" y="464" text-anchor="middle" dominant-baseline="central">dataset</text></g>
+<g data-g="ai"><rect class="pill" x="1290" y="453" width="56" height="20" rx="7"/>
+<text class="lb" x="1318" y="463" text-anchor="middle" dominant-baseline="central">publish</text></g>
+<g data-g="ai"><rect class="pill" x="840" y="404" width="340" height="20" rx="7"/>
+<text class="lbv" x="1010" y="414" text-anchor="middle" dominant-baseline="central">current model · AI-assisted drafts (annotation loop)</text></g>
+<g data-g="ai"><rect class="pill" x="1329" y="378" width="138" height="20" rx="7"/>
+<text class="lb" x="1398" y="388" text-anchor="middle" dominant-baseline="central">validated model only</text></g>
+<g data-g="backup"><rect class="pill" x="1090" y="642" width="81" height="34" rx="7"/>
 <text class="lb" x="1130" y="652" text-anchor="middle" dominant-baseline="central">streaming</text>
-<text class="lb" x="1130" y="666" text-anchor="middle" dominant-baseline="central">replication</text>
-<rect class="pill" x="1130" y="695" width="230" height="20" rx="7"/>
-<text class="lb" x="1245" y="705" text-anchor="middle" dominant-baseline="central">pgBackRest TLS · WAL + base backups</text>
-<rect class="pill" x="640" y="712" width="120" height="20" rx="7"/>
-<text class="lb" x="700" y="722" text-anchor="middle" dominant-baseline="central">rclone copy · S3</text>
-<rect class="pill" x="1575" y="640" width="112" height="20" rx="7"/>
-<text class="lb" x="1631" y="650" text-anchor="middle" dominant-baseline="central">HTTPS 443 out</text>
-<rect class="pill" x="1600" y="590" width="130" height="20" rx="7"/>
-<text class="lbc" x="1665" y="600" text-anchor="middle" dominant-baseline="central">restore (approved)</text>
-<rect class="pill" x="1290" y="776" width="110" height="20" rx="7"/>
-<text class="lb" x="1345" y="786" text-anchor="middle" dominant-baseline="central">S3 PUT · DICOM</text>
-<rect class="pill" x="1087" y="842" width="86" height="34" rx="7"/>
+<text class="lb" x="1130" y="666" text-anchor="middle" dominant-baseline="central">replication</text></g>
+<g data-g="backup"><rect class="pill" x="1130" y="695" width="230" height="20" rx="7"/>
+<text class="lb" x="1245" y="705" text-anchor="middle" dominant-baseline="central">pgBackRest TLS · WAL + base backups</text></g>
+<g data-g="backup"><rect class="pill" x="640" y="712" width="120" height="20" rx="7"/>
+<text class="lb" x="700" y="722" text-anchor="middle" dominant-baseline="central">rclone copy · S3</text></g>
+<g data-g="backup"><rect class="pill" x="1575" y="640" width="112" height="20" rx="7"/>
+<text class="lb" x="1631" y="650" text-anchor="middle" dominant-baseline="central">HTTPS 443 out</text></g>
+<g data-g="restore"><rect class="pill" x="1600" y="590" width="130" height="20" rx="7"/>
+<text class="lbc" x="1665" y="600" text-anchor="middle" dominant-baseline="central">restore (approved)</text></g>
+<g data-g="backup"><rect class="pill" x="1290" y="776" width="110" height="20" rx="7"/>
+<text class="lb" x="1345" y="786" text-anchor="middle" dominant-baseline="central">S3 PUT · DICOM</text></g>
+<g data-g="backup"><rect class="pill" x="1087" y="842" width="86" height="34" rx="7"/>
 <text class="lbc" x="1130" y="852" text-anchor="middle" dominant-baseline="central">lifecycle</text>
-<text class="lbc" x="1130" y="866" text-anchor="middle" dominant-baseline="central">after 90 days</text>
-<rect class="pill" x="1327" y="842" width="86" height="34" rx="7"/>
+<text class="lbc" x="1130" y="866" text-anchor="middle" dominant-baseline="central">after 90 days</text></g>
+<g data-g="backup"><rect class="pill" x="1327" y="842" width="86" height="34" rx="7"/>
 <text class="lbc" x="1370" y="852" text-anchor="middle" dominant-baseline="central">lifecycle</text>
-<text class="lbc" x="1370" y="866" text-anchor="middle" dominant-baseline="central">after 1 year</text>
+<text class="lbc" x="1370" y="866" text-anchor="middle" dominant-baseline="central">after 1 year</text></g>
 <text class="btag" x="190" y="762">Hospital boundary ▲ · ▼ Cloud: only the egress firewall crosses this line</text>
 
 <!-- legend -->
@@ -424,7 +439,11 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
   <p class="figcap">Ports, products and VLAN numbers are reference values and should be replaced with the hospital's actual choices. Dashed boxes are abstract blocks whose internals are not yet decided. Monitoring, DNS, time synchronization and certificates exist on every layer but are not drawn.</p>
 </div>
 
-<h2 class="sec" id="layers"><span class="n">2</span>The five layers</h2>
+<h2 class="sec" id="sequence"><span class="n">2</span>Sequence diagrams</h2>
+<p>The architecture diagram shows <i>where</i> each part runs; these diagrams show <i>in what order</i> the parts talk to each other, including what the radiologist and the annotators see in their user interfaces (boxes tagged <span class="pilltag tc-blue">UI</span>). Pick a diagram, then click a numbered arrow or press <kbd>←</kbd> <kbd>→</kbd> to walk through it one step at a time.</p>
+<div class="sq" data-seq="s1" id="sequence-diagrams"><noscript><p>The sequence diagrams need JavaScript.</p></noscript></div>
+
+<h2 class="sec" id="layers"><span class="n">3</span>The five layers</h2>
 <p>Each layer is a separate network zone (VLAN). Traffic between zones is blocked by default and allowed only for the specific connections drawn in the diagram. A single egress firewall on the hospital boundary is the only way out to the cloud.</p>
 <div class="grid">
   <div class="card c-blue"><div class="v tc-blue">VLAN 10–20</div><h4>Clinical</h4><p>What doctors use every day: scanners, the PACS (dcm4chee), the radiologist viewer, single sign-on, and HIS/RIS. The path from scanner to viewer stays inside this layer.</p></div>
@@ -434,7 +453,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
   <div class="card c-cyan"><div class="v tc-cyan">Outside the hospital</div><h4>Cloud</h4><p>Storage only: encrypted, write-protected buckets that hold studies and database backups, moving to cheaper tiers as they age.</p></div>
 </div>
 
-<h2 class="sec" id="components"><span class="n">3</span>Component glossary</h2>
+<h2 class="sec" id="components"><span class="n">4</span>Component glossary</h2>
 <div class="tbl"><table>
 <thead><tr><th>Component</th><th>Layer</th><th>What it is</th><th>Role in this system</th></tr></thead>
 <tbody>
@@ -460,7 +479,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tr><td class="k">KMS</td><td><span class="pilltag tc-cyan">Cloud</span></td><td>Key Management Service</td><td>Holds the encryption keys; keys are controlled by the hospital</td></tr>
 </tbody></table></div>
 
-<h2 class="sec" id="flow-clinical"><span class="n">4</span>Flow 1 · CT to diagnosis</h2>
+<h2 class="sec" id="flow-clinical" data-flow="clinical" data-seq="0"><span class="n">5</span>Flow 1 · CT to diagnosis</h2>
 <p>The red path is the time a doctor actually spends waiting, from the end of the scan to the first image on screen. It aims for minimum latency and high availability, and it runs entirely on the hospital network.</p>
 <ol class="flow f-clin">
 <li><b class="t">The scanner sends directly to the PACS</b>The CT scanner sends the head scan directly to dcm4chee. There is no router in between, so there is no extra hop and no extra component that could fail. The PACS nodes sit behind a load balancer, so the scanner always reaches a working node.<br><span class="pr">DICOM C-STORE :11112</span></li>
@@ -471,7 +490,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 </ol>
 <div class="callout"><b>Neither the AI nor the cloud is on this path.</b> If the AI stops, or the internet or the cloud provider goes down, scanning, reading and diagnosis continue normally; only the AI flag or the cloud copy is delayed.</div>
 
-<h2 class="sec" id="flow-triage"><span class="n">5</span>Flow 2 · AI triage (push model)</h2>
+<h2 class="sec" id="flow-triage" data-flow="triage" data-seq="0"><span class="n">6</span>Flow 2 · AI triage (push model)</h2>
 <p>This is the path shown in violet. The PACS decides what the AI receives and pushes it; the AI never reaches into the PACS.</p>
 <ol class="flow f-tri">
 <li><b class="t">The PACS pushes the relevant series</b>An export rule in dcm4chee selects the series the AI needs and sends them to the AI buffer. The same rule can also send earlier studies of the same patient from the archive, not only the newest one.<br><span class="pr">DICOM C-STORE export</span></li>
@@ -488,7 +507,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <li><b>Same gateway in every scenario.</b> The PACS export rule and the AI interface are identical in scenarios 1 and 2; moving the GPU to another site only switches on extra gateway modules. In scenario 2 the gateway also de-identifies, crops and resamples, then stores and forwards data before it leaves the site. See <a href="scenario2.html">scenario 2</a>.</li>
 </ul></div>
 
-<h2 class="sec" id="ha"><span class="n">6</span>High availability</h2>
+<h2 class="sec" id="ha"><span class="n">7</span>High availability</h2>
 <p>Each component has its own failover model. The badges in the diagram show which one applies.</p>
 <div class="tbl"><table>
 <thead><tr><th>Component</th><th>Model</th><th>When a node fails</th></tr></thead>
@@ -499,7 +518,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 </tbody></table></div>
 <div class="callout"><b>When one Orthanc node is not enough.</b> If the export volume grows beyond what a single node can handle, switch the buffer to active-active: several Orthanc nodes sharing one PostgreSQL index and shared object storage (SeaweedFS) instead of local NVMe.</div>
 
-<h2 class="sec" id="flow-ai"><span class="n">7</span>Flow 3 · Annotation and model development</h2>
+<h2 class="sec" id="flow-ai" data-flow="ai" data-seq="1"><span class="n">8</span>Flow 3 · Annotation and model development</h2>
 <p>This is the path shown in pink. It is not time-critical and repeats over weeks and months to keep improving the model.</p>
 <ol class="flow f-ai">
 <li><b class="t">De-identified data is prepared</b>The gateway removes patient identifiers from the selected cases and keeps the de-identified copies, which annotation tools read over DICOMweb. Annotators never see patient identity and never reach the PACS.<br><span class="pr">DICOMweb · de-identified studies on the gateway</span></li>
@@ -513,7 +532,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <div class="callout amber"><b>One gateway for inference and annotation, for now.</b> To keep the system simple, annotation reads de-identified studies from the same Orthanc gateway that feeds the AI. This has known costs: annotation load competes with inference for the gateway's disk and network, the research network must be allowed to reach the gateway (DICOMweb read of de-identified studies only), and the de-identified copies on local NVMe are lost on failover (they are re-created by re-export; labels and frozen datasets are safe in the research bucket). If isolation between inference and annotation becomes necessary, a separate research Orthanc storing into the research bucket can be added later without changing the PACS export rule.</div>
 <div class="callout"><b>Why research is separate from inference:</b> research changes constantly and uses heavy GPU jobs, while inference must be stable and always available for emergencies. They share nothing except the gateway that feeds both, the model registry, and the research bucket.</div>
 
-<h2 class="sec" id="flow-backup"><span class="n">8</span>Flow 4 · Backup and replication to cloud</h2>
+<h2 class="sec" id="flow-backup" data-flow="backup" data-seq="2"><span class="n">9</span>Flow 4 · Backup and replication to cloud</h2>
 <p>This is the path shown in amber. It runs in the background, is one-way, and never deletes anything in the cloud.</p>
 <ol class="flow f-bak">
 <li><b class="t">The database is mirrored</b>PostgreSQL primary streams every change to the standby. If the primary fails, the standby takes over within seconds.<br><span class="pr">streaming replication</span></li>
@@ -530,7 +549,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
   <div class="t4"><b>After 10 years</b><span>Deleted, unless on legal hold</span></div>
 </div>
 
-<h2 class="sec" id="flow-restore"><span class="n">9</span>Flow 5 · Retrieval and restore</h2>
+<h2 class="sec" id="flow-restore" data-flow="restore" data-seq="2"><span class="n">10</span>Flow 5 · Retrieval and restore</h2>
 <p>This is the path shown as a dashed cyan line. Data comes back from the cloud only when needed, with approval and through a separate account.</p>
 <div class="callout cyan"><b>Cloud backup only.</b> There is no local backup copy, by design, for simplicity. The PostgreSQL standby covers server failures; every other database recovery comes from the cloud. Restores are slower than from local storage and need a working internet connection, so restore drills should measure the real recovery time.</div>
 <div class="tbl"><table>
@@ -542,7 +561,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tr><td class="k">Ransomware or loss of the server room</td><td>Rebuild the infrastructure and restore from the cloud. Object Lock guarantees the cloud copies were not encrypted or deleted.</td><td>Days</td></tr>
 </tbody></table></div>
 
-<h2 class="sec" id="abstract"><span class="n">10</span>AI blocks: interfaces to be implemented</h2>
+<h2 class="sec" id="abstract"><span class="n">11</span>AI blocks: interfaces to be implemented</h2>
 <p>The dashed blocks are defined by what goes in and what comes out. Any implementation that respects these interfaces fits the architecture without changing the network, storage or backup design.</p>
 <div class="tbl"><table>
 <thead><tr><th>Block</th><th>Inputs</th><th>Outputs</th><th>Requirements</th></tr></thead>
@@ -553,7 +572,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tr><td class="k tc-pink">Model registry</td><td>Candidate models from training</td><td>Validated models to inference; latest model to annotation</td><td>Version history, approval status, traceability to the dataset</td></tr>
 </tbody></table></div>
 
-<h2 class="sec" id="principles"><span class="n">11</span>Design principles</h2>
+<h2 class="sec" id="principles"><span class="n">12</span>Design principles</h2>
 <div class="grid">
   <div class="card c-blue"><h4>Clinical first</h4><p>The scanner sends straight to the PACS. Nothing outside the clinical layer sits on the diagnosis path, and results go to the PACS so doctors keep using the tools they know.</p></div>
   <div class="card c-violet"><h4>Push, don't pull</h4><p>The PACS chooses what the AI receives. The AI has no access to the PACS at all: it reads from the gateway and hands its results back to the gateway.</p></div>
@@ -564,19 +583,11 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
   <div class="card c-emerald"><h4>Restore is tested</h4><p>Restores are rehearsed regularly, because an untested backup cannot be relied on.</p></div>
 </div>
 
+</main>
+</div>
 <footer>Intracerebral hemorrhage AI system · Scenario 1 architecture · <a href="scenario2.html">Scenario 2</a>. Ports, products, VLAN numbers and retention periods are reference values to be confirmed with the hospital's IT, clinical and legal teams.</footer>
 </div>
-<script>
-(function(){
-  var svg=document.getElementById("arch");
-  var btns=document.querySelectorAll(".focusbar button");
-  btns.forEach(function(b){
-    b.addEventListener("click",function(){
-      var f=b.getAttribute("data-f");
-      if(f) svg.setAttribute("data-focus",f); else svg.removeAttribute("data-focus");
-      btns.forEach(function(x){x.setAttribute("aria-pressed",x===b?"true":"false");});
-    });
-  });
-})();
-</script>
+<script src="assets/site.js"></script>
+<script src="assets/sequences-s1.js"></script>
+<script src="assets/sequence.js"></script>
 </body></html>
