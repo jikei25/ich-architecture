@@ -109,7 +109,7 @@ td.k{font-weight:700;white-space:nowrap}
 .pilltag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--slate-s);border:1px solid var(--border);white-space:nowrap}
 ol.flow{list-style:none;counter-reset:f;padding:0;margin:14px 0;position:relative}
 ol.flow>li{counter-increment:f;position:relative;padding:14px 18px 14px 66px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin:10px 0}
-ol.flow>li::before{content:counter(f);position:absolute;left:16px;top:14px;width:32px;height:32px;border-radius:10px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--fc)}
+ol.flow>li::before{content:var(--fp,"") counter(f);position:absolute;left:16px;top:14px;width:32px;height:32px;border-radius:10px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--fc)}
 ol.flow>li b.t{display:block}
 ol.flow>li .pr{display:inline-block;margin-top:4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--muted);background:var(--slate-s);border:1px solid var(--border);border-radius:8px;padding:1px 8px}
 .f-clin{--fc:var(--rose)}.f-tri{--fc:var(--violet)}.f-ai{--fc:var(--pink)}.f-bak{--fc:var(--amber)}.f-rest{--fc:var(--cyan)}
@@ -124,6 +124,13 @@ ol.flow>li .pr{display:inline-block;margin-top:4px;font-family:ui-monospace,Menl
 .t1{background:var(--emerald-s);border-color:var(--emerald)!important}.t2{background:var(--amber-s);border-color:var(--amber)!important}.t3{background:var(--cyan-s);border-color:var(--cyan)!important}.t4{background:var(--slate-s);border-color:var(--slate)!important}
 footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
 @media (max-width:700px){.hero{padding:26px 20px}.hero h1{font-size:25px}nav.toc ol{columns:1}.timeline{grid-template-columns:1fr 1fr}ol.flow>li{padding-left:58px}}
+.stepb circle{stroke:var(--card);stroke-width:2}
+.stepb text{fill:#fff;font-size:10.5px;font-weight:700}
+.sb-clin circle{fill:var(--rose)}.sb-tri circle{fill:var(--violet)}.sb-ai circle{fill:var(--pink)}.sb-bak circle{fill:var(--amber)}.sb-rest circle{fill:var(--cyan)}
+#arch .stepb[data-g]{transition:opacity .25s}
+#arch[data-focus] .stepb[data-g]{opacity:.12}
+#arch[data-focus="clinical"] .stepb[data-g="clinical"],#arch[data-focus="triage"] .stepb[data-g="triage"],#arch[data-focus="ai"] .stepb[data-g="ai"],#arch[data-focus="backup"] .stepb[data-g="backup"],#arch[data-focus="restore"] .stepb[data-g="restore"]{opacity:1}
+.f-clin{--fp:"1."}.f-tri{--fp:"2."}.f-ai{--fp:"3."}.f-bak{--fp:"4."}
 </style>
 <link rel="stylesheet" href="assets/site.css">
 <script>try{var t=localStorage.getItem("ich-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
@@ -227,9 +234,9 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <!-- AI inference lane -->
 <g><rect class="bx s-violet" x="455" y="293" width="150" height="64" rx="12"/>
 <rect class="tagbg h-violet" x="458" y="284" width="112" height="18" rx="9"/>
-<text class="tagt t-violet" x="514" y="293" text-anchor="middle" dominant-baseline="central">ACTIVE-STANDBY</text>
+<text class="tagt t-violet" x="514" y="293" text-anchor="middle" dominant-baseline="central">ACTIVE-ACTIVE</text>
 <text class="bt" x="530" y="320" text-anchor="middle" dominant-baseline="central">Gateway · Orthanc</text>
-<text class="bs" x="530" y="340" text-anchor="middle" dominant-baseline="central">NVMe buffer · de-id</text></g>
+<text class="bs" x="530" y="340" text-anchor="middle" dominant-baseline="central">PG index · SeaweedFS</text></g>
 <g><rect class="abs s-violet af-violet" x="695" y="286" width="630" height="78" rx="14"/>
 <rect class="tagbg h-violet" x="1180.2" y="294" width="135" height="18" rx="9"/>
 <text class="tagt t-violet" x="1248" y="303" text-anchor="middle" dominant-baseline="central">IMPLEMENTATION TBD</text>
@@ -402,6 +409,32 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="lbc" x="1370" y="866" text-anchor="middle" dominant-baseline="central">after 1 year</text></g>
 <text class="btag" x="190" y="762">Hospital boundary ▲ · ▼ Cloud: only the egress firewall crosses this line</text>
 
+<!-- step numbers: flow.step, matching the numbered lists below -->
+<g class="stepb sb-clin" data-g="clinical"><circle cx="395" cy="148" r="11"/><text x="395" y="148" text-anchor="middle" dominant-baseline="central">1.1</text></g>
+<g class="stepb sb-clin" data-g="clinical"><circle cx="420" cy="300" r="11"/><text x="420" y="300" text-anchor="middle" dominant-baseline="central">1.2</text></g>
+<g class="stepb sb-clin" data-g="clinical"><circle cx="912" cy="148" r="11"/><text x="912" y="148" text-anchor="middle" dominant-baseline="central">1.3</text></g>
+<g class="stepb sb-clin" data-g="clinical"><circle cx="1500" cy="105" r="11"/><text x="1500" y="105" text-anchor="middle" dominant-baseline="central">1.4</text></g>
+<g class="stepb sb-clin" data-g="clinical"><circle cx="1010" cy="214" r="11"/><text x="1010" y="214" text-anchor="middle" dominant-baseline="central">1.5</text></g>
+<g class="stepb sb-bak" data-g="backup"><circle cx="1128" cy="620" r="11"/><text x="1128" y="620" text-anchor="middle" dominant-baseline="central">4.1</text></g>
+<g class="stepb sb-bak" data-g="backup"><circle cx="1400" cy="705" r="11"/><text x="1400" y="705" text-anchor="middle" dominant-baseline="central">4.2</text></g>
+<g class="stepb sb-bak" data-g="backup"><circle cx="900" cy="722" r="11"/><text x="900" y="722" text-anchor="middle" dominant-baseline="central">4.3</text></g>
+<g class="stepb sb-bak" data-g="backup"><circle cx="1700" cy="684" r="11"/><text x="1700" y="684" text-anchor="middle" dominant-baseline="central">4.4</text></g>
+<g class="stepb sb-bak" data-g="backup"><circle cx="1150" cy="786" r="11"/><text x="1150" y="786" text-anchor="middle" dominant-baseline="central">4.5</text></g>
+<g class="stepb sb-bak" data-g="backup"><circle cx="1129" cy="820" r="11"/><text x="1129" y="820" text-anchor="middle" dominant-baseline="central">4.6</text></g>
+<g class="stepb sb-rest" data-g="restore"><circle cx="1790" cy="660" r="11"/><text x="1790" y="660" text-anchor="middle" dominant-baseline="central">5</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="613" cy="272" r="11"/><text x="613" y="272" text-anchor="middle" dominant-baseline="central">2.1</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="650" cy="287" r="11"/><text x="650" y="287" text-anchor="middle" dominant-baseline="central">2.2</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="718" cy="305" r="11"/><text x="718" y="305" text-anchor="middle" dominant-baseline="central">2.3</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="578" cy="215" r="11"/><text x="578" y="215" text-anchor="middle" dominant-baseline="central">2.4</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="1360" cy="325" r="11"/><text x="1360" y="325" text-anchor="middle" dominant-baseline="central">2.4</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="1250" cy="548" r="11"/><text x="1250" y="548" text-anchor="middle" dominant-baseline="central">2.4</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="515" cy="376" r="11"/><text x="515" y="376" text-anchor="middle" dominant-baseline="central">3.1</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="490" cy="470" r="11"/><text x="490" y="470" text-anchor="middle" dominant-baseline="central">3.2</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="918" cy="490" r="11"/><text x="918" y="490" text-anchor="middle" dominant-baseline="central">3.3</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="1380" cy="490" r="11"/><text x="1380" y="490" text-anchor="middle" dominant-baseline="central">3.4</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="1590" cy="470" r="11"/><text x="1590" y="470" text-anchor="middle" dominant-baseline="central">3.5</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="1490" cy="409" r="11"/><text x="1490" y="409" text-anchor="middle" dominant-baseline="central">3.6</text></g>
+
 <!-- legend -->
 <rect class="legend" x="20" y="950" width="1800" height="140" rx="14"/>
 <text class="lgh" x="40" y="978">Legend</text>
@@ -435,8 +468,10 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="lgt" x="1422" y="1052" dominant-baseline="central">Data</text>
 <rect class="lh h-cyan" x="1488" y="1042" width="20" height="20" rx="5"/>
 <text class="lgt" x="1516" y="1052" dominant-baseline="central">Cloud</text>
+<g class="stepb sb-tri"><circle cx="1612" cy="1052" r="11"/><text x="1612" y="1052" text-anchor="middle" dominant-baseline="central">2.3</text></g>
+<text class="lgt" x="1630" y="1052" dominant-baseline="central">Flow 2, step 3</text>
 </svg></div>
-  <p class="figcap">Ports, products and VLAN numbers are reference values and should be replaced with the hospital's actual choices. Dashed boxes are abstract blocks whose internals are not yet decided. Monitoring, DNS, time synchronization and certificates exist on every layer but are not drawn.</p>
+  <p class="figcap">Numbered circles mark the steps described below: <b>2.3</b> is step 3 of Flow 2, and its colour matches the flow. Ports, products and VLAN numbers are reference values and should be replaced with the hospital's actual choices. Dashed boxes are abstract blocks whose internals are not yet decided. Monitoring, DNS, time synchronization and certificates exist on every layer but are not drawn.</p>
 </div>
 
 <h2 class="sec" id="sequence"><span class="n">2</span>Sequence diagrams</h2>
@@ -464,7 +499,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tr><td class="k">Identity (Keycloak)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Single sign-on with multi-factor login</td><td>Logs users into the viewer and other clinical tools</td></tr>
 <tr><td class="k">HIS / RIS</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Hospital and Radiology Information Systems: orders, patient records, worklists</td><td>Sends orders to the PACS worklist and receives the AI priority flag</td></tr>
 <tr><td class="k">HL7 / FHIR</td><td>n/a</td><td>Standards for exchanging clinical messages and records</td><td>How orders reach the PACS and how the AI flag reaches HIS/RIS</td></tr>
-<tr><td class="k">Gateway (Orthanc)</td><td><span class="pilltag tc-violet">AI inference</span></td><td>A lightweight DICOM server, active-standby, buffering on local NVMe</td><td>The single receiver of PACS exports and the only AI-side system that talks to the PACS: it also returns AI results to the PACS by C-STORE. Keeps series close to the GPU so the AI can read them as often as it needs, and keeps de-identified copies of selected cases and serves them to annotation over DICOMweb; it also stores the labels annotators save and copies them to the research bucket (fail-closed: if it cannot de-identify a study, nothing is written; instances that may carry text burned into the pixels are rejected, and pixel redaction can be added later as a plugin step)</td></tr>
+<tr><td class="k">Gateway (Orthanc)</td><td><span class="pilltag tc-violet">AI inference</span></td><td>A lightweight DICOM server, run as N+1 active-active nodes behind a load balancer that share one PostgreSQL index and keep their files in SeaweedFS</td><td>The single receiver of PACS exports and the only AI-side system that talks to the PACS: it also returns AI results to the PACS by C-STORE. Keeps series close to the GPU so the AI can read them as often as it needs, and keeps de-identified copies of selected cases and serves them to annotation over DICOMweb; it also stores the labels annotators save and copies them to the research bucket (fail-closed: if it cannot de-identify a study, nothing is written; instances that may carry text burned into the pixels are rejected, and pixel redaction can be added later as a plugin step)</td></tr>
 <tr><td class="k">AI inference service</td><td><span class="pilltag tc-violet">AI inference</span></td><td>Abstract block, implementation to be decided</td><td>Turns the series from the gateway into a hemorrhage mask, a report and a priority flag</td></tr>
 <tr><td class="k">Annotation</td><td><span class="pilltag tc-pink">AI research</span></td><td>Abstract block, tool to be decided</td><td>Clinicians label or correct hemorrhage regions, starting from AI-generated drafts</td></tr>
 <tr><td class="k">Model training</td><td><span class="pilltag tc-pink">AI research</span></td><td>Abstract block, stack to be decided</td><td>Trains and evaluates models on the labeled dataset</td></tr>
@@ -493,8 +528,8 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <h2 class="sec" id="flow-triage" data-flow="triage" data-seq="0"><span class="n">6</span>Flow 2 · AI triage (push model)</h2>
 <p>This is the path shown in violet. The PACS decides what the AI receives and pushes it; the AI never reaches into the PACS.</p>
 <ol class="flow f-tri">
-<li><b class="t">The PACS pushes the relevant series</b>An export rule in dcm4chee selects the series the AI needs and sends them to the AI buffer. The same rule can also send earlier studies of the same patient from the archive, not only the newest one.<br><span class="pr">DICOM C-STORE export</span></li>
-<li><b class="t">The gateway keeps them near the GPU</b>Orthanc stores the series on local NVMe and hands them to the AI inference service. For cases selected for research, it also keeps a de-identified copy and serves it to annotation (Flow 3), so the PACS exports each series only once.</li>
+<li><b class="t">The PACS pushes the relevant series</b>An export rule in dcm4chee selects the series the AI needs and sends them to the gateway. The same rule can also send earlier studies of the same patient from the archive, not only the newest one.<br><span class="pr">DICOM C-STORE export</span></li>
+<li><b class="t">The gateway keeps a working copy</b>Orthanc stores the series (index in PostgreSQL, files in SeaweedFS) and hands them to the AI inference service. For cases selected for research, it also keeps a de-identified copy and serves it to annotation (Flow 3), so the PACS exports each series only once.</li>
 <li><b class="t">AI analyzes the scan</b>The inference service runs the current validated model and produces the hemorrhage mask, a structured report and a priority flag.</li>
 <li><b class="t">Results go back</b>The mask (DICOM SEG) and report (SR) go back to the gateway, which sends them to the PACS by C-STORE, so the AI service never connects to the PACS. The priority flag goes to HIS/RIS, and result details are saved in the AI results database.<br><span class="pr">C-STORE · HL7 ORU / FHIR · PostgreSQL :5432</span></li>
 </ol>
@@ -503,7 +538,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <li><b>Filtering.</b> The AI receives only the relevant series, not every study.</li>
 <li><b>Least privilege.</b> The AI holds no PACS credentials at all, not even for writing results, so data minimisation under Decree 356/2025 is enforced by the architecture rather than by configuration.</li>
 <li><b>Isolation.</b> If Orthanc is down, dcm4chee queues the export task and retries it. The clinical flow is not affected.</li>
-<li><b>A buffer close to the GPU.</b> The AI reads the same data many times (preprocessing, retries, re-runs when the model changes) without loading the PACS hot tier.</li>
+<li><b>A working copy for the AI.</b> The AI reads the same data many times (preprocessing, retries, re-runs when the model changes) without loading the PACS hot tier.</li>
 <li><b>Same gateway in every scenario.</b> The PACS export rule and the AI interface are identical in scenarios 1 and 2; moving the GPU to another site only switches on extra gateway modules. In scenario 2 the gateway also de-identifies, crops and resamples, then stores and forwards data before it leaves the site. See <a href="scenario2.html">scenario 2</a>.</li>
 </ul></div>
 
@@ -514,22 +549,22 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tbody>
 <tr><td class="k">PACS (dcm4chee)</td><td>N+1 nodes behind a load balancer</td><td>dcm4chee is stateless and cluster-safe, so any node can serve any request. Pending work is persisted in PostgreSQL and is picked up by the remaining nodes. A request that was in progress on the failed node is retried by its client (the scanner re-sends, the viewer re-requests).</td></tr>
 <tr><td class="k">PACS state</td><td>Each store has its own HA</td><td>PostgreSQL fails over with Patroni, OpenLDAP is replicated, and SeaweedFS is distributed across nodes. The PACS is only as available as these three stores.</td></tr>
-<tr><td class="k">Gateway (Orthanc)</td><td>Active-standby, local NVMe</td><td>The standby takes over with an empty buffer. The buffer is rebuilt by re-exporting the needed series from dcm4chee. No clinical data is lost, because the PACS remains the source of truth, de-identified copies for annotation are lost with the buffer and re-created by re-export, while labels and frozen datasets stay safe in the research bucket.</td></tr>
+<tr><td class="k">Gateway (Orthanc)</td><td>Active-active, N+1 nodes behind a load balancer</td><td>All nodes share one PostgreSQL index and keep their DICOM files in SeaweedFS, so any node can receive an export or serve a read. When a node fails, the load balancer stops sending to it and dcm4chee retries any interrupted export on another node. Nothing is lost, because files and index live outside the nodes.</td></tr>
 </tbody></table></div>
-<div class="callout"><b>When one Orthanc node is not enough.</b> If the export volume grows beyond what a single node can handle, switch the buffer to active-active: several Orthanc nodes sharing one PostgreSQL index and shared object storage (SeaweedFS) instead of local NVMe.</div>
+<div class="callout"><b>What active-active requires.</b> Orthanc supports several nodes sharing one PostgreSQL index since version 1.9.2, but each node detects "stable" studies on its own, so the AI job dispatcher must ignore duplicate jobs for the same Study Instance UID. The gateway files now live on the same SeaweedFS cluster as the PACS; if AI reads ever slow down clinical reads, give the gateway bucket its own disks.</div>
 
 <h2 class="sec" id="flow-ai" data-flow="ai" data-seq="1"><span class="n">8</span>Flow 3 · Annotation and model development</h2>
 <p>This is the path shown in pink. It is not time-critical and repeats over weeks and months to keep improving the model.</p>
 <ol class="flow f-ai">
 <li><b class="t">De-identified data is prepared</b>The gateway removes patient identifiers from the selected cases and keeps the de-identified copies, which annotation tools read over DICOMweb. Annotators never see patient identity and never reach the PACS.<br><span class="pr">DICOMweb · de-identified studies on the gateway</span></li>
-<li><b class="t">Clinicians annotate</b>The annotation tool shows each scan with a draft mask from the current model. Clinicians correct the draft instead of drawing from scratch. Labels are saved back to the gateway as DICOM SEG over DICOMweb, and the gateway immediately copies each one to the research bucket on SeaweedFS, so no label is lost if the gateway fails over.<br><span class="pr">DICOMweb: images in, SEG labels out · gateway copies to S3</span></li>
+<li><b class="t">Clinicians annotate</b>The annotation tool shows each scan with a draft mask from the current model. Clinicians correct the draft instead of drawing from scratch. Labels are saved back to the gateway as DICOM SEG over DICOMweb, and the gateway immediately copies each one to the research bucket on SeaweedFS, so every label is also kept with the research datasets.<br><span class="pr">DICOMweb: images in, SEG labels out · gateway copies to S3</span></li>
 <li><b class="t">A labeled dataset is frozen</b>The gateway exports a versioned set of images and labels to the research bucket, which is handed to model training, so every model can be traced to the exact data it learned from.</li>
 <li><b class="t">The model is trained and evaluated</b>Training produces a candidate model with its metrics and publishes it to the model registry.</li>
 <li><b class="t">The model is validated</b>Clinicians and the AI team review the candidate on a held-out test set. Only an approved version is marked validated.</li>
 <li><b class="t">Both sides pick up the new model</b>The inference service loads the validated version for patient care. Annotation uses the latest model for better drafts, which closes the annotation loop.</li>
 </ol>
 <div class="callout amber"><b>Burned-in text.</b> Text burned into the pixels is not removed by Orthanc, which only edits DICOM tags. The gateway therefore rejects every instance that may carry it: localizers, Secondary Captures, and any instance flagged with Burned In Annotation. The model needs only axial thin-slice series, which normally carry no burned-in text. Pixel-level redaction (optical character recognition, for example Microsoft Presidio, or masking fixed regions per scanner model) can be added later as an extra step in the gateway's Python plugin, when research needs other image types.</div>
-<div class="callout amber"><b>One gateway for inference and annotation, for now.</b> To keep the system simple, annotation reads de-identified studies from the same Orthanc gateway that feeds the AI. This has known costs: annotation load competes with inference for the gateway's disk and network, the research network must be allowed to reach the gateway (DICOMweb read of de-identified studies only), and the de-identified copies on local NVMe are lost on failover (they are re-created by re-export; labels and frozen datasets are safe in the research bucket). If isolation between inference and annotation becomes necessary, a separate research Orthanc storing into the research bucket can be added later without changing the PACS export rule.</div>
+<div class="callout amber"><b>One gateway for inference and annotation, for now.</b> To keep the system simple, annotation reads de-identified studies from the same Orthanc gateway that feeds the AI. This has known costs: annotation load competes with inference for the gateway's disk and network, the research network must be allowed to reach the gateway (DICOMweb read of de-identified studies only). A gateway node failure loses nothing, because files and index are shared. If isolation between inference and annotation becomes necessary, a separate research Orthanc storing into the research bucket can be added later without changing the PACS export rule.</div>
 <div class="callout"><b>Why research is separate from inference:</b> research changes constantly and uses heavy GPU jobs, while inference must be stable and always available for emergencies. They share nothing except the gateway that feeds both, the model registry, and the research bucket.</div>
 
 <h2 class="sec" id="flow-backup" data-flow="backup" data-seq="2"><span class="n">9</span>Flow 4 · Backup and replication to cloud</h2>

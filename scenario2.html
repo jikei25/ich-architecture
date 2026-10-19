@@ -109,7 +109,7 @@ td.k{font-weight:700;white-space:nowrap}
 .pilltag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--slate-s);border:1px solid var(--border);white-space:nowrap}
 ol.flow{list-style:none;counter-reset:f;padding:0;margin:14px 0;position:relative}
 ol.flow>li{counter-increment:f;position:relative;padding:14px 18px 14px 66px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin:10px 0}
-ol.flow>li::before{content:counter(f);position:absolute;left:16px;top:14px;width:32px;height:32px;border-radius:10px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--fc)}
+ol.flow>li::before{content:var(--fp,"") counter(f);position:absolute;left:16px;top:14px;width:32px;height:32px;border-radius:10px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--fc)}
 ol.flow>li b.t{display:block}
 ol.flow>li .pr{display:inline-block;margin-top:4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--muted);background:var(--slate-s);border:1px solid var(--border);border-radius:8px;padding:1px 8px}
 .f-clin{--fc:var(--rose)}.f-tri{--fc:var(--violet)}.f-ai{--fc:var(--pink)}.f-bak{--fc:var(--amber)}.f-rest{--fc:var(--cyan)}
@@ -126,6 +126,13 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 @media (max-width:700px){.hero{padding:26px 20px}.hero h1{font-size:25px}nav.toc ol{columns:1}.timeline{grid-template-columns:1fr 1fr}ol.flow>li{padding-left:58px}}
 .site{fill:var(--card);fill-opacity:.55;stroke:var(--slate);stroke-width:2;stroke-dasharray:10 5}
 .sitet{fill:var(--slate);font-size:12.5px;font-weight:700}
+.stepb circle{stroke:var(--card);stroke-width:2}
+.stepb text{fill:#fff;font-size:10.5px;font-weight:700}
+.sb-clin circle{fill:var(--rose)}.sb-tri circle{fill:var(--violet)}.sb-ai circle{fill:var(--pink)}.sb-bak circle{fill:var(--amber)}.sb-rest circle{fill:var(--cyan)}
+#arch .stepb[data-g]{transition:opacity .25s}
+#arch[data-focus] .stepb[data-g]{opacity:.12}
+#arch[data-focus="clinical"] .stepb[data-g="clinical"],#arch[data-focus="triage"] .stepb[data-g="triage"],#arch[data-focus="ai"] .stepb[data-g="ai"],#arch[data-focus="backup"] .stepb[data-g="backup"],#arch[data-focus="restore"] .stepb[data-g="restore"]{opacity:1}
+.f-clin{--fp:"1."}.f-tri{--fp:"2."}.f-ai{--fp:"3."}.f-bak{--fp:"4."}
 </style>
 <link rel="stylesheet" href="assets/site.css">
 <script>try{var t=localStorage.getItem("ich-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
@@ -142,7 +149,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <header class="hero">
   <div class="eyebrow">Intracerebral hemorrhage AI system · Deployment scenario 2 · <a href="index.html">see scenario 1</a></div>
   <h1>GPUs at a second site: clinical work stays home, only de-identified tensors travel</h1>
-  <p>The hospital owns GPUs, but they sit at a second campus. Everything clinical stays at the main site exactly as in scenario 1. The AI buffer becomes a gateway: it de-identifies, crops and resamples each study, then stores and forwards one encrypted tensor to site 2 over a private link. Site 2 never sees patient identity and never reaches the PACS.</p>
+  <p>The hospital owns GPUs, but they sit at a second campus. Everything clinical stays at the main site exactly as in scenario 1. The gateway also de-identifies, crops and resamples each study, then stores and forwards one encrypted tensor to site 2 over a private link. Site 2 never sees patient identity and never reaches the PACS.</p>
   <div class="chips"><span>Clinical path unchanged</span><span>Gateway de-identifies before data leaves</span><span>One tensor per study over N8</span><span>Site 2 down: "no AI result", care continues</span></div>
 </header>
 
@@ -230,7 +237,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <!-- AI inference lane: gateway at the main site -->
 <g><rect class="bx s-violet" x="455" y="286" width="450" height="78" rx="12"/>
 <rect class="tagbg h-violet" x="458" y="277" width="112" height="18" rx="9"/>
-<text class="tagt t-violet" x="514" y="286" text-anchor="middle" dominant-baseline="central">ACTIVE-STANDBY</text>
+<text class="tagt t-violet" x="514" y="286" text-anchor="middle" dominant-baseline="central">ACTIVE-ACTIVE</text>
 <text class="bt big" x="680" y="311" text-anchor="middle" dominant-baseline="central">AI gateway · Orthanc</text>
 <text class="bs" x="680" y="333" text-anchor="middle" dominant-baseline="central">buffer · de-identify (fail-closed) · crop / resample · encrypt</text>
 <text class="bs" x="680" y="349" text-anchor="middle" dominant-baseline="central">store and forward to site 2 · de-identified copies for research</text></g>
@@ -402,6 +409,34 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="lbc" x="1370" y="866" text-anchor="middle" dominant-baseline="central">after 1 year</text></g>
 <text class="btag" x="190" y="762">Hospital boundary ▲ · ▼ Cloud: only the egress firewall crosses this line</text>
 
+<!-- step numbers: flow.step, matching the numbered lists below -->
+<g class="stepb sb-clin" data-g="clinical"><circle cx="395" cy="148" r="11"/><text x="395" y="148" text-anchor="middle" dominant-baseline="central">1.1</text></g>
+<g class="stepb sb-clin" data-g="clinical"><circle cx="420" cy="300" r="11"/><text x="420" y="300" text-anchor="middle" dominant-baseline="central">1.2</text></g>
+<g class="stepb sb-clin" data-g="clinical"><circle cx="912" cy="148" r="11"/><text x="912" y="148" text-anchor="middle" dominant-baseline="central">1.3</text></g>
+<g class="stepb sb-clin" data-g="clinical"><circle cx="1500" cy="105" r="11"/><text x="1500" y="105" text-anchor="middle" dominant-baseline="central">1.4</text></g>
+<g class="stepb sb-clin" data-g="clinical"><circle cx="1010" cy="214" r="11"/><text x="1010" y="214" text-anchor="middle" dominant-baseline="central">1.5</text></g>
+<g class="stepb sb-bak" data-g="backup"><circle cx="1128" cy="620" r="11"/><text x="1128" y="620" text-anchor="middle" dominant-baseline="central">4.1</text></g>
+<g class="stepb sb-bak" data-g="backup"><circle cx="1400" cy="705" r="11"/><text x="1400" y="705" text-anchor="middle" dominant-baseline="central">4.2</text></g>
+<g class="stepb sb-bak" data-g="backup"><circle cx="900" cy="722" r="11"/><text x="900" y="722" text-anchor="middle" dominant-baseline="central">4.3</text></g>
+<g class="stepb sb-bak" data-g="backup"><circle cx="1700" cy="684" r="11"/><text x="1700" y="684" text-anchor="middle" dominant-baseline="central">4.4</text></g>
+<g class="stepb sb-bak" data-g="backup"><circle cx="1150" cy="786" r="11"/><text x="1150" y="786" text-anchor="middle" dominant-baseline="central">4.5</text></g>
+<g class="stepb sb-bak" data-g="backup"><circle cx="1129" cy="820" r="11"/><text x="1129" y="820" text-anchor="middle" dominant-baseline="central">4.6</text></g>
+<g class="stepb sb-rest" data-g="restore"><circle cx="1790" cy="660" r="11"/><text x="1790" y="660" text-anchor="middle" dominant-baseline="central">5</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="613" cy="268" r="11"/><text x="613" y="268" text-anchor="middle" dominant-baseline="central">2.1</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="878" cy="304" r="11"/><text x="878" y="304" text-anchor="middle" dominant-baseline="central">2.2</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="878" cy="332" r="11"/><text x="878" y="332" text-anchor="middle" dominant-baseline="central">2.3</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="968" cy="300" r="11"/><text x="968" y="300" text-anchor="middle" dominant-baseline="central">2.4</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="1058" cy="306" r="11"/><text x="1058" y="306" text-anchor="middle" dominant-baseline="central">2.5</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="968" cy="356" r="11"/><text x="968" y="356" text-anchor="middle" dominant-baseline="central">2.6</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="760" cy="215" r="11"/><text x="760" y="215" text-anchor="middle" dominant-baseline="central">2.6</text></g>
+<g class="stepb sb-tri" data-g="triage"><circle cx="1360" cy="230" r="11"/><text x="1360" y="230" text-anchor="middle" dominant-baseline="central">2.6</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="690" cy="394" r="11"/><text x="690" y="394" text-anchor="middle" dominant-baseline="central">3.1</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="490" cy="470" r="11"/><text x="490" y="470" text-anchor="middle" dominant-baseline="central">3.2</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="980" cy="458" r="11"/><text x="980" y="458" text-anchor="middle" dominant-baseline="central">3.3</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="1420" cy="490" r="11"/><text x="1420" y="490" text-anchor="middle" dominant-baseline="central">3.4</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="1640" cy="470" r="11"/><text x="1640" y="470" text-anchor="middle" dominant-baseline="central">3.5</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="1590" cy="412" r="11"/><text x="1590" y="412" text-anchor="middle" dominant-baseline="central">3.6</text></g>
+
 <!-- legend -->
 <rect class="legend" x="20" y="950" width="1800" height="140" rx="14"/>
 <text class="lgh" x="40" y="978">Legend</text>
@@ -435,8 +470,10 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="lgt" x="1422" y="1052" dominant-baseline="central">Data</text>
 <rect class="lh h-cyan" x="1488" y="1042" width="20" height="20" rx="5"/>
 <text class="lgt" x="1516" y="1052" dominant-baseline="central">Cloud</text>
+<g class="stepb sb-tri"><circle cx="1612" cy="1052" r="11"/><text x="1612" y="1052" text-anchor="middle" dominant-baseline="central">2.3</text></g>
+<text class="lgt" x="1630" y="1052" dominant-baseline="central">Flow 2, step 3</text>
 </svg></div>
-  <p class="figcap">Ports, products and VLAN numbers are reference values. The clinical, data, backup and restore parts are identical to <a href="index.html">scenario 1</a>; this page only explains what differs.</p>
+  <p class="figcap">Numbered circles mark the steps described below: <b>2.3</b> is step 3 of Flow 2, and its colour matches the flow. Steps of flows 1, 3, 4 and 5 are described in scenario 1. Ports, products and VLAN numbers are reference values. The clinical, data, backup and restore parts are identical to <a href="index.html">scenario 1</a>; this page only explains what differs.</p>
 </div>
 
 <h2 class="sec" id="sequence"><span class="n">2</span>Sequence diagrams</h2>
@@ -481,13 +518,13 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tbody>
 <tr><td class="k">Site 2 or N8 is down</td><td>Every call has a timeout and a circuit breaker. When the deadline passes (120 s, or 90 s for emergency cases) the study shows "no AI result" and is read in normal order. The job is dropped: it is not sent when the link returns, and no late result or alert ever arrives. The clinical path is not affected.</td></tr>
 <tr><td class="k">Gateway cannot de-identify a study</td><td>The study is blocked and shows "no AI result". Nothing leaves the site.</td></tr>
-<tr><td class="k">Gateway node fails</td><td>The standby takes over with an empty buffer; the series are re-exported from the PACS.</td></tr>
+<tr><td class="k">Gateway node fails</td><td>The load balancer stops sending to it and the other nodes carry on. Files and index are shared, so nothing is lost; dcm4chee retries any export that was interrupted.</td></tr>
 <tr><td class="k">Internet is down</td><td>No effect on the AI. Only the cloud copy waits.</td></tr>
 </tbody></table></div>
 <p>The viewer always distinguishes three states: AI not run yet, AI failed or timed out ("no AI result"), and AI done and waiting for confirmation.</p>
 
 <h2 class="sec" id="ha"><span class="n">7</span>High availability</h2>
-<p>PACS, PACS state and the backup path are as in <a href="index.html#ha">scenario 1</a>. The gateway is active-standby with its buffer on local NVMe; a failover starts with an empty buffer that is refilled by re-export from dcm4chee. If export volume outgrows one node, the gateway moves to active-active with a shared PostgreSQL index and shared object storage (SeaweedFS).</p>
+<p>PACS, PACS state and the backup path are as in <a href="index.html#ha">scenario 1</a>. The gateway runs as N+1 active-active nodes behind a load balancer, sharing one PostgreSQL index and keeping its files (including tensors waiting to be forwarded) in SeaweedFS, so any node can pick up a job and a node failure loses nothing.</p>
 
 </main>
 </div>
