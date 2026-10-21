@@ -135,7 +135,6 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 td.win{background:var(--emerald-s)}
 th.win{background:var(--emerald-h)}
 .adr{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:16px 0}
-.adr .card h4{display:flex;align-items:center;gap:8px}
 dl.qa{margin:14px 0}
 dl.qa dt{font-weight:700;margin-top:16px}
 dl.qa dd{margin:4px 0 0;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px}
@@ -144,6 +143,11 @@ main a{color:var(--violet)}
 .tbl.wide table{min-width:760px;table-layout:fixed}
 .tbl.wide th:first-child{width:28%}
 .tbl td.k{white-space:normal;width:30%;min-width:140px}
+h3.dec{font-size:20px;line-height:1.35;margin:40px 0 8px;scroll-margin-top:72px;display:flex;align-items:center;gap:10px}
+.dn{flex:none;font-size:12.5px;font-weight:700;padding:3px 9px;border-radius:8px;background:var(--violet-s);color:var(--violet);border:1px solid var(--violet-h)}
+.idx table{min-width:860px}
+.idx td:first-child{white-space:nowrap}
+.idx a{font-weight:700;text-decoration:none}
 </style>
 <link rel="stylesheet" href="assets/site.css">
 <script>try{var t=localStorage.getItem("ich-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
@@ -160,32 +164,50 @@ main a{color:var(--violet)}
 <div class="page">
 <header class="hero">
   <div class="eyebrow">Intracerebral hemorrhage AI system · Design decisions · applies to <a href="index.html">scenario 1</a> and <a href="scenario2.html">scenario 2</a></div>
-  <h1>Design decisions: which DICOM server goes where, and why</h1>
-  <p>The architecture has two DICOM servers with two different jobs. The PACS is the clinical archive on the path doctors wait on; the gateway is a programmable buffer that feeds the AI and research. Each job has its own requirements, so each gets its own product: dcm4chee for the PACS, Orthanc for the gateway. This page records the options considered, the evidence for each choice, the costs accepted, and when to revisit.</p>
-  <div class="chips"><span>D1 · PACS: dcm4chee</span><span>D2 · Gateway: Orthanc</span><span>D3 · Two products, not one</span></div>
+  <h1>Design decisions: why each product in the architecture was chosen</h1>
+  <p>Every named product in the diagram is recorded here: the options considered, the evidence for the choice, the costs accepted, and when to revisit. The dashed AI blocks (inference, annotation, training, registry) are defined by their interfaces and are not decided on this page.</p>
+  <div class="chips"><span>DICOM servers · D1–D3</span><span>Data layer · D4–D7</span><span>Backup and cloud · D8–D10</span><span>Clinical access · D11–D12</span></div>
 </header>
 
 <div class="layout">
 <nav class="toc"><b>Contents</b><ol>
-<li><a href="#roles">Two roles, two products</a></li>
-<li><a href="#d1">D1 · PACS: dcm4chee</a></li>
-<li><a href="#d2">D2 · Gateway: Orthanc</a></li>
-<li><a href="#d3">D3 · Why not one product for both</a></li>
+<li><a href="#index">Decision index</a></li>
+<li><a href="#dicom">DICOM servers</a></li>
+<li><a href="#data">Data layer</a></li>
+<li><a href="#backup">Backup and cloud</a></li>
+<li><a href="#access">Clinical access</a></li>
 <li><a href="#qa">Questions reviewers ask</a></li>
 <li><a href="#followups">Follow-ups</a></li>
 <li><a href="#sources">Sources</a></li>
 </ol></nav>
 <main>
 
-<h2 class="sec" id="roles"><span class="n">1</span>Two roles, two products</h2>
+<h2 class="sec" id="index"><span class="n">1</span>Decision index</h2>
+<p>One line per decision. Every choice speaks an open standard (DICOM, DICOMweb, HL7, S3, SQL, LDAP, OIDC), so any of them can be swapped for an equivalent product without redrawing the architecture.</p>
+<div class="tbl idx"><table>
+<tr><th>#</th><th>Component</th><th>Choice</th><th>Main alternatives</th><th>Deciding reason</th></tr>
+<tr><td><a href="#d1">D1</a></td><td>PACS</td><td>dcm4chee</td><td>Orthanc, Dicoogle, commercial PACS</td><td>HL7 to worklist, export rules with priors and a persistent export queue are built in</td></tr>
+<tr><td><a href="#d2">D2</a></td><td>AI gateway</td><td>Orthanc</td><td>AI pulls from PACS, second dcm4chee, MONAI Deploy IG, pynetdicom</td><td>Python plugin in-process, built-in de-identification, DICOMweb for annotation</td></tr>
+<tr><td><a href="#d3">D3</a></td><td>One or two DICOM products</td><td>Two</td><td>Orthanc only, dcm4chee only</td><td>Each wins in its own role; both share the same database and object store</td></tr>
+<tr><td><a href="#d4">D4</a></td><td>Object storage</td><td>SeaweedFS</td><td>MinIO, Ceph, Garage, NFS</td><td>Apache 2.0, S3 API, built for many small files; MinIO community edition is archived</td></tr>
+<tr><td><a href="#d5">D5</a></td><td>Relational database</td><td>PostgreSQL</td><td>MySQL/MariaDB, Oracle, SQL Server</td><td>The one engine dcm4chee, Orthanc and Keycloak all support well, with mature HA and backup tools</td></tr>
+<tr><td><a href="#d6">D6</a></td><td>Database failover</td><td>Patroni</td><td>repmgr, pg_auto_failover, Pacemaker, manual</td><td>Consensus-based leader election prevents two primaries; failover in seconds</td></tr>
+<tr><td><a href="#d7">D7</a></td><td>PACS configuration</td><td>OpenLDAP</td><td>Hospital Active Directory, OpenDJ, Apache DS</td><td>Required by dcm4chee; official image ships the schema; keeps PACS config out of hospital AD</td></tr>
+<tr><td><a href="#d8">D8</a></td><td>Database backup</td><td>pgBackRest</td><td>pg_dump, Barman, WAL-G</td><td>Point-in-time recovery, encryption, S3 repository, dedicated repo host over TLS</td></tr>
+<tr><td><a href="#d9">D9</a></td><td>File copy to cloud</td><td>rclone copy</td><td>SeaweedFS remote sync, provider CLIs</td><td>Provider-neutral, never deletes at the destination, checksums and bandwidth limits</td></tr>
+<tr><td><a href="#d10">D10</a></td><td>Cloud protection</td><td>Object Lock + hospital KMS + tiers</td><td>Tape, second site, plain bucket</td><td>Ransomware cannot delete copies; the provider cannot read them; old data is cheap</td></tr>
+<tr><td><a href="#d11">D11</a></td><td>Identity</td><td>Keycloak</td><td>Direct AD login, Authentik, cloud IdP</td><td>On-premise SSO + MFA over OIDC, federates hospital AD, used by dcm4chee's secured setup</td></tr>
+<tr><td><a href="#d12">D12</a></td><td>Radiologist viewer</td><td>OHIF</td><td>Weasis, Orthanc viewers, commercial certified viewer</td><td>Zero-footprint web, DICOMweb, shows the AI's SEG and SR, OIDC login</td></tr>
+</table></div>
+
+<h2 class="sec" id="dicom"><span class="n">2</span>DICOM servers</h2>
 <p>The question is not "Orthanc or dcm4chee". The architecture needs a DICOM server in two places, and the requirements of the two places pull in opposite directions.</p>
 <div class="grid">
   <div class="card c-blue"><div class="v tc-blue">VLAN 10–20 · clinical critical path</div><h4>PACS → dcm4chee</h4><p>Must be durable and standards-complete: HL7 orders to a modality worklist, rule-based export with priors, a stateless cluster with persistent task queues, storage tiering and retention for 10 years, IHE audit, single sign-on. Changes rarely; owned by hospital IT.</p></div>
   <div class="card c-violet"><div class="v tc-violet">VLAN 30 · best-effort</div><h4>Gateway → Orthanc</h4><p>Must be programmable and light: run code when a study is complete, de-identify fail-closed, crop and resample into a tensor and forward it (scenario 2), serve DICOMweb to annotation, scale to N+1 nodes cheaply. Changes often; owned by the AI team.</p></div>
 </div>
-<div class="callout"><b>The one-line answer.</b> Each product wins in its own role, and swapping them makes both lose: Orthanc as the PACS would lack HL7, worklist and lifecycle features; dcm4chee as the gateway would lack the scripting the AI pipeline needs.</div>
 
-<h2 class="sec" id="d1"><span class="n">2</span>D1 · PACS: dcm4chee</h2>
+<h3 class="dec" id="d1"><span class="dn">D1</span>PACS: dcm4chee</h3>
 <p><b>Context.</b> The PACS receives every study straight from the scanner, serves the viewer while series arrive, builds the scanner worklist from HIS/RIS orders, pushes selected series to the gateway, and holds the official record. The criteria below come from the flows in <a href="index.html#flow-clinical">scenario 1</a>.</p>
 <div class="tbl wide"><table>
 <tr><th>Requirement (where it comes from)</th><th class="win">dcm4chee</th><th>Orthanc</th><th>Dicoogle</th></tr>
@@ -203,13 +225,13 @@ main a{color:var(--violet)}
   <div class="card c-slate"><div class="v tc-slate">Revisit when</div><h4>The hospital has its own PACS</h4><p>dcm4chee is the reference choice. Any PACS that can export by rule over C-STORE and serve DICOMweb can take its place without changing the gateway, the AI or annotation.</p></div>
 </div>
 
-<h2 class="sec" id="d2"><span class="n">3</span>D2 · Gateway: Orthanc</h2>
+<h3 class="dec" id="d2"><span class="dn">D2</span>AI gateway: Orthanc</h3>
 <p><b>Context.</b> The gateway is the only AI-side system that talks to the PACS. It receives the export once, triggers the AI job, de-identifies fail-closed, serves de-identified studies and stores labels for annotation, returns SEG and SR to the PACS, and in <a href="scenario2.html#flow-triage">scenario 2</a> also crops, resamples, encrypts and forwards one tensor per study to site 2.</p>
 <div class="tbl"><table>
 <tr><th>Option</th><th>Why it was not chosen, or why it was</th></tr>
 <tr><td class="k">AI pulls from the PACS over DICOMweb</td><td><span class="n">Rejected.</span> Breaks "push, don't pull": the AI would hold PACS credentials, repeated reads (preprocessing, retries, re-runs) would load the PACS hot tier, and data minimisation would depend on configuration instead of architecture.</td></tr>
 <tr><td class="k">A second dcm4chee as the gateway</td><td><span class="n">Rejected.</span> dcm4chee can de-identify on export, but it cannot crop, resample, build a tensor or forward over gRPC, and extending it means Java EE development. It also needs its own WildFly and LDAP for what is only a buffer, and running the same product as the PACS loses failure isolation.</td></tr>
-<tr><td class="k">MONAI Deploy Informatics Gateway</td><td><span class="p">Not now.</span> Built for routing DICOM to AI, but its standard bundle brings a message broker (RabbitMQ), object storage (MinIO by default, which this design already rejected) and MongoDB. It does not serve QIDO/WADO for annotation and has no de-identification pipeline of its own. Worth revisiting if the team adopts the whole MONAI Deploy stack.</td></tr>
+<tr><td class="k">MONAI Deploy Informatics Gateway</td><td><span class="p">Not now.</span> Built for routing DICOM to AI, but its standard bundle brings a message broker (RabbitMQ), object storage (MinIO by default, see D4) and MongoDB. It does not serve QIDO/WADO for annotation and has no de-identification pipeline of its own. Worth revisiting if the team adopts the whole MONAI Deploy stack.</td></tr>
 <tr><td class="k">Custom service on pynetdicom</td><td><span class="n">Rejected.</span> Storage SCP, stable-study detection, retries, a DICOMweb server, de-identification and HA would all be ours to write and test. Fail-closed de-identification is the most safety-critical part of the gateway and should not be rebuilt from scratch.</td></tr>
 <tr><td class="k win">Orthanc</td><td class="win"><span class="y">Chosen.</span> See the five reasons below.</td></tr>
 </table></div>
@@ -226,7 +248,7 @@ main a{color:var(--violet)}
   <div class="card c-slate"><div class="v tc-slate">Revisit when</div><h4>Annotation load hurts inference</h4><p>Add a separate research Orthanc storing into the research bucket. The PACS export rule does not change.</p></div>
 </div>
 
-<h2 class="sec" id="d3"><span class="n">4</span>D3 · Why not one product for both</h2>
+<h3 class="dec" id="d3"><span class="dn">D3</span>Two DICOM products, not one</h3>
 <div class="tbl"><table>
 <tr><th>Single-product option</th><th>What breaks</th></tr>
 <tr><td class="k">Orthanc for PACS and gateway</td><td>HL7 orders, the worklist, export rules with priors, the persistent export queue, storage lifecycle and IHE audit all become custom scripts on the clinical critical path. A gateway change made by the AI team could take down the PACS.</td></tr>
@@ -234,36 +256,163 @@ main a{color:var(--violet)}
 <tr><td class="k win">dcm4chee + Orthanc</td><td class="win">Each runs where it is strong. The extra cost is small, because both use the same PostgreSQL cluster (separate databases) and the same SeaweedFS cluster (separate buckets).</td></tr>
 </table></div>
 
-<h2 class="sec" id="qa"><span class="n">5</span>Questions reviewers ask</h2>
+<h2 class="sec" id="data"><span class="n">3</span>Data layer</h2>
+<p>The PACS nodes and gateway nodes are stateless; all state lives in three stores, each with its own HA. The PACS is only as available as these stores, so they are chosen for durability and for being boring to operate.</p>
+
+<h3 class="dec" id="d4"><span class="dn">D4</span>Object storage: SeaweedFS</h3>
+<p><b>Context.</b> One cluster holds the PACS bucket (every image file for the last 90 days) and the research bucket (labels and frozen datasets), plus the gateway's files. dcm4chee, Orthanc and rclone all reach it through S3. DICOM data is many small objects: a head CT is a few hundred instances of roughly half a megabyte each.</p>
+<div class="tbl"><table>
+<tr><th>Option</th><th>Assessment</th></tr>
+<tr><td class="k">MinIO</td><td><span class="n">Rejected.</span> The community edition lost its admin console in May 2025, stopped shipping binaries and images in October 2025, entered maintenance mode in December 2025 and was archived as "no longer maintained" in February 2026. A store that holds clinical data for years cannot depend on a project that no longer ships security fixes; the commercial successor is paid.</td></tr>
+<tr><td class="k">Ceph (RADOS Gateway)</td><td><span class="p">Not chosen.</span> The most mature and feature-complete option, but it runs several daemon types (monitors, managers, OSDs, gateways), needs careful tuning and realistically a dedicated storage team. The right choice if the hospital already operates Ceph.</td></tr>
+<tr><td class="k">Garage</td><td><span class="p">Not chosen.</span> Light and built for geo-distribution, but AGPL-licensed, with a smaller install base and narrower S3 feature coverage.</td></tr>
+<tr><td class="k">NFS or local disks</td><td><span class="n">Rejected.</span> dcm4chee and Orthanc can write to a filesystem, but a shared NFS server is a single point of failure, and the stateless-node HA model and the S3-based cloud copy both assume a distributed object store.</td></tr>
+<tr><td class="k win">SeaweedFS</td><td class="win"><span class="y">Chosen.</span> Apache 2.0, S3-compatible, built on Facebook's Haystack design for many small files (one disk read per file, about 40 bytes of metadata per file), replication across nodes and racks, light Go binaries.</td></tr>
+</table></div>
+<div class="adr">
+  <div class="card c-amber"><div class="v tc-amber">Costs accepted</div><h4>Smaller project</h4><p>Smaller community than Ceph, with development led by one main maintainer, and some features (for example automatic erasure-coding repair, according to a third-party review) sit in the Enterprise edition. Use replication rather than erasure coding on the free edition, and verify features before deployment.</p></div>
+  <div class="card c-slate"><div class="v tc-slate">Revisit when</div><h4>Maintenance slows or Ceph exists</h4><p>Every client speaks S3, so moving to Ceph RGW or another S3 store is a data copy and an endpoint change, with no application change.</p></div>
+</div>
+
+<h3 class="dec" id="d5"><span class="dn">D5</span>Relational database: PostgreSQL</h3>
+<p><b>Context.</b> Holds the PACS index and pending PACS work, the gateway index, AI results and label metadata, each in its own database. Keycloak needs a database too.</p>
+<div class="tbl"><table>
+<tr><th>Option</th><th>Assessment</th></tr>
+<tr><td class="k">MySQL / MariaDB</td><td><span class="p">Viable, not chosen.</span> Supported by dcm4chee and Orthanc. PostgreSQL is preferred because the multi-writer <code>TransactionMode</code> setting the active-active gateway relies on is documented for Orthanc's PostgreSQL plugin, and because the HA and backup tools chosen in D6 and D8 are PostgreSQL tools.</td></tr>
+<tr><td class="k">Oracle / SQL Server</td><td><span class="n">Rejected.</span> dcm4chee supports them, but they add licence cost and Orthanc's official index plugins target PostgreSQL and MySQL, so a second engine would be needed anyway.</td></tr>
+<tr><td class="k win">PostgreSQL</td><td class="win"><span class="y">Chosen.</span> Supported by dcm4chee (with official Docker images), Orthanc and Keycloak, so one engine serves every database. Permissive licence, and mature failover (Patroni) and point-in-time backup (pgBackRest).</td></tr>
+</table></div>
+<div class="adr">
+  <div class="card c-amber"><div class="v tc-amber">Cost accepted</div><h4>One shared cluster</h4><p>Every database shares one primary/standby pair, so a heavy AI query can slow the PACS index. Mitigated by separate databases, per-application connection limits and monitoring.</p></div>
+  <div class="card c-slate"><div class="v tc-slate">Revisit when</div><h4>AI load hurts PACS queries</h4><p>Split the AI results and label databases onto their own Patroni cluster. Applications only change their connection string.</p></div>
+</div>
+
+<h3 class="dec" id="d6"><span class="dn">D6</span>Database failover: Patroni</h3>
+<div class="tbl"><table>
+<tr><th>Option</th><th>Assessment</th></tr>
+<tr><td class="k">Manual failover</td><td><span class="n">Rejected.</span> Takes minutes to hours and needs an on-call database administrator, while the PACS is down for the whole time.</td></tr>
+<tr><td class="k">repmgr</td><td><span class="p">Not chosen.</span> Simple, but without a consensus store it relies on a witness node and fencing to avoid two primaries after a network split.</td></tr>
+<tr><td class="k">pg_auto_failover</td><td><span class="p">Not chosen.</span> Easy to set up, but the monitor node that decides failover is itself a single point to protect.</td></tr>
+<tr><td class="k">Pacemaker / Corosync</td><td><span class="p">Not chosen.</span> Generic cluster manager; powerful but complex to configure correctly for PostgreSQL.</td></tr>
+<tr><td class="k win">Patroni</td><td class="win"><span class="y">Chosen.</span> Leader election through a consensus store (etcd, Consul or ZooKeeper) guarantees one primary, failover takes seconds, and it is the most widely used PostgreSQL HA manager. Works with pgBackRest for rebuilding replicas.</td></tr>
+</table></div>
+<div class="callout amber"><b>Not drawn yet.</b> Patroni needs a three-node consensus store (usually etcd), and clients need a way to always reach the current primary (HAProxy checking Patroni's REST health endpoint, or a floating IP). Both belong in the Data layer of the diagram.</div>
+
+<h3 class="dec" id="d7"><span class="dn">D7</span>PACS configuration: OpenLDAP</h3>
+<p><b>Context.</b> dcm4chee keeps its configuration (devices, application entities, export rules, storage descriptors) in an LDAP directory shared by all PACS nodes. It holds no user accounts; people log in through Keycloak (D11).</p>
+<div class="tbl"><table>
+<tr><th>Option</th><th>Assessment</th></tr>
+<tr><td class="k">Hospital Active Directory</td><td><span class="n">Rejected.</span> The dcm4che schema would have to be loaded into the hospital directory, which hospital IT rarely allows, and it would tie the PACS configuration to the identity system.</td></tr>
+<tr><td class="k">OpenDJ / Apache DS</td><td><span class="p">Supported, not chosen.</span> Both are listed in the dcm4chee installation guide, but the official Docker image and most community material use OpenLDAP.</td></tr>
+<tr><td class="k win">OpenLDAP</td><td class="win"><span class="y">Chosen.</span> The official <code>dcm4che/slapd-dcm4chee</code> image ships the schema, replication between providers gives HA, and the footprint is tiny.</td></tr>
+</table></div>
+<div class="callout amber"><b>Backup gap.</b> The backup gateway sends PostgreSQL and image files to the cloud, but nothing in the design backs up the LDAP configuration. A scheduled LDIF export (<code>slapcat</code>) copied by rclone closes it; without it, a lost directory means rebuilding the PACS configuration by hand.</div>
+
+<h2 class="sec" id="backup"><span class="n">4</span>Backup and cloud</h2>
+<p>HA protects against a server failing; backup protects against mistakes, corruption and ransomware. The cloud is the only backup by design, so these choices favour copies that cannot be deleted or read by anyone outside the hospital.</p>
+
+<h3 class="dec" id="d8"><span class="dn">D8</span>Database backup: pgBackRest</h3>
+<div class="tbl"><table>
+<tr><th>Option</th><th>Assessment</th></tr>
+<tr><td class="k">pg_dump</td><td><span class="n">Rejected.</span> Logical dumps cannot restore to an exact moment, and restoring a large index from a dump is slow.</td></tr>
+<tr><td class="k">Barman</td><td><span class="p">Viable, not chosen.</span> Mature and supports point-in-time recovery; cloud storage goes through separate barman-cloud tools.</td></tr>
+<tr><td class="k">WAL-G</td><td><span class="p">Viable, not chosen.</span> Fast and S3-native, with fewer built-in verification and repository-management features.</td></tr>
+<tr><td class="k win">pgBackRest</td><td class="win"><span class="y">Chosen.</span> Point-in-time recovery from full, differential and incremental backups, parallel and compressed, client-side encryption, a native S3 repository, and a dedicated repository host over TLS, which is exactly the backup gateway on <code>:8432</code>.</td></tr>
+</table></div>
+<div class="callout amber"><b>Align retention with Object Lock.</b> pgBackRest removes expired backups itself. If the bucket's Object Lock period is longer than pgBackRest's retention, the removal fails; set the two deliberately (for example both at 35 days) and alert on expire errors.</div>
+
+<h3 class="dec" id="d9"><span class="dn">D9</span>File copy to cloud: rclone</h3>
+<div class="tbl"><table>
+<tr><th>Option</th><th>Assessment</th></tr>
+<tr><td class="k">SeaweedFS remote sync</td><td><span class="p">Not chosen.</span> Native and continuous, but it ties the backup path to the storage product chosen in D4.</td></tr>
+<tr><td class="k">Provider CLIs (aws s3 sync and similar)</td><td><span class="p">Not chosen.</span> Each works with one provider, and "sync" mirrors deletions, which is exactly what the backup must not do.</td></tr>
+<tr><td class="k win">rclone copy</td><td class="win"><span class="y">Chosen.</span> Works with any S3 store and any major cloud, <code>copy</code> never deletes at the destination, verifies checksums, limits bandwidth so the internet link is not saturated, and is safe to re-run.</td></tr>
+</table></div>
+<div class="adr">
+  <div class="card c-amber"><div class="v tc-amber">Cost accepted</div><h4>Batch, not continuous</h4><p>Files written since the last run are not yet in the cloud, so the data-loss window for images equals the schedule interval. Monitor the run and the lag.</p></div>
+</div>
+
+<h3 class="dec" id="d10"><span class="dn">D10</span>Cloud protection: Object Lock, hospital KMS, tiers, one door out</h3>
+<div class="tbl"><table>
+<tr><th>Option</th><th>Assessment</th></tr>
+<tr><td class="k">Tape or offline disks</td><td><span class="p">Not chosen.</span> Safe from ransomware, but restores are slow and manual, and someone has to rotate the media.</td></tr>
+<tr><td class="k">Second hospital site</td><td><span class="p">Not available.</span> Scenario 1 has no second site; in scenario 2, site 2 holds only de-identified data and GPUs.</td></tr>
+<tr><td class="k">Plain cloud bucket</td><td><span class="n">Rejected.</span> Anyone who steals the backup credentials, including ransomware, can delete it.</td></tr>
+<tr><td class="k">Provider-managed keys</td><td><span class="n">Rejected.</span> The provider could decrypt patient data.</td></tr>
+<tr><td class="k win">Object Lock + hospital KMS + lifecycle tiers, through one egress firewall and IPsec</td><td class="win"><span class="y">Chosen.</span> Write-once retention with versioning means no one can delete a copy early; keys held by the hospital mean the provider cannot read it; lifecycle tiers move studies to Infrequent Access after 90 days and to Archive after a year to cut cost; a single outbound-only door means the cloud can never connect in.</td></tr>
+</table></div>
+<div class="adr">
+  <div class="card c-amber"><div class="v tc-amber">Costs accepted</div><h4>Slow and strict</h4><p>Archive-tier restores take hours and cost retrieval fees. Compliance-mode retention cannot be shortened even by an administrator, so retention periods must be set carefully.</p></div>
+  <div class="card c-slate"><div class="v tc-slate">Confirm with legal</div><h4>Where the copies live</h4><p>Check that storing encrypted copies with the chosen provider and region meets the cross-border data rules under Decree 356/2025.</p></div>
+</div>
+
+<h2 class="sec" id="access"><span class="n">5</span>Clinical access</h2>
+
+<h3 class="dec" id="d11"><span class="dn">D11</span>Identity: Keycloak</h3>
+<div class="tbl"><table>
+<tr><th>Option</th><th>Assessment</th></tr>
+<tr><td class="k">Each application logs in against the hospital AD</td><td><span class="n">Rejected.</span> No single sign-on across the viewer and tools, no built-in MFA, and every application handles passwords itself.</td></tr>
+<tr><td class="k">Cloud identity provider</td><td><span class="n">Rejected.</span> Puts the internet on the login path, so an outage would stop doctors from reading, against the "clinical first" principle.</td></tr>
+<tr><td class="k">Authentik / Authelia</td><td><span class="p">Not chosen.</span> Lighter, but with smaller ecosystems and no existing integration with dcm4chee.</td></tr>
+<tr><td class="k win">Keycloak</td><td class="win"><span class="y">Chosen.</span> On-premise OIDC and SAML single sign-on with MFA (one-time codes, WebAuthn), federates users from the hospital AD so accounts stay in one place, used by dcm4chee's secured deployment, supported by OHIF, Apache 2.0 licence.</td></tr>
+</table></div>
+<div class="callout amber"><b>Login is on the clinical path.</b> If Keycloak is down, doctors cannot open the viewer. It needs at least two nodes and its own database on the PostgreSQL cluster, which the High availability table does not list yet.</div>
+
+<h3 class="dec" id="d12"><span class="dn">D12</span>Radiologist viewer: OHIF</h3>
+<div class="tbl"><table>
+<tr><th>Option</th><th>Assessment</th></tr>
+<tr><td class="k">Weasis</td><td><span class="p">Not chosen.</span> Rich desktop viewer that pairs well with dcm4chee, but it must be installed and updated on every workstation.</td></tr>
+<tr><td class="k">Orthanc viewers</td><td><span class="n">Rejected.</span> They read from Orthanc, which in this design is the AI gateway, not the PACS.</td></tr>
+<tr><td class="k">Commercial certified viewer</td><td><span class="p">Keep as an option.</span> Certified for primary diagnosis, at a licence cost; often the hospital already has one.</td></tr>
+<tr><td class="k win">OHIF</td><td class="win"><span class="y">Chosen.</span> Zero-footprint web viewer over DICOMweb, opens a study while series are still arriving, displays DICOM SEG and SR (the AI's outputs), logs in through Keycloak over OIDC, MIT licence, and can be extended with the confirm-or-correct workflow.</td></tr>
+</table></div>
+<div class="callout amber"><b>Regulatory status.</b> The base OHIF viewer is not FDA-cleared or CE-marked, and making sure it complies with local rules is the user's responsibility. If the hospital requires a certified viewer for primary diagnosis, keep its existing one: because the AI results are standard SEG and SR stored in the PACS, any viewer that displays SEG shows them, and the rest of the architecture does not change.</div>
+
+<h2 class="sec" id="qa"><span class="n">6</span>Questions reviewers ask</h2>
 <dl class="qa">
 <dt>Is Orthanc reliable enough for a hospital?</dt>
 <dd>It is not on the critical path. If the gateway stops, dcm4chee queues the export and retries, doctors read in normal order, and the viewer shows "no AI result". The gateway's reliability affects how fast the AI flag arrives, never whether a diagnosis can be made.</dd>
 <dt>What if the hospital already has a commercial PACS?</dt>
 <dd>Keep it. The gateway only needs the PACS to export selected series by C-STORE and to accept SEG and SR back. The gateway, AI, annotation and backup design stay the same. This is the main benefit of the push model.</dd>
+<dt>Why so many open-source components? Who maintains them?</dt>
+<dd>Each is a widely used tool for one job, and each speaks an open standard (DICOM, DICOMweb, S3, SQL, LDAP, OIDC). Any of them can be replaced by a commercial product with the same interface without redrawing the architecture. Who operates each one must be agreed with hospital IT before deployment.</dd>
 <dt>Why not use the cloud (Google Cloud Healthcare API, AWS HealthImaging)?</dt>
 <dd>The architecture processes everything on-premise and sends only encrypted copies to the cloud for retention. A cloud DICOM store would put the cloud and the internet on the diagnosis path and move identifiable data off-site, which conflicts with the design principles and with data minimisation under Decree 356/2025.</dd>
+<dt>Why SeaweedFS rather than the better-known MinIO?</dt>
+<dd>MinIO's community edition is no longer maintained: its repository was archived in February 2026 after a year of feature removals. SeaweedFS keeps the same S3 interface under Apache 2.0, so dcm4chee, Orthanc and rclone did not have to change.</dd>
 <dt>Do the licences cause problems?</dt>
-<dd>Not for internal use. dcm4chee is MPL 1.1 / GPL / LGPL. Orthanc's core is GPLv3 and its PostgreSQL and DICOMweb plugins are AGPLv3. If the hospital modifies an AGPL plugin and lets users reach it over the network, the modified source must be offered to those users.</dd>
+<dd>Not for internal use. dcm4chee is MPL 1.1 / GPL / LGPL. Orthanc's core is GPLv3 and its PostgreSQL and DICOMweb plugins are AGPLv3, as is Garage (not chosen). If the hospital modifies an AGPL component and lets users reach it over the network, the modified source must be offered to those users. SeaweedFS, Keycloak (Apache 2.0), OHIF (MIT) and PostgreSQL (PostgreSQL licence) are permissive.</dd>
 <dt>Is active-active Orthanc actually supported?</dt>
 <dd>Yes, with conditions. Since Orthanc 1.9.2 with PostgreSQL plugin 4.0, several instances can share one index. PostgreSQL plugin 6.0 with Orthanc 1.12.3 adds a <code>TransactionMode</code> option, where <code>ReadCommitted</code> lets several instances write at the same time. The shared lock must be disabled (<code>Lock: false</code>), and duplicate stable-study events must be filtered by the dispatcher.</dd>
 </dl>
 
-<h2 class="sec" id="followups"><span class="n">6</span>Follow-ups</h2>
+<h2 class="sec" id="followups"><span class="n">7</span>Follow-ups</h2>
 <div class="callout amber"><b>Open points to close before deployment.</b><ul>
 <li><b>Pin the gateway versions.</b> The <a href="index.html#ha">High availability</a> section cites Orthanc 1.9.2. Write down the minimum versions and settings used for active-active: Orthanc ≥ 1.12.3, PostgreSQL plugin ≥ 6.0, <code>Lock: false</code>, <code>IndexConnectionsCount</code> above 1, and the chosen <code>TransactionMode</code>. Test concurrent writes under load.</li>
-<li><b>Mark dcm4chee as the reference PACS.</b> State in scenario 1 that any PACS with rule-based C-STORE export and DICOMweb can replace it.</li>
-<li><b>Confirm with the hospital.</b> Which PACS already exists, whether its export rules support priors, and who operates dcm4chee (Java, WildFly and LDAP skills).</li>
+<li><b>Draw the Patroni dependencies.</b> Add the three-node etcd and the primary-routing layer (HAProxy or a floating IP) to the Data layer (D6).</li>
+<li><b>Back up the LDAP configuration.</b> Schedule an LDIF export and copy it with rclone (D7).</li>
+<li><b>Make Keycloak highly available.</b> At least two nodes, with its database on the PostgreSQL cluster, listed in the HA table (D11).</li>
+<li><b>Align pgBackRest retention with Object Lock</b> on the PostgreSQL backup bucket (D8).</li>
+<li><b>Choose the SeaweedFS replication setting</b> and confirm which features the free edition includes (D4).</li>
+<li><b>Mark dcm4chee as the reference PACS</b> and OHIF as replaceable by the hospital's certified viewer (D1, D12).</li>
+<li><b>Confirm with the hospital:</b> the existing PACS and viewer, who operates each component, and the cloud provider and region against Decree 356/2025 (D10).</li>
 </ul></div>
 
-<h2 class="sec" id="sources"><span class="n">7</span>Sources</h2>
+<h2 class="sec" id="sources"><span class="n">8</span>Sources</h2>
 <ol class="src">
 <li><a href="https://dcm4che.atlassian.net/wiki/spaces/ee2/pages/2555988/ORM+Service">dcm4chee: ORM Service (HL7 ORM to modality worklist)</a></li>
 <li><a href="https://dcm4chee-arc-cs.readthedocs.io/en/latest/networking/config/hl7ExportRule.html">dcm4chee: HL7 Export Rule (priors selection)</a></li>
 <li><a href="https://github.com/dcm4che/dcm4chee-arc-light/wiki/Export-Studies-on-receive-of-HL7-messages">dcm4chee wiki: Export studies on receipt of HL7 messages</a></li>
+<li><a href="https://github-wiki-see.page/m/dcm4che/dcm4chee-arc-light/wiki/Installation">dcm4chee wiki: Installation (supported LDAP servers and databases)</a></li>
 <li><a href="https://orthanc.uclouvain.be/book/plugins/postgresql.html">Orthanc Book: PostgreSQL plugins (Lock, IndexConnectionsCount, TransactionMode)</a></li>
 <li><a href="https://orthanc.uclouvain.be/hg/orthanc-book/rev/411e82bb3a9f">Orthanc Book: scalability FAQ, multiple writers since 1.9.2</a></li>
 <li><a href="https://monai.io/monai-deploy-informatics-gateway/setup/setup.html">MONAI Deploy Informatics Gateway: setup and runtime requirements</a></li>
 <li><a href="https://zenodo.org/records/8087783">MONAI Deploy Express v0.4.0: bundled services (MinIO, RabbitMQ, MongoDB)</a></li>
+<li><a href="https://en.wikipedia.org/wiki/MinIO">MinIO (Wikipedia): end of community development</a></li>
+<li><a href="https://blog.vonng.com/en/db/minio-is-dead/">MinIO community edition timeline: console removal to archived repository</a></li>
+<li><a href="https://github.com/seaweedfs/seaweedfs">SeaweedFS: project repository and design</a></li>
+<li><a href="https://www.opentechhub.io/seaweedfs/">SeaweedFS: third-party review of free and Enterprise features</a></li>
+<li><a href="https://docs.ohif.org/faq">OHIF FAQ: regulatory status of the base viewer</a></li>
 </ol>
 
 </main>
