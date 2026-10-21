@@ -17,6 +17,7 @@
 .progress{height:2px;background:transparent}
 .progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#6366f1,#06b6d4)}
 @media (max-width:720px){.brand .brand-t{display:none}.scen a span{display:none}.theme-btn .tl{display:none}}
+@media (max-width:480px){.topbar-in{gap:8px}.brand{flex:none}.scen a{padding:4px 8px;white-space:nowrap}.scen a b{font-size:12.5px}}
 
 /* ---------- layout and contents ---------- */
 h2.sec{scroll-margin-top:72px;position:relative}
