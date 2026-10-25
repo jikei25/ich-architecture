@@ -1,0 +1,132 @@
+\section{Khung pháp lý về bảo vệ dữ liệu bệnh nhân tại Việt Nam}
+\label{sec:legal}
+
+Hình ảnh y tế là dữ liệu cá nhân thuộc nhóm nhạy cảm nhất, và tại Việt Nam việc
+xử lý loại dữ liệu này chịu sự điều chỉnh của một khung pháp lý nhiều tầng gồm
+pháp luật chuyên ngành y tế, pháp luật chung về bảo vệ dữ liệu cá nhân và pháp
+luật về an ninh mạng. Các ràng buộc này mang tính kiến trúc: chúng quyết định
+dữ liệu được lưu trú ở đâu, ai được phép truy cập và những gì bắt buộc phải ghi
+nhận, và không thể bổ sung thêm về sau vào một hệ thống vốn được thiết kế mà
+không tính đến chúng.
+
+\subsection{Pháp luật chuyên ngành y tế}
+
+\textbf{Luật Khám bệnh, chữa bệnh} (số 15/2023/QH15, có hiệu lực từ ngày 01
+tháng 01 năm 2024) \cite{lawmet2023} xác lập quyền được bảo mật thông tin của người bệnh như một
+quyền luật định. Thông tin về tình trạng sức khoẻ và đời tư của người bệnh được
+ghi trong hồ sơ bệnh án phải được giữ bí mật và chỉ được tiết lộ khi có sự đồng
+ý của người bệnh hoặc trong các trường hợp pháp luật cho phép. Cũng chính luật
+này điều chỉnh bản thân hồ sơ bệnh án, quy định thời hạn lưu trữ và xác định
+những chủ thể được phép tiếp cận, đồng thời khẳng định chẩn đoán là hoạt động
+chỉ dành cho người hành nghề có giấy phép. Điểm cuối cùng này là cơ sở pháp lý
+cho định hướng hỗ trợ được giữ nhất quán trong toàn bộ báo cáo: nền tảng có thể
+cung cấp thông tin phục vụ chẩn đoán nhưng không được đưa ra chẩn đoán.
+
+\textbf{Thông tư 13/2025/TT-BYT} hướng dẫn triển khai hồ sơ bệnh án điện tử
+(ban hành ngày 06/6/2025, có hiệu lực từ ngày 21/7/2025) thay thế Thông tư
+46/2018/TT-BYT \cite{tt13_2025,mohemr}. Thông tư đặt lộ trình bắt buộc: các bệnh
+viện phải triển khai chậm nhất ngày 30/9/2025, các cơ sở khám bệnh, chữa bệnh khác
+chậm nhất ngày 31/12/2026. Cơ sở phải có hạ tầng gồm máy chủ, thiết bị lưu trữ,
+giải pháp an toàn thông tin và phần mềm quản lý hồ sơ; hệ thống phải đáp ứng tiêu
+chuẩn kỹ thuật về an toàn thông tin và có khả năng phục hồi dữ liệu, hỗ trợ chữ ký
+số hoặc phương thức xác thực hợp pháp khác, và kết nối với cơ sở dữ liệu quốc gia
+về dân cư. Hai yêu cầu có hệ quả kiến trúc trực tiếp. Yêu cầu truy xuất và kiểm tra
+hồ sơ về sau khiến một nhật ký truy vết chỉ ghi thêm (append-only), ghi nhận mọi
+truy cập, trở thành yêu cầu chức năng chứ không còn là lựa chọn thiết kế. Yêu cầu
+khả năng phục hồi dữ liệu biến độ bền của kho ảnh thành nghĩa vụ pháp lý, không
+chỉ là chất lượng kỹ thuật.
+
+\subsection{Bảo vệ dữ liệu cá nhân}
+
+Khung bảo vệ dữ liệu cá nhân của Việt Nam đã thay đổi căn bản trong thời gian
+thực hiện đề tài. \textbf{Nghị định 13/2023/NĐ-CP}, có hiệu lực từ ngày 01/7/2023,
+là văn bản toàn diện đầu tiên \cite{decree13}. Kể từ ngày 01/01/2026, vai trò này
+thuộc về \textbf{Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15}, được Quốc hội thông
+qua ngày 26/6/2025, cùng \textbf{Nghị định 356/2025/NĐ-CP} quy định chi tiết thi
+hành, thay thế Nghị định 13 \cite{pdpl2025,decree356}. Các hồ sơ đánh giá tác động
+đã lập theo Nghị định 13 vẫn được công nhận, nhưng mọi cập nhật về sau phải tuân
+theo luật mới. Phần lớn nghĩa vụ được kế thừa từ Nghị định 13, nay được nâng lên
+tầm luật và đi kèm chế tài nặng hơn. Một số quy định tác động trực tiếp đến thiết
+kế hệ thống.
+
+Luật phân biệt \emph{dữ liệu cá nhân cơ bản} với \emph{dữ liệu cá nhân nhạy cảm}
+và xếp thông tin về tình trạng sức khoẻ vào nhóm nhạy cảm, kéo theo các nghĩa vụ
+tăng cường. Sự đồng ý phải tự nguyện, rõ ràng và cụ thể cho từng mục đích; sự im
+lặng không được coi là đồng ý, và chủ thể dữ liệu có quyền rút lại sự đồng ý bất
+kỳ lúc nào. Trên thực tế, bên kiểm soát dữ liệu phải lưu giữ được bằng chứng về sự
+đồng ý cùng trạng thái hiện hành của nó. Chủ thể dữ liệu được trao các quyền truy
+cập, chỉnh sửa, xoá và phản đối, với thời hạn phản hồi được quy định cụ thể. Bên
+kiểm soát dữ liệu phải lập hồ sơ \textbf{đánh giá tác động xử lý dữ liệu cá nhân}
+và gửi cơ quan chuyên trách bảo vệ dữ liệu cá nhân thuộc \textbf{Bộ Công an} trong
+thời hạn 60 ngày (Điều 21).
+
+Đối với \textbf{chuyển dữ liệu cá nhân xuyên biên giới} (Điều 20), bên chuyển dữ
+liệu phải lập hồ sơ đánh giá tác động chuyển dữ liệu và gửi cơ quan chuyên trách
+trong thời hạn 60 ngày. Vi phạm quy định về chuyển dữ liệu xuyên biên giới có thể
+bị phạt tới 5\% doanh thu của năm trước liền kề, các vi phạm khác tới 3 tỷ đồng.
+Đối với dự án này, hệ quả là trực tiếp và nặng nề: một kiến trúc lưu trữ hình ảnh
+trên dịch vụ đám mây đặt ở nước ngoài sẽ phát sinh gánh nặng tuân thủ và rủi ro chế
+tài mà một triển khai tại chỗ khép kín hoàn toàn tránh được. Chính cân nhắc này, hơn
+bất kỳ yếu tố kỹ thuật nào, quyết định mô hình ghi cục bộ trước và đặt mọi kho ngoài
+cơ sở trong lãnh thổ Việt Nam được đề xuất trong Mục~\ref{sec:architecture}.
+
+Song song, \textbf{Luật Dữ liệu số 60/2024/QH15}, có hiệu lực từ ngày 01/7/2025,
+phân loại dữ liệu thành dữ liệu cốt lõi, dữ liệu quan trọng và dữ liệu khác, và đặt
+ra thủ tục riêng đối với việc chuyển và xử lý dữ liệu cốt lõi, dữ liệu quan trọng ra
+nước ngoài \cite{datalaw2024}. Một kho ảnh tập trung quy mô vùng có thể rơi vào các
+nhóm này khi danh mục được ban hành. Nguyên tắc thiết kế rút ra là xem các yêu cầu
+hiện hành như mức sàn chứ không phải mức trần.
+
+\subsection{An ninh mạng và nội địa hoá dữ liệu}
+
+\textbf{Luật An ninh mạng} số 24/2018/QH14 \cite{cybersecuritylaw} và
+\textbf{Nghị định 53/2022/NĐ-CP} hướng dẫn thi hành \cite{decree53} đặt ra nghĩa vụ
+nội địa hoá dữ liệu đối với một số nhóm nhà cung cấp dịch vụ, yêu cầu các loại dữ
+liệu được quy định về người dùng Việt Nam phải được lưu trữ trong lãnh thổ Việt Nam.
+Từ ngày 01/7/2026, luật này được thay thế bởi \textbf{Luật An ninh mạng số
+116/2025/QH15} \cite{cybersecuritylaw2025}, mở rộng phạm vi bảo vệ tới hệ thống
+thông tin và dữ liệu, và yêu cầu chủ quản hệ thống thực hiện quản lý rủi ro, kiểm
+tra an ninh, ứng cứu sự cố và các giải pháp bảo vệ dữ liệu, đặc biệt là dữ liệu cá
+nhân. Các văn bản hướng dẫn luật cũ, trong đó có Nghị định 53/2022/NĐ-CP, cần được
+rà soát lại khi văn bản hướng dẫn luật mới được ban hành; về phía thiết kế, giả định
+an toàn là dữ liệu bệnh nhân được lưu trữ trong lãnh thổ Việt Nam. Hệ thống
+thông tin bệnh viện còn có thể thuộc phạm vi điều chỉnh của các quy định về hệ
+thống thông tin theo cấp độ, theo đó các yêu cầu bảo đảm an toàn được áp dụng
+tương ứng với mức độ quan trọng được xác định của hệ thống. Một nền tảng can
+thiệp vào quy trình chẩn đoán cấp cứu cần được mặc định xem là thuộc cấp độ
+không thấp, và phải được thiết kế phù hợp với giả định đó.
+
+\subsection{Các yêu cầu thiết kế phát sinh}
+
+Phân tích pháp lý dẫn tới các yêu cầu được chuyển trực tiếp sang
+Mục~\ref{sec:architecture}:
+
+\begin{enumerate}[label=L\arabic*.,leftmargin=1.2cm]
+    \item \textbf{Nơi lưu trú dữ liệu.} Dữ liệu hình ảnh định danh được mặc
+          định giữ trong phạm vi bệnh viện, hoặc trong lãnh thổ Việt Nam. Mọi
+          đường truyền dữ liệu ra nước ngoài đều đòi hỏi đánh giá tác động
+          chuyển dữ liệu và được xem là trường hợp ngoại lệ.
+    \item \textbf{Tối thiểu hoá dữ liệu.} Chỉ những dữ liệu thực sự cần thiết
+          cho từng mục đích mới được truyền ra khỏi kho lưu trữ gốc; các thuộc
+          tính định danh được loại bỏ ngay tại ranh giới theo Mục~\ref{sec:deid}.
+    \item \textbf{Kiểm soát truy cập.} Xác thực là bắt buộc và theo vai trò;
+          cấu hình cho phép truy cập ẩn danh tuy chấp nhận được trong bản mẫu
+          phát triển nhưng bị nghiêm cấm khi triển khai thực tế.
+    \item \textbf{Truy vết.} Mọi hành vi truy cập và tiết lộ dữ liệu bệnh nhân
+          đều được ghi vào nhật ký chỉ ghi thêm, với mức chi tiết đủ để tái lập
+          ai đã truy cập dữ liệu nào và vào thời điểm nào.
+    \item \textbf{Mã hoá.} Dữ liệu được mã hoá khi truyền, điều mà DICOM cổ
+          điển đòi hỏi phải dùng TLS hoặc đường hầm, và mã hoá khi lưu trữ.
+    \item \textbf{Thời hạn lưu trữ.} Thời hạn lưu trữ có thể cấu hình theo yêu
+          cầu áp dụng, kèm cơ chế xoá có căn cứ khi hết hạn.
+    \item \textbf{Sự đồng ý và giới hạn mục đích.} Dữ liệu thu thập phục vụ
+          khám chữa bệnh không được tái sử dụng cho mục đích nghiên cứu nếu
+          không có căn cứ pháp lý riêng, và hệ thống phân tách hai mục đích này
+          bằng cấu trúc chứ không chỉ bằng chính sách.
+\item \textbf{Khả năng phục hồi.} Hình ảnh, như một phần của hồ sơ bệnh án
+      điện tử, phải khôi phục được sau sự cố theo Thông tư 13/2025/TT-BYT;
+      yêu cầu này được hiện thực bằng các cơ chế độ bền ở
+      Mục~\ref{sec:durability}.
+\end{enumerate}
+
+\medskip

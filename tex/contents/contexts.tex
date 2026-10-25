@@ -1,0 +1,103 @@
+\section{Các bối cảnh triển khai tại bệnh viện}
+\label{sec:contexts}
+
+Tiền đề của dự án này là không có một kiến trúc duy nhất nào phù hợp với mọi
+bệnh viện. Mục này đặc trưng hoá các bối cảnh tồn tại trong hệ thống y tế Việt
+Nam theo những chiều thực sự quyết định điều gì có thể triển khai được.
+
+\subsection{Cấu trúc hệ thống bệnh viện Việt Nam}
+
+Y tế công lập tại Việt Nam được tổ chức theo tuyến, từ các bệnh viện tuyến
+trung ương trực thuộc Bộ Y tế, qua các bệnh viện tuyến tỉnh và tuyến huyện, tới
+các trạm y tế xã. Năng lực chẩn đoán hình ảnh bám theo phân tuyến này: CT là
+thường quy từ tuyến tỉnh trở lên và ngày càng phổ biến ở tuyến huyện, trong khi
+MRI tập trung ở tuyến trung ương và các cơ sở tuyến tỉnh lớn. Nhân lực bác sĩ
+chẩn đoán hình ảnh phân bố mất cân đối hơn nhiều so với trang thiết bị, và
+chính sự bất đối xứng này, có máy chụp mà thiếu người đọc, xác định cơ hội cho
+một nền tảng cho phép hình ảnh đến được với bác sĩ ở bất kỳ đâu.
+
+\subsection{Các chiều phân biệt}
+
+\begin{description}[leftmargin=3.0cm,style=nextline]
+    \item[Hạ tầng hình ảnh] Có hay không hệ thống PACS, hệ thống đó có hỗ trợ
+          DICOMweb hay không, và hình ảnh được lưu trữ tập trung hay được giữ
+          lại trên máy trạm của thiết bị chụp.
+    \item[Tài nguyên tính toán] Có sẵn phần cứng GPU hay không, có hạ tầng máy
+          chủ hay không, và có thể giả định về an ninh vật lý cũng như tính
+          liên tục của nguồn điện hay không.
+    \item[Kết nối mạng] Băng thông và độ tin cậy của đường truyền ra mạng bên
+          ngoài, yếu tố quyết định liệu một thành phần đặt từ xa có khả thi hay
+          không.
+    \item[Năng lực CNTT] Có hay không nhân sự đủ khả năng vận hành, bảo trì hệ
+          thống đã triển khai, yếu tố quyết định mức độ phức tạp vận hành có
+          thể chấp nhận.
+    \item[Nhân lực lâm sàng] Có bác sĩ chẩn đoán hình ảnh tại chỗ hay không và
+          trong khung giờ nào, yếu tố quyết định mức độ cần thiết của khả năng
+          truy cập hình ảnh từ xa.
+    \item[Khối lượng] Số ca chụp mỗi ngày, quyết định yêu cầu về thông lượng.
+\end{description}
+
+\subsection{Các mẫu bối cảnh điển hình}
+
+Ba mẫu bối cảnh điển hình được đề xuất, định nghĩa sao cho một bệnh viện cụ thể
+có thể được xếp vào một mẫu chỉ bằng quan sát.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}l X X X@{}}
+\toprule
+ & \textbf{A: Trung ương} & \textbf{B: Tuyến tỉnh} & \textbf{C: Tuyến huyện} \\
+\midrule
+PACS & Hoàn thiện, DICOMweb & Có, mức độ khác nhau & Thường không có \\
+Lưu trữ ảnh hiện tại & PACS/VNA, có sao lưu & PACS dung lượng hạn chế, sao lưu không đều & Ổ cứng máy trạm thiết bị, bị ghi đè khi đầy, không sao lưu \\
+GPU & Có sẵn & Có thể có & Không \\
+Kết nối mạng & Ổn định, tốc độ cao & Trung bình & Không liên tục \\
+Nhân sự CNTT & Phòng ban chuyên trách & 1--2 người đa năng & Không có tại chỗ \\
+Bác sĩ chẩn đoán hình ảnh & Tại chỗ, 24/7 & Giờ hành chính & Không có hoặc luân phiên \\
+Khối lượng (CT sọ não/ngày) & $>50$ & 10--50 & $<10$ \\
+Nhu cầu chính & Thông lượng, tích hợp PACS sẵn có & Lưu trữ và truy cập ngoài giờ & Lưu trữ tại chỗ, kết nối tuyến trên \\
+\bottomrule
+\end{tabularx}
+\caption{Các mẫu bối cảnh bệnh viện điển hình.}
+\label{tab:contexts}
+\end{table}
+
+\textbf{Bối cảnh A (bệnh viện tuyến trung ương).} Ràng buộc không nằm ở hạ
+tầng, mà ở việc tích hợp với một hệ thống PACS sẵn có và được sử dụng với cường
+độ cao. Hệ thống không được làm xáo trộn quy trình làm việc đã định hình, phải
+duy trì thông lượng lớn và phải tích hợp với phần mềm xem ảnh hiện hữu thay vì
+thay thế nó. Lợi ích nằm ở việc bổ sung những năng lực mà hệ thống sẵn có còn
+thiếu, chẳng hạn truy cập hình ảnh qua trình duyệt hay chia sẻ ca chụp giữa các
+khoa, mà không làm thay đổi quy trình đang vận hành.
+
+\textbf{Bối cảnh B (bệnh viện tuyến tỉnh).} Có hệ thống PACS nhưng có thể là
+sản phẩm đời cũ với mức hỗ trợ DICOMweb hạn chế. Có một phần năng lực máy chủ;
+việc trang bị GPU thì chưa chắc chắn. Bác sĩ chẩn đoán hình ảnh có mặt trong
+giờ hành chính, nên khoảng thời gian ngoài giờ hành chính là nơi hệ thống đóng
+góp nhiều nhất. Đây là trường hợp phổ biến nhất và là mục tiêu chính.
+
+\textbf{Bối cảnh C (bệnh viện tuyến huyện).} Có máy CT nhưng không có PACS,
+hình ảnh nằm trên máy trạm của thiết bị chụp. Không có phòng máy chủ, không có
+nhân sự CNTT và không có bác sĩ chẩn đoán hình ảnh tại chỗ; kết nối tới cơ sở
+tuyến trên có thể không liên tục. Ở đây hệ thống phải đảm nhiệm chính vai trò
+lưu trữ, phải tự cài đặt và tự bảo trì với can thiệp tối thiểu, và phải hoạt
+động được cả khi mất kết nối mạng. Vai trò chính của nó là bảo đảm hình ảnh
+được lưu trữ an toàn ngay tại chỗ và chuyển được tới bác sĩ ở cơ sở tuyến trên
+khi cần, khiến liên kết chẩn đoán hình ảnh từ xa trở thành thành phần thiết yếu
+chứ không phải tuỳ chọn.
+
+\subsection{Các yêu cầu phi chức năng xuyên suốt}
+
+Bất kể bối cảnh nào, những điều sau đây đều đúng. \emph{Sự cố phải an toàn}:
+nếu các thành phần xử lý phụ trợ không khả dụng, hình ảnh vẫn phải tiếp tục
+được chuyển tới PACS và phần mềm xem ảnh mà không bị cản trở, do đó các thành
+phần này không bao giờ được nằm trên đường tới hạn của việc truyền tải hình
+ảnh. \emph{Dữ liệu phải truy được nguồn gốc}, kèm theo dấu thời gian và thông
+tin về nơi phát sinh, để một ca chụp trong quá khứ luôn có thể được đối chiếu
+lại. \emph{Dữ liệu đã tiếp nhận không được mất}: khi hệ thống đã xác nhận nhận ảnh từ
+thiết bị chụp, bản duy nhất của ca chụp có thể chỉ còn nằm trong hệ thống, nên yêu
+cầu độ bền áp dụng ở mọi bối cảnh, chỉ khác nhau ở cách hiện thực
+(Mục~\ref{sec:durability}). \emph{Hệ thống phải cấu hình được khi triển khai}, từ quy tắc định tuyến
+và thời hạn lưu trữ cho tới phân quyền truy cập, bởi mỗi bệnh viện có quy trình
+làm việc riêng.

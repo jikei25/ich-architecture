@@ -1,0 +1,244 @@
+\section{DICOM và khả năng liên thông trong ảnh y khoa}
+\label{sec:dicom}
+
+Bất kỳ nền tảng nào muốn vận hành bên trong bệnh viện đều phải nói được ngôn ngữ
+của bệnh viện. Đối với chẩn đoán hình ảnh, ngôn ngữ đó là DICOM, và các đặc tính
+của nó ràng buộc kiến trúc hệ thống đủ nhiều để cần được trình bày như một nội
+dung riêng thay vì chỉ là một chi tiết cài đặt.
+
+\subsection{Chuẩn DICOM}
+
+DICOM (Digital Imaging and Communications in Medicine, ISO 12052) là chuẩn quốc
+tế quy định định dạng, lưu trữ và trao đổi ảnh y khoa \cite{dicom2024,pianykh2012dicom}. Chuẩn này bắt nguồn từ nỗ
+lực của ACR--NEMA năm 1985 nhằm chấm dứt tình trạng phụ thuộc nhà cung cấp
+(vendor lock-in) giữa các hãng sản xuất thiết bị chẩn đoán hình ảnh, và đã trở
+nên phổ quát trên thực tế kể từ phiên bản 3.0 (1993). Điểm quan trọng là DICOM
+không chỉ đơn thuần là một định dạng tệp. Nó đồng thời đặc tả:
+
+\begin{itemize}
+    \item một \textbf{mô hình thông tin} (information model), tổ chức dữ liệu
+          theo phân cấp bốn mức Bệnh nhân $\rightarrow$ Ca chụp (Study)
+          $\rightarrow$ Chuỗi ảnh (Series) $\rightarrow$ Đối tượng ảnh
+          (Instance);
+    \item một \textbf{định dạng tệp} trong đó dữ liệu điểm ảnh và siêu dữ liệu
+          không thể tách rời, được mang trong cùng một đối tượng; và
+    \item một họ \textbf{giao thức mạng} dùng để truy vấn, truy xuất và truyền
+          tải các đối tượng đó.
+\end{itemize}
+
+Tính không thể tách rời giữa điểm ảnh và siêu dữ liệu là điểm xuất phát cho mọi
+vấn đề tiếp theo. Một đối tượng DICOM là một chuỗi các \emph{phần tử dữ liệu}
+(data element), mỗi phần tử được định danh bởi một \emph{thẻ} (tag), là cặp số
+16 bit viết dưới dạng \texttt{(group,element)}. Bảng~\ref{tab:tags} liệt kê các
+phần tử mà đề tài này phụ thuộc vào.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}l l X@{}}
+\toprule
+\textbf{Thẻ} & \textbf{Tên} & \textbf{Ý nghĩa} \\
+\midrule
+\texttt{(0010,0010)} & PatientName & Định danh trực tiếp; phải được loại bỏ trước khi dữ liệu rời khỏi bệnh viện \\
+\texttt{(0010,0020)} & PatientID & Mã hồ sơ bệnh án của bệnh viện; định danh trực tiếp \\
+\texttt{(0010,0030)} & PatientBirthDate & Bán định danh; có nguy cơ tái định danh khi kết hợp \\
+\texttt{(0020,000D)} & StudyInstanceUID & Định danh duy nhất toàn cục của ca chụp; khóa chính của một ca chụp \\
+\texttt{(0020,000E)} & SeriesInstanceUID & Định danh một chuỗi ảnh trong một ca chụp \\
+\texttt{(0008,0018)} & SOPInstanceUID & Định danh một đối tượng ảnh đơn lẻ \\
+\texttt{(0008,0050)} & AccessionNumber & Mã chỉ định do HIS/RIS cấp; khoá liên kết ca chụp với chỉ định và kết quả đọc (Mục~\ref{sec:his}) \\
+\texttt{(0008,0060)} & Modality & \texttt{CT}, \texttt{MR}, \ldots; dùng để định tuyến \\
+\texttt{(0028,1052)} & RescaleIntercept & Chuyển giá trị lưu trữ sang đơn vị Hounsfield \\
+\texttt{(0028,1053)} & RescaleSlope & Chuyển giá trị lưu trữ sang đơn vị Hounsfield \\
+\texttt{(0028,1050)} & WindowCenter & Cửa sổ hiển thị mặc định \\
+\texttt{(0028,1051)} & WindowWidth & Cửa sổ hiển thị mặc định \\
+\bottomrule
+\end{tabularx}
+\caption{Các phần tử dữ liệu DICOM mà nền tảng phụ thuộc vào.}
+\label{tab:tags}
+\end{table}
+
+Giá trị điểm ảnh được lưu trữ bản thân chúng không phải là đơn vị Hounsfield;
+phép chuyển đổi là
+
+\begin{equation}
+    \mathrm{HU} = \mathtt{RescaleSlope} \times p + \mathtt{RescaleIntercept},
+    \label{eq:hu}
+\end{equation}
+
+trong đó $p$ là giá trị được lưu trữ. Áp dụng Công thức~\ref{eq:hu} trước mọi
+thao tác cửa sổ là điều kiện để hình ảnh hiển thị nhất quán giữa các máy chụp
+khác nhau và để các phép đo đậm độ có ý nghĩa so sánh được, bởi các nhà sản
+xuất khác nhau dùng cách mã hóa giá trị lưu trữ khác nhau cho cùng một mức suy
+giảm vật lý. Bỏ qua bước này thì cùng một mô, khi chụp trên hai thiết bị khác
+hãng, sẽ hiển thị khác nhau trên trình xem.
+
+\subsection{Các dịch vụ mạng}
+
+Các thao tác mạng của DICOM được xây dựng trên các \emph{lớp dịch vụ} (service
+class), trong đó một bên đóng vai trò Service Class User (SCU, bên yêu cầu) và
+bên kia đóng vai trò Service Class Provider (SCP, bên đáp ứng). Các thao tác
+liên quan ở đây gồm:
+
+\begin{description}[leftmargin=2.2cm,style=nextline]
+    \item[C-STORE] truyền một đối tượng ảnh từ nút này sang nút khác. Đây là cách
+          máy chụp CT gửi một ca chụp đã hoàn tất tới PACS, và là điểm tự nhiên
+          để nền tảng chặn bắt các ca chụp mới.
+    \item[C-FIND] truy vấn các ca chụp thỏa mãn tiêu chí cho trước.
+    \item[C-MOVE] yêu cầu một nút gửi các đối tượng ảnh phù hợp tới một bên thứ ba.
+    \item[C-ECHO] kiểm tra kết nối, tương đương lệnh ping trong DICOM.
+\end{description}
+
+Các thao tác này chạy trên một liên kết TCP tại cổng thường được đánh số 104 hoặc
+11112, và định danh các bên tham gia bằng \emph{Application Entity Title} (AE
+Title), một tên ký hiệu ngắn. Việc thiết lập liên kết đòi hỏi mỗi bên phải nhận
+biết AE Title của bên kia, qua đó cung cấp một cơ chế kiểm soát truy cập sơ khai:
+một nút sẽ từ chối liên kết với một đối tác lạ. Đây là cấu hình chứ không phải
+xác thực theo nghĩa mật mã học, và giao thức DICOM cổ điển mặc định truyền dữ
+liệu ở dạng rõ. Do đó, mọi triển khai đi qua mạng không tin cậy đều phải bọc
+DICOM trong TLS hoặc VPN, một yêu cầu sẽ xuất hiện trở lại ở
+Mục~\ref{sec:architecture}.
+
+\subsection{DICOMweb}
+
+DICOMweb là cách diễn đạt lại các dịch vụ trên theo kiểu RESTful trên nền HTTP,
+gồm WADO-RS (truy xuất), STOW-RS (lưu trữ) và QIDO-RS (truy vấn) \cite{dicomweb}. Nó quan trọng
+với đề tài này vì một lý do thực tiễn: các trình xem chạy trên trình duyệt không
+thể mở liên kết mạng DICOM thuần, nên một giao diện lâm sàng dạng web đòi hỏi
+DICOMweb ở phía máy chủ. DICOMweb cũng kết hợp tự nhiên với hạ tầng HTTP thông
+thường, bao gồm TLS, xác thực bằng bearer-token và reverse proxy, điều mà giao
+thức cổ điển không làm được.
+
+Bản mẫu của nền tảng phản ánh trực tiếp điều này. Orthanc, một PACS nhẹ mã nguồn
+mở \cite{jodogne2018orthanc}, được cấu hình để đồng thời mở cổng DICOM cổ điển (4242) nhằm tiếp nhận ca
+chụp từ các thiết bị và một giao diện DICOMweb (8042) cho trình xem, với reverse
+proxy của trình xem chuyển tiếp \texttt{/dicom-web} và \texttt{/wado} tới đó.
+Cách bố trí song giao thức này là điều cho phép một giao diện web hiện đại cùng
+tồn tại với thiết bị chẩn đoán hình ảnh chỉ nói được giao thức năm 1993.
+
+\subsection{Cú pháp truyền và nén ảnh}
+\label{sec:transfersyntax}
+
+Mỗi đối tượng DICOM được mã hoá theo một \emph{cú pháp truyền} (Transfer Syntax),
+định danh bằng một UID, quy định thứ tự byte, cách biểu diễn kiểu dữ liệu và,
+quan trọng nhất, cách nén dữ liệu điểm ảnh \cite{dicomps35}. Hai bên của một liên
+kết DICOM thương lượng cú pháp truyền khi thiết lập liên kết; một nút không hỗ trợ
+cú pháp của đối tác sẽ yêu cầu chuyển mã hoặc từ chối đối tượng. Bảng~\ref{tab:ts}
+liệt kê các cú pháp liên quan tới đề tài.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}l l X@{}}
+\toprule
+\textbf{Cú pháp truyền} & \textbf{UID} & \textbf{Tính chất} \\
+\midrule
+Implicit VR Little Endian & \texttt{1.2.840.10008.1.2} & Mặc định bắt buộc phải hỗ trợ; không nén \\
+Explicit VR Little Endian & \texttt{1.2.840.10008.1.2.1} & Không nén; phổ biến nhất \\
+JPEG Lossless (SV1) & \texttt{1.2.840.10008.1.2.4.70} & Không mất mát; được thiết bị đời cũ hỗ trợ rộng rãi \\
+JPEG-LS Lossless & \texttt{1.2.840.10008.1.2.4.80} & Không mất mát; nhanh, tỉ lệ nén tốt \\
+JPEG 2000 (Lossless Only) & \texttt{1.2.840.10008.1.2.4.90} & Không mất mát; mở rộng được theo độ phân giải nhưng tốn tính toán khi giải mã \\
+HTJ2K (Lossless Only) & \texttt{1.2.840.10008.1.2.4.201} & Bổ sung năm 2023 (Supplement 235); thông lượng mã hoá và giải mã cao \\
+HTJ2K (Lossless RPCL) & \texttt{1.2.840.10008.1.2.4.202} & Như trên, sắp thứ tự luồng bit tối ưu cho hiển thị lũy tiến theo độ phân giải \\
+HTJ2K & \texttt{1.2.840.10008.1.2.4.203} & Cho phép cả nén có mất mát lẫn không mất mát \\
+\bottomrule
+\end{tabularx}
+\caption{Các cú pháp truyền DICOM liên quan tới nền tảng.}
+\label{tab:ts}
+\end{table}
+
+Từ Mục~\ref{sec:windowing}, yêu cầu đối với nền tảng là rõ ràng: bản lưu trữ phục
+vụ chẩn đoán chỉ được dùng cú pháp không mất mát. Nén có mất mát làm thay đổi giá
+trị điểm ảnh, và vì phép cửa sổ khuếch đại các chênh lệch nhỏ về HU thành chênh
+lệch lớn về cường độ hiển thị (Hình~\ref{fig:windowing}), sai số nén vốn khó thấy
+trên ảnh thông thường có thể trở nên đáng kể khi đọc trong cửa sổ hẹp. Nén có mất
+mát vì vậy chỉ được dùng cho ảnh thu nhỏ và ảnh xem trước. Với ảnh CT, nén không
+mất mát thường chỉ giảm dung lượng vài lần, nhưng như vậy đã đủ thay đổi đáng kể
+thời gian truyền qua đường truyền chậm (Hình~\ref{fig:transfer}) và dung lượng
+lưu trữ dài hạn (Hình~\ref{fig:storage}).
+
+Trong nhóm không mất mát, HTJ2K \cite{dicomsup235} đáng được chú ý vì hai lý do.
+Thứ nhất, nó giữ các tính năng của JPEG 2000, như khả năng mở rộng theo độ phân
+giải, nhưng thay bộ mã hoá khối bằng một thuật toán có thông lượng cao hơn đáng
+kể, loại bỏ nhược điểm chính khiến JPEG 2000 ít được dùng trong hiển thị thời gian
+thực. Thứ hai, với biến thể RPCL, trình xem có thể hiển thị một phiên bản độ phân
+giải thấp của lát cắt ngay khi nhận được phần đầu của luồng bit và làm nét dần khi
+phần còn lại đến. Cornerstone3D, lớp hiển thị của OHIF từ phiên bản 3, hỗ trợ kiểu
+tải lũy tiến này, và dịch vụ AWS HealthImaging cũng lưu dữ liệu điểm ảnh dưới dạng
+HTJ2K \cite{awshealthimaging}. Với đường truyền chậm ở bối cảnh C, đây là cơ chế
+cho phép bác sĩ tuyến trên bắt đầu đọc trước khi toàn bộ ca chụp được truyền xong;
+mức lợi ích thực tế cần được đo trong Giai đoạn~2.
+
+\subsection{Tích hợp với hệ thống thông tin bệnh viện}
+\label{sec:his}
+
+Ảnh chụp chỉ có ý nghĩa lâm sàng khi gắn với đúng bệnh nhân, đúng chỉ định và đúng
+kết quả đọc. Những thông tin này nằm trong hệ thống thông tin bệnh viện (HIS), hệ
+thống thông tin chẩn đoán hình ảnh (RIS) và hồ sơ bệnh án điện tử (EMR), không nằm
+trong PACS. Một nền tảng quản lý ảnh vì vậy phải trao đổi với các hệ thống đó qua
+các cơ chế chuẩn sau.
+
+\begin{description}[leftmargin=2.6cm,style=nextline]
+\item[Modality Worklist] Thiết bị chụp truy vấn danh sách ca đã được chỉ định
+      (C-FIND trên worklist) để lấy thông tin bệnh nhân, mã chỉ định
+      (\texttt{AccessionNumber}) và thủ thuật cần chụp, thay vì kỹ thuật viên
+      nhập tay. Đây là biện pháp hiệu quả nhất để tránh sai lệch định danh ngay
+      từ nguồn. Modality Performed Procedure Step (MPPS) báo ngược trạng thái
+      đã chụp.
+\item[HL7 v2] Chuẩn nhắn tin vẫn phổ biến nhất giữa HIS và RIS: bản tin ADT cho
+      thông tin hành chính của bệnh nhân, ORM/OMI cho chỉ định, ORU cho kết
+      quả.
+\item[HL7 FHIR] Chuẩn REST hiện đại. Các tài nguyên liên quan gồm
+      \texttt{Patient}, \texttt{ServiceRequest}, \texttt{ImagingStudy} (tham
+      chiếu tới ca chụp qua StudyInstanceUID và điểm truy cập DICOMweb) và
+      \texttt{DiagnosticReport} \cite{hl7fhir}. FHIR phù hợp cho các hệ thống
+      mới và cho trao đổi liên viện.
+\item[Hồ sơ IHE] IHE không định nghĩa chuẩn mới mà quy định cách phối hợp các
+      chuẩn trên trong từng kịch bản. Liên quan trực tiếp là Scheduled
+      Workflow (SWF.b) cho luồng chỉ định--chụp--đọc, Patient Information
+      Reconciliation (PIR) cho việc sửa định danh sau khi đã chụp, XDS-I.b cho
+      chia sẻ ảnh giữa các cơ sở \cite{iherad}, và Audit Trail and Node
+      Authentication (ATNA) cho xác thực nút mạng bằng TLS và định dạng bản ghi
+      nhật ký truy vết \cite{iheiti}.
+\end{description}
+
+Mức độ tích hợp khả thi phụ thuộc bối cảnh. Ở bối cảnh A, HIS/RIS thường đã hỗ
+trợ HL7 và worklist, và nền tảng chỉ cần nhận bản tin. Ở bối cảnh C, thường không
+có RIS, worklist không khả dụng và định danh được nhập tay trên máy chụp; nền tảng
+phải chấp nhận thực tế này và cung cấp chức năng đối chiếu, sửa định danh có ghi
+nhật ký theo tinh thần PIR. Ngoài ra, Thông tư 13/2025/TT-BYT yêu cầu hồ sơ bệnh
+án điện tử kết nối với cơ sở dữ liệu quốc gia về dân cư (Mục~\ref{sec:legal}); khi
+đó số định danh cá nhân trở thành khoá liên kết bệnh nhân giữa các cơ sở, đồng thời
+là một định danh trực tiếp phải bị loại bỏ khi khử định danh.
+
+\subsection{Khử định danh}
+\label{sec:deid}
+
+Vì các định danh được nhúng ngay trong bản thân đối tượng ảnh, việc chia sẻ một
+đối tượng DICOM đồng nghĩa với chia sẻ danh tính bệnh nhân, trừ khi có hành động
+chủ động ngăn chặn. DICOM PS3.15 Phụ lục E \cite{dicomps315} định nghĩa các Hồ sơ bảo mật
+(Confidentiality Profile) quy định thuộc tính nào phải bị loại bỏ, thay thế hoặc
+giữ lại tùy theo mục đích sử dụng.
+
+Ba khó khăn thường tái diễn trong thực tế và phải được xử lý tường minh:
+
+\begin{enumerate}
+    \item \textbf{Chú thích in chìm vào ảnh.} Một số thiết bị vẽ thông tin bệnh
+          nhân trực tiếp vào mảng điểm ảnh. Thuộc tính
+          \texttt{(0028,0301) BurnedInAnnotation} báo hiệu điều này nhưng không
+          được điền nhất quán, nên có thể cần kiểm tra ở mức điểm ảnh.
+    \item \textbf{Thẻ riêng của nhà sản xuất.} Các hãng lưu dữ liệu độc quyền
+          trong những nhóm thẻ riêng với ngữ nghĩa không được công bố. Chính sách
+          an toàn là loại bỏ toàn bộ thẻ riêng, chấp nhận mất các tham số thu
+          nhận ảnh mà chúng mang theo.
+    \item \textbf{Tính nhất quán của UID.} Thay thế UID một cách ngẫu nhiên sẽ
+          phá vỡ quan hệ ca chụp--chuỗi ảnh--đối tượng ảnh. Khử định danh phải áp
+          dụng một phép ánh xạ đơn ánh nhất quán để giữ nguyên cấu trúc phân cấp
+          trong khi các định danh gốc không thể khôi phục được.
+\end{enumerate}
+
+Hơn nữa, khử định danh cần được hiểu là giảm thiểu rủi ro chứ không phải loại bỏ
+rủi ro. Ảnh CT sọ não chứa cấu trúc khuôn mặt của bệnh nhân, và việc dựng bề mặt
+từ một khối ảnh đã khử định danh có thể tạo ra một khuôn mặt nhận diện được; khả
+năng này đã được ghi nhận trong y văn \cite{schwarz2019identification} và có nghĩa là dữ liệu hình ảnh phải được
+đối xử như dữ liệu cá nhân ngay cả sau khi đã loại bỏ các thẻ. Giá trị pháp lý
+của kết luận này theo pháp luật Việt Nam được bàn luận ở Mục~\ref{sec:legal}.

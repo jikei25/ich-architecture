@@ -1,0 +1,70 @@
+\section{Kết luận và kế hoạch Giai đoạn 2}
+
+\subsection{Tổng kết}
+
+Giai đoạn~1 đã thiết lập nền móng cho một nền tảng phần mềm quản lý và khai thác
+dữ liệu ảnh y khoa phục vụ chẩn đoán xuất huyết não trong các bối cảnh bệnh viện
+khác nhau. Kiến thức lâm sàng nền tảng đã được khảo sát, qua đó làm rõ các yêu
+cầu mà quy trình đọc ảnh đặt ra cho hệ thống lưu trữ, đặc biệt là việc phải bảo
+toàn dữ liệu điểm ảnh gốc để bác sĩ có thể tuỳ ý chuyển đổi cửa sổ hiển thị khi
+đọc.
+
+Chuẩn DICOM đã được trình bày như một ràng buộc kiến trúc chứ không phải một chi
+tiết cài đặt: nó quy định cách dữ liệu được tiếp nhận, những thuộc tính phải
+được bảo toàn để hiển thị chính xác, và những thuộc tính phải được loại bỏ trước
+khi chia sẻ. Các giải pháp phần mềm hiện có đã được khảo sát và phân tích, cho
+thấy một khoảng trống rõ ràng giữa các hệ thống thương mại hoàn chỉnh nhưng đắt
+đỏ và khép kín, với các thành phần mã nguồn mở tuy miễn phí nhưng đòi hỏi công
+sức tích hợp đáng kể.
+
+Khung pháp lý Việt Nam, chủ yếu là Luật Bảo vệ dữ liệu cá nhân năm 2025 (kế thừa
+và thay thế Nghị định 13/2023/NĐ-CP), Luật Khám bệnh, chữa bệnh và Thông tư
+13/2025/TT-BYT về hồ sơ bệnh án điện tử, xác lập dữ liệu sức khoẻ là dữ liệu cá nhân nhạy cảm và điều
+chỉnh việc chuyển dữ liệu ra nước ngoài chặt chẽ tới mức mô hình lưu trữ cục bộ
+trước, đồng bộ đám mây sau trở thành lựa chọn mặc định hợp lý chứ không đơn
+thuần là một ưu tiên thận trọng.
+
+Một mô hình chung đã được xây dựng trước khi đi vào từng bệnh viện: luồng xử lý
+chín bước của một ca chụp, nguyên tắc ghi cục bộ trước, các cơ chế độ bền D1--D7
+bảo đảm ca chụp đã xác nhận không bị mất, và bốn tầng lưu trữ từ kho nóng tại chỗ
+tới kho lạnh ngoài cơ sở. Ba mẫu bối cảnh bệnh viện đã được đặc tả, và ba kiến trúc
+tương ứng được đề xuất như các cấu hình của mô hình chung đó, khác nhau ở nơi giữ
+bản gốc, cách hiện thực các tầng lưu trữ và hành vi khi có sự cố; mô hình liên viện
+trục--nan mở rộng kiến trúc C cho một mạng lưới cơ sở tuyến huyện. Kiến trúc B đã
+được kiểm chứng bằng bản mẫu cho phần tiếp nhận, hiển thị và kích hoạt theo sự kiện.
+
+\subsection{Giai đoạn 2}
+
+\begin{enumerate}
+    \item \textbf{Hoàn thiện nền tảng.} Hiện thực bộ điều phối kèm khử định
+          danh, cơ chế thử lại và kiểm soát tải; hoàn thiện hàng đợi đồng bộ bền
+vững mô tả tại Mục~\ref{sec:flow}.
+\item \textbf{Lưu trữ bền và phân tầng.} Hiện thực các tầng T1--T3 trên kho
+      tương thích S3, chính sách vòng đời và nạp trước ca cũ, cùng các cơ chế
+      D3--D7 (kiểm tra toàn vẹn định kỳ, sao lưu 3-2-1 mã hoá, khoá ghi một lần,
+      diễn tập khôi phục) theo Mục~\ref{sec:durability} và Mục~\ref{sec:tiering}.
+\item \textbf{Tích hợp HIS/RIS.} Nhận chỉ định qua HL7 v2 hoặc FHIR, cung cấp
+      Modality Worklist khi có thể, và chức năng đối chiếu định danh theo tinh
+      thần IHE PIR (Mục~\ref{sec:his}).
+    \item \textbf{An toàn thông tin.} Bổ sung xác thực và phân quyền theo vai
+          trò, mã hoá kênh truyền và dữ liệu lưu trữ, nhật ký truy vết chỉ ghi
+          thêm, theo đúng các yêu cầu tại Mục~\ref{sec:legal}.
+    \item \textbf{Hoàn thiện giao diện đọc ảnh.} Tuỳ biến trình xem cho phù hợp
+          với quy trình đọc ảnh sọ não, bao gồm các cửa sổ hiển thị đặt sẵn mô
+          tả tại Mục~\ref{sec:windowing}.
+    \item \textbf{Đánh giá.} Đo thời gian truyền thực tế và lợi ích của nén không mất
+      mát, tải lũy tiến HTJ2K trên đường truyền chậm để thay các ước lượng ở
+      Hình~\ref{fig:transfer}; đo RPO và RTO thực tế qua diễn tập sự cố; đo độ trễ đầu-cuối từ lúc thiết bị gửi ảnh tới lúc
+          bác sĩ xem được, đo thông lượng, và đặc tả hành vi hệ thống dưới các
+          kịch bản lỗi mà nguyên tắc~P1 hướng tới kiểm soát, đặc biệt là kịch
+          bản mất kết nối kéo dài.
+    \item \textbf{Triển khai thử nghiệm.} Với điều kiện có thoả thuận hợp tác
+          phù hợp, triển khai thử tại một cơ sở y tế nhằm kiểm chứng giả định về
+          hạ tầng và quy trình đã nêu ở Mục~\ref{sec:contexts}.
+\end{enumerate}
+
+Rủi ro chính đối với Giai đoạn~2 là khả năng tiếp cận một cơ sở y tế thực tế để
+triển khai thử nghiệm, yếu tố mà việc kiểm chứng các giả định kiến trúc phụ
+thuộc vào. Vì vậy, việc kết nối với các cơ sở y tế cần được bắt đầu sớm, và kế
+hoạch đánh giá cần được xây dựng sao cho có thể chuyển về phương án kiểm thử
+trên dữ liệu mô phỏng nếu không thu xếp được triển khai thực tế.

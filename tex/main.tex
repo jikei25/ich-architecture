@@ -1,0 +1,281 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage{a4wide,amssymb,epsfig,latexsym,multicol,array,hhline,fancyhdr}
+\usepackage{enumitem}
+\usepackage{vntex}
+\usepackage{booktabs}
+\usepackage{amsmath}
+% \usepackage{algorithm}   % (Vinh 24/09/2026) xung đột với algorithm2e: \algorithm already defined
+% \usepackage{algorithmic}
+\usepackage{lastpage}
+\usepackage[lined,boxed,commentsnumbered]{algorithm2e}
+% \usepackage{enumerate}  % (Vinh 24/09/2026) xung đột với enumitem
+\usepackage{color}
+\usepackage{graphicx}			
+\usepackage{ragged2e}
+\usepackage{array}
+\usepackage{tabularx, caption}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X} % (Vinh 24/09/2026) cột X căn trái cho các bảng nhiều chữ
+\usepackage{multirow}
+\usepackage[framemethod=tikz]{mdframed}
+\usepackage{multicol}
+\usepackage{rotating}
+\usepackage{graphics}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{epsfig}
+\usepackage{tikz}
+\usepackage{listings}
+\geometry{top=2cm, bottom=3cm, left=2cm, right=2cm}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+%% 25.10.02
+\setlist[itemize]{leftmargin=*}
+% \usepackage{enumerate}  % (Vinh 24/09/2026) xung đột với enumitem
+\usepackage{float}
+\usepackage{longtable}
+% \usepackage{paralist}  % (Vinh 24/09/2026) ghi đè itemize/enumerate của enumitem, gây lỗi Undefined control sequence ở mọi \end{itemize}
+
+\lstset{frame=tb,
+	language=Matlab,
+	aboveskip=3mm,
+	belowskip=3mm,
+	showstringspaces=false,
+	columns=fixed,
+	basicstyle={\ttfamily},
+	numbers=none,
+	numberstyle=\tiny\color{gray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{dkgreen},
+	stringstyle=\color{mauve},
+	breaklines=true,
+	breakatwhitespace=true,
+	tabsize=3,
+	numbers=left,
+	stepnumber=1,
+	numbersep=1pt,    
+	firstnumber=1,
+	numberfirstline=true
+}
+\definecolor{codeblue}{rgb}{0.0,0.0,0.0}     % Keywords
+\definecolor{codegreen}{rgb}{0,0.6,0}        % Comments
+\definecolor{codepurple}{rgb}{0.58,0,0.82}   % Strings
+\definecolor{codeorange}{rgb}{0.8,0.33,0}    % Types
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}     % Line numbers
+\definecolor{codepreprocessor}{rgb}{0.5,0,0} % Preprocessor commands
+\definecolor{codebackground}{rgb}{0.95,0.95,0.92} % Background color
+\lstdefinestyle{cppstyle}{
+    language=C,
+    basicstyle=\ttfamily,
+    backgroundcolor=\color{codebackground},
+    keywordstyle=\color{codeblue}\bfseries,
+    commentstyle=\color{codegreen}\itshape,
+    stringstyle=\color{codepurple},
+    numberstyle=\tiny\color{codegray},
+    identifierstyle=\color{black},
+    numbers=left,
+    numbersep=5pt,
+    frame=single,
+    rulecolor=\color{black},
+    showstringspaces=false,
+    xleftmargin=0pt, % No left margin
+    xrightmargin=0pt
+}
+
+\lstdefinelanguage{SQL}{
+    morekeywords={
+        SELECT, FROM, WHERE, AND, OR, INSERT, INTO, VALUES,
+        UPDATE, DELETE, JOIN, INNER, LEFT, RIGHT, ON, CREATE,
+        TABLE, PRIMARY, KEY, FOREIGN,
+        EXEC, ALTER, ADD, CONSTRAINT, UNIQUE, CHECK, IN, IS, NULL, NOT, LIKE, BETWEEN, REFERENCES, ORDER, BY, AS
+    },
+    sensitive=false,
+    morecomment=[l]{--},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]',
+}
+
+\lstset{
+    language=SQL,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    frame=single,
+    columns=fullflexible,
+    showstringspaces=false,
+    numbers=none
+}
+
+\usetikzlibrary{arrows,snakes,backgrounds,positioning,shapes.geometric,fit,calc} % (Vinh 24/09/2026) thêm positioning/shapes.geometric cho các hình TikZ
+\usepackage{hyperref}
+\usepackage{indentfirst}
+\hypersetup{urlcolor=blue,linkcolor=black,citecolor=black,colorlinks=true} 
+\AtBeginDocument{\renewcommand*\contentsname{Mục lục}}
+\AtBeginDocument{\renewcommand{\listfigurename}{Danh sách hình vẽ}}
+\AtBeginDocument{\renewcommand{\listtablename}{Danh sách bảng}}
+\AtBeginDocument{\renewcommand{\figurename}{Hình}}
+\AtBeginDocument{\renewcommand{\tablename}{Bảng}}
+\setlength{\headheight}{30pt}
+\pagestyle{fancy}
+\fancyhead{}
+\fancyhead[L]{
+ \begin{tabular}{ll}
+    \begin{picture}(10,15)(0,0)
+    \put(0,-6){\includegraphics[width=8mm, height=8mm]{hcmut.png}}
+    %\put(0,-8){\epsfig{width=10mm,figure=hcmut.eps}}
+   \end{picture}&
+	%\includegraphics[width=8mm, height=8mm]{hcmut.png} & %
+	\begin{tabular}{l}
+		\small \textbf{Trường Đại học Bách khoa - ĐHQG-HCM}\\
+	\end{tabular} 	
+ \end{tabular}
+}
+\fancyhead[R]{
+	\begin{tabular}{l}
+		\tiny \bf \\
+		\tiny \bf 
+	\end{tabular}  }
+\fancyfoot{} % clear all footer fields
+\fancyfoot[L]{\scriptsize \textbf{Đồ án chuyên ngành}}
+\fancyfoot[R]{\scriptsize Trang {\thepage}/\pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\footrulewidth}{0.3pt}
+\renewcommand{\contentsname}{Mục lục}
+
+%%%
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{2}
+\makeatletter
+\newcounter {subsubsubsection}[subsubsection]
+\renewcommand\thesubsubsubsection{\thesubsubsection .\@alph\c@subsubsubsection}
+\newcommand\subsubsubsection{\@startsection{subsubsubsection}{4}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\normalfont\normalsize\bfseries}}
+\newcommand*\l@subsubsubsection{\@dottedtocline{3}{10.0em}{4.1em}}
+\newcommand*{\subsubsubsectionmark}[1]{}
+\makeatother
+\usepackage[vietnamese]{babel}
+
+
+%%%%%%%%%%%%
+% ref
+\usepackage[numbers,sort&compress]{natbib}
+\bibliographystyle{ieeetr}
+
+%%%%%%%%%%%%
+\begin{document}
+\renewcommand{\refname}{Tài liệu tham khảo}
+
+\begin{titlepage}
+\begin{tikzpicture}[remember picture,overlay,inner sep=0,outer sep=0]
+     \draw[blue!70!black,line width=4pt] ([xshift=-1.5cm,yshift=-2cm]current page.north east) coordinate (A)--([xshift=1.5cm,yshift=-2cm]current page.north west) coordinate(B)--([xshift=1.5cm,yshift=2cm]current page.south west) coordinate (C)--([xshift=-1.5cm,yshift=2cm]current page.south east) coordinate(D)--cycle;
+
+     \draw ([yshift=0.5cm,xshift=-0.5cm]A)-- ([yshift=0.5cm,xshift=0.5cm]B)--
+     ([yshift=-0.5cm,xshift=0.5cm]B) --([yshift=-0.5cm,xshift=-0.5cm]B)--([yshift=0.5cm,xshift=-0.5cm]C)--([yshift=0.5cm,xshift=0.5cm]C)--([yshift=-0.5cm,xshift=0.5cm]C)-- ([yshift=-0.5cm,xshift=-0.5cm]D)--([yshift=0.5cm,xshift=-0.5cm]D)--([yshift=0.5cm,xshift=0.5cm]D)--([yshift=-0.5cm,xshift=0.5cm]A)--([yshift=-0.5cm,xshift=-0.5cm]A)--([yshift=0.5cm,xshift=-0.5cm]A);
+
+
+     \draw ([yshift=-0.3cm,xshift=0.3cm]A)-- ([yshift=-0.3cm,xshift=-0.3cm]B)--
+     ([yshift=0.3cm,xshift=-0.3cm]B) --([yshift=0.3cm,xshift=0.3cm]B)--([yshift=-0.3cm,xshift=0.3cm]C)--([yshift=-0.3cm,xshift=-0.3cm]C)--([yshift=0.3cm,xshift=-0.3cm]C)-- ([yshift=0.3cm,xshift=0.3cm]D)--([yshift=-0.3cm,xshift=0.3cm]D)--([yshift=-0.3cm,xshift=-0.3cm]D)--([yshift=0.3cm,xshift=-0.3cm]A)--([yshift=0.3cm,xshift=0.3cm]A)--([yshift=-0.3cm,xshift=0.3cm]A);
+
+   \end{tikzpicture}
+   \vspace{0.25cm}
+\begin{center}
+\textbf{ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}\\
+\vspace{0.05cm}
+\textbf{TRƯỜNG ĐẠI HỌC BÁCH KHOA}\\
+\vspace{0.05cm}
+\textbf{KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH} \\
+\end{center}
+\vspace{0.55cm}
+\begin{figure}[h!]
+\begin{center}
+\includegraphics[scale=0.5]{hcmut.png}
+\end{center}
+\end{figure}
+\vspace{0.55cm}
+\begin{center}
+\begin{center}
+\begin{tabular}{c}
+\multicolumn{1}{c}{\textbf{{\Large Đồ án Chuyên ngành}}}\\
+~~\\
+\hline
+\\ 
+\multicolumn{1}{l}{\textbf{{\Large Báo cáo}}}\\
+\\
+\textbf{\textit{{\Large ``Phát triển nền tảng phần mềm hỗ trợ}}}\\
+\textbf{\textit{{\Large chẩn đoán xuất huyết não}}}\\
+\textbf{\textit{{\Large từ dữ liệu ảnh y khoa''}}}\\
+\\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hspace{3cm}
+\begin{tabular}{r l}
+     \textbf{Giảng viên hướng dẫn:} & TS. Diệp Thanh Đăng \\ 
+                        & TS. Chung Thanh Minh \\
+                        & \\
+     \textbf{Sinh viên thực hiện:} 
+                        & Lê Phan Khải Vinh (\textit{2313914}) \\
+                        & Nguyễn Khắc Khánh Huy (\textit{2311186})\\
+                        & Phạm Nguyễn Gia Khang (\textit{2311464})\\
+
+\end{tabular}
+\end{center}
+ \vspace{2.25cm}
+\begin{center}
+\textbf{TP. HỒ CHÍ MINH, THÁNG 12 NĂM 2026}
+\end{center}
+\end{titlepage}
+\pagebreak
+\tableofcontents
+\pagebreak
+
+% Glossaries
+% {}
+% \printunsrtglossary[type={symbols}, title={Danh mục ký hiệu}]
+% \printunsrtglossary[type={abbreviations}, title={Danh mục từ viết tắt}]
+\pagebreak
+\listoffigures
+\listoftables
+\pagebreak
+\addcontentsline{toc}{section}{\listfigurename}
+\addcontentsline{toc}{section}{\listtablename}
+
+\newpage
+\input{contents/introduction}
+
+\newpage
+\input{contents/clinical}
+
+\newpage
+\input{contents/dicom}
+
+\newpage
+\input{contents/solutions}
+
+\newpage
+\input{contents/legal}
+
+\newpage
+\input{contents/contexts}
+
+\newpage
+\input{contents/architecture}
+
+\newpage
+\input{contents/conclusion}
+
+\newpage
+\addcontentsline{toc}{section}{Tài liệu tham khảo}
+\nocite{*}
+\bibliography{refs}
+
+\end{document}
+
+
+

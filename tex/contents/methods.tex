@@ -1,0 +1,138 @@
+\section{Khảo sát các phương pháp chẩn đoán dựa trên ảnh}
+\label{sec:methods}
+
+\subsection{Các cách phát biểu bài toán}
+
+Các công trình đã công bố về phân tích tự động xuất huyết não (ICH) giải quyết
+nhiều bài toán khác nhau, vốn thường bị đánh đồng nhưng lại khác biệt về chi phí
+gán nhãn và giá trị lâm sàng:
+
+\begin{description}[leftmargin=2.6cm,style=nextline]
+    \item[Phân loại lát cắt] gán nhãn cho từng lát cắt ngang trục. Chi phí gán
+          nhãn thấp, và các tập dữ liệu công khai lớn đều được gán nhãn theo cách
+          này, nhưng đầu ra cần được tổng hợp lại mới có ý nghĩa lâm sàng.
+    \item[Phân loại ca chụp] gán một nhãn duy nhất cho mỗi lần thăm khám. Cách
+          này khớp trực tiếp với tình huống phân loại ưu tiên, nhưng phải giải
+          quyết bài toán tổng hợp: một ca chụp là dương tính nếu \emph{bất kỳ}
+          lát cắt nào dương tính, nên phép lấy trung bình ngây thơ sẽ làm loãng
+          các tổn thương nhỏ.
+    \item[Phân vùng] khoanh vùng khối xuất huyết ở mức voxel, cho phép đo thể
+          tích. Thể tích khối máu tụ là đầu vào trực tiếp cho các quyết định điều
+          trị, nên đây là đầu ra có giá trị lâm sàng cao nhất, song việc gán nhãn
+          ở mức voxel lại tốn kém và khan hiếm.
+    \item[Phát hiện / định vị] cho ra các vùng bao, nằm ở mức trung gian cả về
+          chi phí lẫn giá trị sử dụng.
+\end{description}
+
+\subsection{Các phương pháp cổ điển}
+
+Các hướng tiếp cận trước thời kỳ học sâu khai thác đặc điểm rằng vùng xuất huyết
+nằm trong một khoảng HU đặc trưng, kết hợp phép lấy ngưỡng với các phép toán hình
+thái và phương pháp tăng trưởng vùng, đôi khi kèm theo một bộ phân loại truyền
+thống trên các đặc trưng kết cấu được thiết kế thủ công. Các phương pháp này có
+chi phí tính toán không đáng kể và hoàn toàn có thể diễn giải, đồng thời vẫn giữ
+vai trò như một phép kiểm tra tính hợp lý và một phương án dự phòng. Điểm yếu của
+chúng là sự thiếu bền vững: ngưỡng cố định thất bại trước hiệu ứng thể tích từng
+phần ở ranh giới tổn thương, trước nhiễu ảnh do cứng hóa chùm tia gần nền sọ, và
+trước vôi hóa, vốn có cùng khoảng HU với máu tụ cấp nhưng lại không có ý nghĩa
+lâm sàng. Độ nhạy được báo cáo thấp hơn nhiều so với mức hiện có thể đạt được, và
+không có hệ thống thuần cổ điển nào đang được sử dụng lâm sàng một cách đáng kể.
+
+\subsection{Mạng tích chập hai chiều}
+
+Cách phát biểu chiếm ưu thế xem mỗi lát cắt ngang trục như một ảnh và áp dụng một
+mạng nơ-ron tích chập (convolutional neural network, CNN) xương sống tiêu chuẩn
+(ResNet, EfficientNet, DenseNet) đã được tiền huấn luyện trên ImageNet. Phép kết
+hợp nhiều cửa sổ trình bày ở Mục~\ref{sec:windowing} cung cấp ba kênh đầu vào.
+Cuộc thi RSNA Intracranial Hemorrhage Detection năm 2019, vốn công bố khoảng
+870{,}000 lát cắt được chuyên gia gán nhãn, đã thiết lập hướng này như một đường
+cơ sở mạnh và tạo ra các quy ước kiến trúc mà phần lớn công trình sau đó tuân
+theo.
+
+Hướng tiếp cận này được hỗ trợ tốt bởi công cụ, huấn luyện được trên phần cứng
+khiêm tốn, và hưởng lợi từ học chuyển giao (transfer learning). Hạn chế cố hữu
+của nó là bỏ qua ngữ cảnh giữa các lát cắt. Bác sĩ chẩn đoán hình ảnh xác định
+một vùng tăng tỷ trọng là xuất huyết một phần nhờ theo dõi diễn biến của nó qua
+các lát cắt liền kề; một bộ phân loại theo từng lát cắt không làm được điều đó.
+Điều này gây thiệt hại lớn nhất với xuất huyết dưới nhện (subarachnoid
+haemorrhage, SAH) dạng mỏng, khi một lát cắt đơn lẻ có thể thực sự mơ hồ.
+
+\subsection{Mô hình chuỗi trên đặc trưng lát cắt}
+
+Giải pháp khắc phục tiêu chuẩn vẫn giữ một CNN 2D làm bộ trích xuất đặc trưng cho
+từng lát cắt, nhưng thay việc phân loại độc lập bằng một mô hình chuỗi, thường là
+LSTM hai chiều hoặc bộ mã hóa transformer, chạy trên dãy vector nhúng lát cắt đã
+sắp thứ tự. Cách này khôi phục ngữ cảnh giữa các lát cắt với chi phí chỉ bằng một
+phần nhỏ so với tích chập 3D đầy đủ và đã thống trị bảng xếp hạng của cuộc thi
+RSNA. Nó cũng giải quyết gọn bài toán tổng hợp, vì mô hình chuỗi có thể phát ra
+đồng thời dự đoán ở mức lát cắt và mức ca chụp từ một biểu diễn dùng chung. Cái
+giá phải trả là một quy trình hai giai đoạn với độ phức tạp huấn luyện tương ứng
+cao hơn.
+
+\subsection{Mạng tích chập ba chiều}
+
+Thao tác trực tiếp trên khối ảnh bằng tích chập 3D mô hình hóa ngữ cảnh không
+gian một cách tự nhiên. Khó khăn nằm ở khía cạnh thực tiễn: mức tiêu thụ bộ nhớ
+buộc phải hoặc giảm mẫu mạnh, làm xóa mất chính những tổn thương nhỏ quan trọng
+nhất, hoặc huấn luyện theo mảnh (patch), làm tái xuất hiện giới hạn về ngữ cảnh.
+Không có sẵn tiền huấn luyện trên ImageNet, nên cần nhiều dữ liệu có nhãn hơn, và
+khối ảnh CT có voxel bất đẳng hướng với độ dày lát cắt thay đổi giữa các phác đồ,
+đòi hỏi phải lấy mẫu lại một cách nhất quán. Do vậy, các hướng tiếp cận 3D phổ
+biến hơn trong phân vùng, nơi các biến thể U-Net 3D là chuẩn mực, hơn là trong
+phân loại.
+
+\subsection{Các kiến trúc phân vùng}
+
+U-Net và các hậu duệ của nó vẫn là kiến trúc tham chiếu, với khung nnU-Net tự
+cấu hình là một lựa chọn mặc định mạnh, tự động điều chỉnh tiền xử lý và cấu trúc
+mạng theo tập dữ liệu. Các kiến trúc lai bổ sung transformer mô hình hóa tốt hơn
+các phụ thuộc tầm xa, đổi lại đòi hỏi nhiều dữ liệu hơn. Vì nhãn ICH ở mức voxel
+khan hiếm, các công trình phân vùng đã công bố thường huấn luyện trên những tập
+dữ liệu nhỏ hơn hai đến ba bậc độ lớn so với tập dữ liệu sẵn có cho bài toán phân
+loại.
+
+\subsection{Tổng hợp so sánh}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}l c c X@{}}
+\toprule
+\textbf{Hướng tiếp cận} & \textbf{Nhu cầu dữ liệu} & \textbf{Tính toán} & \textbf{Hạn chế chính} \\
+\midrule
+Lấy ngưỡng / hình thái & không & tối thiểu & Thiếu bền vững trước nhiễu ảnh và vôi hóa \\
+CNN 2D theo lát cắt & trung bình & thấp & Không có ngữ cảnh giữa các lát cắt \\
+CNN 2D + mô hình chuỗi & trung bình & trung bình & Độ phức tạp huấn luyện hai giai đoạn \\
+CNN 3D & cao & cao & Bộ nhớ; không có tiền huấn luyện; nhạy với lấy mẫu lại \\
+Họ U-Net (phân vùng) & cao (mức voxel) & cao & Chi phí gán nhãn \\
+\bottomrule
+\end{tabularx}
+\caption{So sánh các hướng tiếp cận phân tích tự động xuất huyết não.}
+\label{tab:methods}
+\end{table}
+
+\subsection{Đánh giá và bài toán tỷ lệ nền}
+
+Các con số độ chính xác được báo cáo cần được đọc một cách thận trọng, bởi tỷ lệ
+hiện mắc ICH trong quần thể chụp CT sọ não không chọn lọc là thấp. Một bộ phân
+loại luôn dự đoán ``không xuất huyết'' vẫn đạt độ chính xác cao nhưng vô dụng về
+mặt lâm sàng, nên độ chính xác không được dùng làm chỉ số chủ đạo. Độ nhạy, độ
+đặc hiệu và diện tích dưới đường cong ROC là các thước đo phù hợp, kèm theo yêu
+cầu báo cáo theo từng phân nhóm xuất huyết, vì các con số tổng hợp che giấu hiệu
+năng kém đối với SAH đã bàn ở Mục~\ref{sec:clinical}.
+
+Giá trị tiên đoán dương xứng đáng được đặc biệt chú ý, vì khác với độ nhạy và độ
+đặc hiệu, nó phụ thuộc vào tỷ lệ hiện mắc. Với tỷ lệ hiện mắc điển hình ở khoa
+cấp cứu, ngay cả một bộ phân loại có độ đặc hiệu rất cao vẫn sinh ra một tỷ lệ
+đáng kể dương tính giả trong số các cảnh báo của nó. Nếu những cảnh báo đó đòi
+hỏi hành động, tình trạng mệt mỏi vì cảnh báo phát sinh sẽ bào mòn giá trị của hệ
+thống, và cân nhắc này định hình trực tiếp cách trình bày kết quả trên giao diện.
+
+Hai cạm bẫy khác cũng rất phổ biến. \emph{Rò rỉ dữ liệu} xảy ra khi các lát cắt
+của cùng một bệnh nhân xuất hiện ở cả tập huấn luyện lẫn tập kiểm thử; việc chia
+tập phải được thực hiện ở mức bệnh nhân. \emph{Dịch chuyển phân phối} xảy ra khi
+một mô hình huấn luyện tại một cơ sở gặp phải máy chụp và phác đồ của cơ sở khác,
+và đây là nguyên nhân chính khiến hiệu năng hồi cứu cao hơn hiệu năng thực tế khi
+triển khai. Cả hai đều dẫn tới yêu cầu, được phát triển ở
+Mục~\ref{sec:architecture}, rằng nền tảng phải tự giám sát phân phối dữ liệu đầu
+vào của chính nó sau khi triển khai.

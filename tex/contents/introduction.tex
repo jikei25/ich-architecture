@@ -1,0 +1,78 @@
+\section{Giới thiệu}
+
+\subsection{Bối cảnh}
+
+Xuất huyết não (intracranial haemorrhage, ICH) là một trong số những nguyên nhân
+hàng đầu gây tử vong và tàn tật lâu dài trên toàn thế giới, trong đó có Việt Nam \cite{feigin2022burden}. Bệnh lý này đặc trưng bởi khởi phát đột ngột và diễn tiến xấu nhanh chóng: khoảng
+một phần ba bệnh nhân có tình trạng lan rộng khối máu tụ trong những giờ đầu
+sau khi khởi phát triệu chứng \cite{dowlatshahi2011expansion}, và mỗi giờ trì hoãn can thiệp đều dẫn tới tổn
+thất đo lường được về kết cục chức năng. Do đó, quy trình chẩn đoán khi nghi
+ngờ xuất huyết não là một trong những luồng công việc khẩn trương nhất về mặt
+thời gian trong bệnh viện.
+
+Trong thực hành lâm sàng, chẩn đoán gần như hoàn toàn dựa vào hình ảnh y khoa,
+chủ yếu là chụp cắt lớp vi tính (CT) không tiêm thuốc cản quang và cộng hưởng từ (MRI) trong một số trường hợp chọn lọc. Nhìn từ góc độ công nghệ thông tin
+y tế, điều này đặt ra một bài toán hạ tầng rõ rệt: ảnh chụp phải được tiếp nhận
+từ thiết bị, lưu trữ an toàn và đưa tới tay bác sĩ chẩn đoán hình ảnh một cách
+nhanh chóng, tin cậy. Mỗi mắt xích chậm trễ hay trục trặc trong chuỗi này đều
+trực tiếp kéo dài thời gian tới chẩn đoán.
+
+Thực trạng hạ tầng tại các bệnh viện Việt Nam rất không đồng đều. Bệnh viện
+tuyến trung ương thường đã có hệ thống lưu trữ và truyền tải hình ảnh (Picture
+Archiving and Communication System, PACS) hoàn chỉnh \cite{huang2011pacs}, trong khi nhiều bệnh viện
+tuyến huyện có máy chụp CT nhưng chưa có hệ thống lưu trữ tập trung, hình ảnh
+vẫn nằm trên máy trạm của thiết bị chụp. Thêm vào đó, nguồn bác sĩ chẩn đoán
+hình ảnh vừa hạn chế vừa phân bố không đồng đều: các bệnh viện tuyến huyện và
+tuyến tỉnh thường không có bác sĩ trực tại chỗ trong ca đêm, đúng vào khoảng
+thời gian các ca cấp cứu xuất hiện. Sự chênh lệch này khiến một giải pháp phần
+mềm duy nhất, thiết kế theo một giả định hạ tầng cố định, không thể triển khai
+rộng rãi.
+
+\subsection{Bài toán}
+
+Một quan sát lặp lại trong các tài liệu về triển khai hệ thống thông tin y tế là
+rào cản lớn nhất không nằm ở tính năng phần mềm, mà ở khả năng tích hợp vào môi
+trường nơi hoạt động khám chữa bệnh thực sự diễn ra. Các môi trường đó không đồng
+nhất: một bệnh viện tuyến trung ương có PACS hoàn chỉnh, hạ tầng mạng dự phòng
+và phòng công nghệ thông tin riêng đặt ra bài toán tích hợp hoàn toàn khác biệt so
+với một bệnh viện tuyến huyện nơi hình ảnh được lưu ngay trên máy trạm của thiết
+bị chụp và kết nối mạng thì chập chờn.
+
+Vì vậy, đề tài này xem bài toán tích hợp là trọng tâm. Mục tiêu là một
+\emph{nền tảng phần mềm} quản lý và khai thác dữ liệu ảnh y khoa phục vụ chẩn
+đoán xuất huyết não, có thể triển khai trong nhiều bối cảnh bệnh viện khác nhau,
+thay vì một ứng dụng nguyên khối gắn với một giả định hạ tầng duy nhất.
+
+\subsection{Mục tiêu và phạm vi Giai đoạn 1}
+
+Giai đoạn~1 gồm các nhiệm vụ sau, tương ứng với các mục của báo cáo này:
+
+\begin{enumerate}[label=(\alph*)]
+    \item tìm hiểu kiến thức lâm sàng nền tảng về xuất huyết não và các yêu cầu
+          của quy trình chẩn đoán hình ảnh (Mục~\ref{sec:clinical});
+    \item tìm hiểu chuẩn DICOM cùng các cơ chế liên thông dữ liệu ảnh y khoa
+      và tích hợp với hệ thống thông tin bệnh viện
+          (Mục~\ref{sec:dicom});
+    \item khảo sát các giải pháp phần mềm hiện có trên thế giới
+          (Mục~\ref{sec:solutions});
+    \item phân tích điểm mạnh và điểm yếu của các giải pháp đó
+          (Mục~\ref{sec:solutions-analysis});
+    \item tìm hiểu khung pháp lý Việt Nam về bảo vệ dữ liệu bệnh nhân
+          (Mục~\ref{sec:legal});
+    \item tìm hiểu các bối cảnh bệnh viện khác nhau
+          (Mục~\ref{sec:contexts});
+    \item đề xuất mô hình lưu trữ và xử lý chung, rồi kiến trúc phần mềm phù hợp
+      cho từng bối cảnh
+          (Mục~\ref{sec:architecture}).
+\end{enumerate}
+
+Phạm vi của Giai đoạn~1 tập trung vào tầng nền tảng, bao gồm việc tiếp nhận, lưu
+trữ, truy xuất và hiển thị dữ liệu ảnh y khoa cùng các ràng buộc pháp lý và kiến
+trúc đi kèm. Việc xây dựng các thành phần phân tích ảnh tự động \emph{nằm ngoài
+phạm vi} báo cáo này; tuy vậy, kiến trúc được đề xuất vẫn tính đến khả năng mở
+rộng cho các thành phần đó về sau thông qua cơ chế sự kiện trình bày trong
+Mục~\ref{sec:architecture}.
+
+Mục~\ref{sec:dicom} và Mục~\ref{sec:legal} lần lượt trình bày chuẩn DICOM và
+khung pháp lý Việt Nam điều chỉnh dữ liệu bệnh nhân; cả hai được xem là ràng
+buộc bắt buộc đối với kiến trúc chứ không phải phần bình luận nền.

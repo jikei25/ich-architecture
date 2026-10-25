@@ -1,0 +1,238 @@
+\section{Khảo sát các giải pháp phần mềm hiện có}
+\label{sec:solutions}
+
+\subsection{Các hệ thống PACS/VNA thương mại}
+
+Thị trường phần mềm quản lý và lưu trữ ảnh y khoa từ lâu do một số nhà cung cấp
+lớn chi phối. GE Healthcare, Siemens Healthineers và Philips đều phát triển các
+hệ thống PACS gắn liền với dòng thiết bị chẩn đoán hình ảnh của chính mình.
+Fujifilm với dòng sản phẩm Synapse, cùng Sectra và Agfa HealthCare, cung cấp các
+nền tảng PACS và VNA hướng tới quy mô bệnh viện và mạng lưới nhiều cơ sở.
+
+Điểm chung của nhóm này là mức độ hoàn chỉnh cao. Hệ thống được cung cấp trọn
+gói, kèm dịch vụ triển khai, đào tạo và bảo trì, tích hợp sẵn với HIS và RIS
+theo các chuẩn HL7 và DICOM, đồng thời phối hợp chặt chẽ với máy chụp cùng hãng.
+Đổi lại, chi phí đầu tư và phí duy trì hằng năm ở mức cao, mã nguồn đóng và cấu
+trúc dữ liệu nội bộ thường không được công bố, khiến cơ sở y tế rơi vào tình
+trạng phụ thuộc nhà cung cấp cả về nâng cấp, mở rộng lẫn di chuyển dữ liệu về
+sau.
+
+\subsection{Các hệ thống PACS mã nguồn mở}
+
+\textbf{Orthanc} là một PACS mã nguồn mở nhẹ với giấy phép thoáng. Hệ thống chạy
+từ một tệp nhị phân duy nhất, không bắt buộc phải có cơ sở dữ liệu bên ngoài, hỗ
+trợ đồng thời giao thức DICOM cổ điển và DICOMweb, đồng thời tích hợp bộ thông
+dịch Lua cho phép định nghĩa các hành vi tự động khi có ảnh mới đến. Nhờ yêu cầu
+tài nguyên thấp, Orthanc phù hợp cả khi đóng vai trò PACS đầy đủ tại một cơ sở
+nhỏ lẫn khi làm cổng tích hợp đặt cạnh một PACS sẵn có tại cơ sở lớn
+\cite{jodogne2018orthanc}.
+
+Điểm đáng chú ý của Orthanc là hệ sinh thái plugin, cho phép bổ sung đúng những
+năng lực mà lõi còn thiếu mà không phải sửa lõi \cite{orthancbook}. Plugin
+PostgreSQL thay SQLite mặc định bằng một cơ sở dữ liệu chịu tải cao làm chỉ mục, và
+cho phép nhiều phiên bản Orthanc dùng chung chỉ mục. Plugin lưu trữ đối tượng ghi
+dữ liệu điểm ảnh lên kho tương thích S3, Azure Blob hoặc Google Cloud Storage thay
+vì hệ thống tệp cục bộ. Plugin DICOMweb cung cấp WADO-RS, STOW-RS và QIDO-RS. Plugin
+phân quyền nâng cao chuyển mọi quyết định cấp quyền cho một dịch vụ web bên ngoài,
+và dự án orthanc-auth-service hiện thực sẵn dịch vụ này trên nền máy chủ định danh
+Keycloak, kèm cơ chế chia sẻ ca chụp bằng token \cite{orthancauth,keycloak}. Tổ hợp
+này giải quyết được một phần đáng kể các điểm yếu về quản trị nêu ở
+Mục~\ref{sec:solutions-analysis}, nhưng vẫn là việc lắp ghép cần được thiết kế và
+kiểm thử.
+
+\textbf{dcm4che} là bộ công cụ DICOM viết bằng Java, đã trưởng thành qua nhiều
+năm phát triển và được xem là một trong những hiện thực DICOM mã nguồn mở đầy đủ
+nhất. Trên nền bộ công cụ này, \textbf{dcm4chee-arc} cung cấp một kho lưu trữ ảnh
+ở quy mô doanh nghiệp, hỗ trợ phong phú các dịch vụ DICOM và DICOMweb cùng các
+cơ chế quản trị dữ liệu. Bù lại, hệ thống đòi hỏi hạ tầng nặng hơn đáng kể, gồm
+máy chủ ứng dụng Java và cơ sở dữ liệu riêng, cũng như nhân sự quen thuộc với hệ
+sinh thái Java.
+
+\subsection{Các trình xem ảnh y khoa}
+
+\textbf{OHIF Viewer}, do Open Health Imaging Foundation duy trì \cite{ziegler2020ohif}, là trình xem mã
+nguồn mở chạy hoàn toàn trên trình duyệt. Đặc tính không cần cài đặt tại máy
+trạm (zero-footprint) giúp loại bỏ khâu triển khai và cập nhật phần mềm trên
+từng máy tính, một lợi thế rõ rệt tại các cơ sở có năng lực quản trị công nghệ
+thông tin hạn chế. Kiến trúc mở rộng theo mô-đun cho phép bổ sung công cụ đo
+đạc, bố cục hiển thị hay lớp phủ thông tin ngay trong giao diện đọc ảnh tiêu
+chuẩn. Từ phiên bản 3, OHIF dựa trên Cornerstone3D, hỗ trợ dựng hình bằng GPU và tải
+ảnh lũy tiến (Mục~\ref{sec:transfersyntax}).
+
+\textbf{Cornerstone.js} là thư viện hiển thị ảnh y khoa trên nền web, đảm nhận
+việc giải mã, dựng hình và tương tác với dữ liệu DICOM. Đây chính là lớp nền mà
+OHIF Viewer xây dựng bên trên, và cũng có thể được dùng trực tiếp khi cần một
+giao diện xem ảnh gọn nhẹ, gắn chặt với ứng dụng sẵn có.
+
+\textbf{Weasis} là trình xem chạy trên máy trạm, viết bằng Java, hỗ trợ nhiều
+phương thức chụp và có thể khởi chạy trực tiếp từ liên kết do PACS sinh ra. Ưu
+điểm của trình xem desktop là khai thác tốt tài nguyên máy cục bộ, nhưng đi kèm
+với đó là yêu cầu cài đặt và duy trì phần mềm trên từng máy.
+
+\subsection{Các thành phần mã nguồn mở chuyên biệt}
+
+Ngoài PACS và trình xem, một số dự án mã nguồn mở giải quyết đúng từng khâu mà
+đề tài cần, và là tham chiếu trực tiếp cho thiết kế ở Mục~\ref{sec:architecture}.
+
+\textbf{KHEOPS} là nền tảng chia sẻ ảnh DICOM, tổ chức ca chụp theo ``album'' và
+cấp quyền truy cập bằng token gắn với một album hoặc một ca chụp, có thể giới hạn
+quyền và thời hạn; dữ liệu được truy cập qua DICOMweb và mở bằng OHIF hoặc Weasis
+\cite{kheops}. Mô hình token phạm vi hẹp này khớp với kịch bản gửi một ca chụp cho
+bác sĩ tuyến trên mà không cấp cho họ quyền vào toàn bộ kho ảnh.
+
+\textbf{Karnak}, của cùng nhóm phát triển, là cổng DICOM chuyên khử định danh và
+định tuyến ảnh theo các hồ sơ của DICOM PS3.15, với giao diện cấu hình quy tắc khử
+định danh cho từng dự án \cite{karnak}. Đây là tham chiếu cho khâu khử định danh
+tại ranh giới của bộ điều phối.
+
+\textbf{MONAI Deploy Informatics Gateway} tiếp nhận dữ liệu qua DICOM DIMSE,
+DICOMweb và FHIR, gom các đối tượng thành ca chụp, phát sự kiện kích hoạt quy trình
+xử lý và gửi kết quả ngược về PACS \cite{monaiig}. Về chức năng, nó gần như trùng
+với bộ điều phối trong mô hình thành phần, và là ứng viên nên được đánh giá trước
+khi tự xây dựng, đặc biệt khi các thành phần phân tích ảnh tự động được bổ sung ở
+các giai đoạn sau. Đổi lại, nó cần thêm hàng đợi thông điệp và kho đối tượng, nặng
+so với thiết bị trọn gói ở bối cảnh C.
+
+\subsection{Các nền tảng ảnh y khoa trên đám mây}
+\label{sec:cloud}
+
+Các nhà cung cấp đám mây lớn đều có dịch vụ quản lý ảnh y khoa: AWS HealthImaging
+\cite{awshealthimaging}, kho DICOM của Google Cloud Healthcare API
+\cite{gcphealthcare}, và dịch vụ DICOM của Azure Health Data Services, vốn phát
+triển từ dự án mã nguồn mở Medical Imaging Server for DICOM của Microsoft
+\cite{msdicom}. Cả ba đều cung cấp DICOMweb, tự mở rộng quy mô và tính phí theo
+dung lượng và lưu lượng. Chúng thay thế tầng lưu trữ, không thay thế trình xem
+hay quy trình đọc ảnh.
+
+Bài viết của AWS về xây dựng PACS gốc đám mây \cite{awspacs2026} đáng được phân
+tích kỹ vì nó đi tới cùng kết luận với đề tài từ hướng ngược lại. Kiến trúc được đề
+xuất là mô hình lai trục--nan: mỗi bệnh viện giữ một máy chủ VNA cục bộ tiếp nhận
+ảnh qua C-STORE và phục vụ bác sĩ tại chỗ ở tốc độ mạng nội bộ, còn ảnh được sao
+chép bất đồng bộ lên kho đối tượng trung tâm qua kênh riêng mà không chặn luồng lâm
+sàng. Một cơ sở dữ liệu trung tâm chỉ chứa siêu dữ liệu, gồm chỉ mục bệnh nhân
+chung, vị trí của từng ca chụp và trạng thái đồng bộ, cho phép bác sĩ ở bệnh viện
+này tìm và mở ca chụp thực hiện ở bệnh viện khác; trình xem tự định tuyến yêu cầu
+tới bản cục bộ nếu còn trong bộ đệm, hoặc tới kho trung tâm nếu không. Bài viết
+dựa trên quan sát rằng tần suất truy cập ảnh cao trong vài tháng đầu, giảm mạnh sau
+6--12 tháng và hiếm khi được truy cập sau 2--3 năm để đề xuất phân tầng lưu trữ theo
+vòng đời, từ lớp truy cập thường xuyên tới lớp lưu trữ sâu cho dữ liệu trên năm năm,
+và khuyến nghị mô hình lai thay vì thuần đám mây khi kết nối mạng hạn chế hoặc chỉ
+phụ thuộc một nhà mạng.
+
+Đối chiếu với đề tài: (i) nguyên tắc ghi cục bộ trước, đồng bộ sau
+(Mục~\ref{sec:localfirst}) trùng khớp, cho thấy đây không chỉ là lựa chọn bắt buộc
+của cơ sở thiếu tài nguyên mà còn là thực hành được khuyến nghị ở quy mô lớn; (ii)
+tách chỉ mục khỏi điểm ảnh và phân tầng theo vòng đời là hai điểm đề tài tiếp thu,
+trình bày ở Mục~\ref{sec:tiering} và Mục~\ref{sec:hub}; (iii) khác biệt nằm ở giả
+định. Bài viết giả định kênh kết nối riêng ổn định, đội ngũ vận hành, và khả năng đặt
+dữ liệu tại một vùng đám mây trong lãnh thổ quốc gia; ở Việt Nam, dữ liệu đưa ra
+ngoài lãnh thổ phải qua đánh giá tác động chuyển dữ liệu xuyên biên giới
+(Mục~\ref{sec:legal}), và ở bối cảnh C kênh kết nối chính là điểm yếu nhất. Vì vậy
+đề tài đặt trung tâm ở hạ tầng trong nước và chỉ gửi ra ngoài bệnh viện bản sao lưu
+đã mã hoá và bản đã khử định danh.
+
+
+\subsection{Bối cảnh trong nước}
+
+Tại Việt Nam, chủ trương chuyển đổi số ngành y tế và lộ trình triển khai bệnh án
+điện tử đang thúc đẩy các bệnh viện thay thế phim in bằng hệ thống lưu trữ và
+truyền tải hình ảnh. Thông tư 13/2025/TT-BYT đặt thời hạn triển khai hồ sơ bệnh án
+điện tử cho các bệnh viện chậm nhất ngày 30/9/2025 và cho các cơ sở khám bệnh, chữa
+bệnh khác chậm nhất ngày 31/12/2026 \cite{tt13_2025}; vì kết quả cận lâm sàng, trong
+đó có chẩn đoán hình ảnh, là một phần của hồ sơ bệnh án, lộ trình này tạo áp lực
+trực tiếp lên việc số hoá và lưu trữ ảnh ở chính nhóm cơ sở chưa có PACS. Nhiều cơ sở lớn lựa chọn giải pháp thương mại nhập khẩu
+hoặc dịch vụ do doanh nghiệp trong nước cung cấp, trong khi tuyến huyện và các
+phòng khám phần lớn vẫn gặp trở ngại về chi phí đầu tư và nhân lực vận hành. Đây
+là khoảng trống mà một giải pháp xây dựng trên nền tảng mã nguồn mở có thể lấp
+đầy.
+
+\section{Phân tích các giải pháp hiện có}
+\label{sec:solutions-analysis}
+
+\subsection{Điểm mạnh}
+
+Các hệ thống PACS thương mại mang lại sự hoàn chỉnh và tính ổn định đã được kiểm
+chứng qua nhiều năm vận hành lâm sàng. Người mua nhận được một sản phẩm trọn gói
+cùng cam kết hỗ trợ kỹ thuật, quy trình tích hợp với HIS và RIS đã được chuẩn
+hoá, và trách nhiệm khắc phục sự cố thuộc về một đầu mối duy nhất. Với bệnh viện
+có lưu lượng chụp lớn và ngân sách tương xứng, đây là phương án giảm thiểu rủi ro
+triển khai.
+
+Nhóm mã nguồn mở lại mạnh ở những khía cạnh khác. Chi phí cấp phép gần như bằng
+không cho phép dồn nguồn lực vào hạ tầng và con người thay vì bản quyền phần mềm.
+Mã nguồn công khai giúp kiểm tra được cách dữ liệu được lưu trữ và xử lý, đồng
+thời cho phép tuỳ biến sâu theo quy trình thực tế của từng khoa chẩn đoán hình
+ảnh. Việc tuân thủ chặt các chuẩn DICOM và DICOMweb giữ cho dữ liệu luôn ở định
+dạng mở, nhờ đó có thể chuyển đổi giữa các hệ thống mà không bị ràng buộc. Riêng
+Orthanc và OHIF còn nổi bật ở yêu cầu tài nguyên thấp, đủ để vận hành trên một
+máy chủ phổ thông tại cơ sở tuyến dưới.
+
+\subsection{Điểm yếu và khoảng trống}
+
+\textbf{Chi phí và cấp phép.} Các hệ thống thương mại được định giá cho những
+bệnh viện dồi dào ngân sách, theo hình thức mua bản quyền kèm phí bảo trì hằng
+năm hoặc tính theo dung lượng lưu trữ. Với bệnh viện tuyến huyện và phòng khám
+tư nhân quy mô nhỏ, mức chi phí này vượt quá khả năng chi trả, trong khi đây lại
+chính là nhóm cơ sở cần một hệ thống quản lý ảnh có tổ chức nhất.
+
+\textbf{Phụ thuộc nhà cung cấp.} Khi hệ thống đóng kín và cấu trúc lưu trữ không
+được công bố, mọi thay đổi về sau đều phải đi qua nhà cung cấp ban đầu. Việc mở
+rộng thêm chức năng, kết nối với hệ thống của bên thứ ba hay di chuyển toàn bộ
+kho ảnh sang nền tảng khác đều trở nên tốn kém, và cơ sở y tế mất phần lớn quyền
+chủ động đối với hạ tầng của chính mình.
+
+\textbf{Khả năng tuỳ biến.} Quy trình làm việc tại mỗi khoa chẩn đoán hình ảnh
+có những khác biệt nhất định, từ cách phân luồng ca chụp đến biểu mẫu kết quả.
+Sản phẩm thương mại chỉ cho phép cấu hình trong khuôn khổ nhà sản xuất định sẵn,
+còn những yêu cầu nằm ngoài khuôn khổ đó thường phải chờ bản cập nhật hoặc trả
+phí phát triển riêng.
+
+\textbf{Hạ tầng và nhân lực vận hành.} Ở chiều ngược lại, các giải pháp mã nguồn
+mở quy mô doanh nghiệp như dcm4chee-arc đòi hỏi đội ngũ có kinh nghiệm quản trị
+máy chủ, cơ sở dữ liệu và mạng. Nhiều cơ sở tuyến dưới không có sẵn nhân lực như
+vậy, nên một hệ thống tuy miễn phí nhưng phức tạp vẫn có thể trở thành gánh nặng
+vận hành.
+
+\textbf{Triển khai tại cơ sở hạn chế tài nguyên.} Phần lớn giải pháp thương mại
+mặc định rằng cơ sở đã có máy chủ đủ mạnh, đường truyền ổn định và bộ phận công
+nghệ thông tin thường trực. Những nơi không đáp ứng được các điều kiện đó gần
+như không có phương án phù hợp, và khả năng vận hành ở chế độ hạn chế khi mạng
+gián đoạn hiếm khi được tính đến.
+
+\textbf{Chủ quyền dữ liệu.} Các dịch vụ lưu trữ ảnh trên đám mây đòi hỏi dữ liệu
+hình ảnh rời khỏi phạm vi cơ sở y tế, làm phát sinh những ràng buộc mà
+Mục~\ref{sec:legal} cho thấy không đơn thuần mang tính hợp đồng theo pháp luật
+Việt Nam. Khả năng lưu trữ và xử lý hoàn toàn tại chỗ vì vậy là một yêu cầu
+thực chất chứ không phải tuỳ chọn.
+
+\textbf{Gánh nặng tích hợp của các thành phần mã nguồn mở.} Hệ sinh thái mã
+nguồn mở tránh được chi phí cấp phép nhưng chỉ cung cấp các thành phần rời rạc,
+không phải một giải pháp hoàn chỉnh. Orthanc, OHIF và các thư viện liên quan,
+xét riêng từng thành phần, đều đã trưởng thành; nhưng ghép chúng thành một hệ
+thống có xác thực người dùng, phân quyền theo vai trò, nhật ký kiểm toán, giám
+sát và hành vi được định nghĩa rõ ràng khi xảy ra sự cố là một khối lượng công
+việc kỹ thuật đáng kể. Chính phần lắp ghép này tạo nên đóng góp của đề tài.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}X X X@{}}
+\toprule
+\textbf{Giải pháp} & \textbf{Điểm mạnh} & \textbf{Điểm yếu} \\
+\midrule
+PACS thương mại (GE, Siemens, Philips, Fujifilm, Sectra, Agfa) & Hoàn chỉnh; hỗ trợ chính hãng; tích hợp sâu với thiết bị và với HIS/RIS & Chi phí đầu tư và duy trì cao; mã nguồn đóng; phụ thuộc nhà cung cấp; khó tuỳ biến \\
+Orthanc & Nhẹ, một tệp nhị phân; hỗ trợ cả DICOM cổ điển lẫn DICOMweb; scripting Lua; giấy phép thoáng & Thiếu sẵn các chức năng quản trị cấp bệnh viện; phải tự bổ sung xác thực, phân quyền và giám sát \\
+dcm4che/dcm4chee-arc & Trưởng thành; đầy đủ dịch vụ DICOM; phù hợp quy mô doanh nghiệp & Hạ tầng nặng; cấu hình phức tạp; đòi hỏi nhân lực quản trị Java và cơ sở dữ liệu \\
+OHIF Viewer & Chạy trên trình duyệt, không cần cài đặt tại máy trạm; kiến trúc mở rộng theo mô-đun & Phụ thuộc năng lực máy khách và đường truyền; cần tuỳ biến để khớp quy trình đọc ảnh cụ thể \\
+Weasis & Trình xem desktop giàu chức năng; khai thác tốt tài nguyên máy cục bộ & Phải cài đặt và cập nhật trên từng máy trạm \\
+Cornerstone.js & Thư viện hiển thị linh hoạt, nhúng được vào ứng dụng web sẵn có & Chỉ là thư viện, không phải trình xem hoàn chỉnh; phải tự xây dựng giao diện \\
+Plugin Orthanc (PostgreSQL, lưu trữ đối tượng, phân quyền) & Bổ sung chỉ mục chịu tải, lưu trữ S3, phân quyền qua Keycloak mà không sửa lõi & Mỗi plugin là một điểm cấu hình và nâng cấp riêng; cần kiểm thử tổ hợp \\
+KHEOPS & Chia sẻ ca chụp bằng token phạm vi hẹp; DICOMweb; tích hợp OHIF và Weasis & Thêm một hệ thống cần vận hành; không tiếp nhận trực tiếp từ máy chụp \\
+Karnak & Khử định danh theo hồ sơ PS3.15, cấu hình qua giao diện & Chỉ giải quyết khâu khử định danh và định tuyến \\
+MONAI Deploy Informatics Gateway & Tiếp nhận DIMSE, DICOMweb, FHIR; phát sự kiện; trả kết quả về PACS & Hướng tới quy trình AI; phụ thuộc hàng đợi thông điệp và kho đối tượng \\
+Dịch vụ đám mây (AWS HealthImaging, Google Cloud Healthcare API, Azure DICOM) & Không phải vận hành hạ tầng lưu trữ; tự mở rộng; DICOMweb & Dữ liệu rời khỏi bệnh viện; ràng buộc chuyển dữ liệu xuyên biên giới; phụ thuộc đường truyền và nhà cung cấp \\
+\bottomrule
+\end{tabularx}
+\caption{Phân tích so sánh các giải pháp quản lý và hiển thị ảnh y khoa hiện có.}
+\label{tab:solutions}
+\end{table}

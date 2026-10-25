@@ -1,0 +1,96 @@
+\section{Phân tích và lựa chọn phương pháp tiềm năng}
+\label{sec:selection}
+
+\subsection{Tiêu chí lựa chọn}
+
+Việc lựa chọn được chi phối bởi bối cảnh triển khai (deployment) hơn là chỉ bởi
+hiệu năng trên các bộ đánh giá chuẩn. Nền tảng phải chạy được tại các bệnh viện
+có tài nguyên tính toán trải từ một máy chủ GPU chuyên dụng đến một máy trạm dùng
+chung duy nhất, và phải trả kết quả đủ nhanh để tác động đến thứ tự đọc của danh
+sách chờ đọc (worklist). Do đó các tiêu chí được áp dụng là:
+
+\begin{enumerate}[label=C\arabic*.,leftmargin=1.2cm]
+    \item \textbf{Hiệu năng chẩn đoán}, trong đó độ nhạy (sensitivity) theo từng
+          phân nhóm được xem trọng hơn độ chính xác tổng hợp.
+    \item \textbf{Độ trễ suy luận} (inference latency), hướng tới dưới hai phút
+          cho mỗi ca chụp tính từ lúc tiếp nhận đến khi có kết quả, vì một tín
+          hiệu phân loại ưu tiên (triage) đến sau khi bác sĩ chẩn đoán hình ảnh
+          đã đọc xong ca chụp thì không mang lại lợi ích nào.
+    \item \textbf{Yêu cầu phần cứng} (hardware footprint), bắt buộc phải có
+          phương án suy giảm để thực thi chỉ trên CPU cho các cơ sở hạn chế tài
+          nguyên.
+    \item \textbf{Khả năng có dữ liệu huấn luyện}, ưu tiên các cách phát biểu bài
+          toán được hỗ trợ bởi các tập dữ liệu công khai sẵn có.
+    \item \textbf{Khả năng diễn giải} (interpretability), vì một kết luận không
+          được giải thích sẽ không được tin tưởng hay sử dụng.
+\end{enumerate}
+
+\subsection{Phương pháp được lựa chọn}
+
+\textbf{Kiến trúc hai giai đoạn} được lựa chọn: một bộ mã hoá (encoder) CNN 2D
+áp dụng trên từng lát cắt (slice), tiếp theo là một mô hình chuỗi (sequence
+model) hai chiều trên các vector nhúng (embedding) lát cắt thu được, xuất ra xác
+suất phân nhóm ở cả mức lát cắt và mức ca chụp.
+
+Lựa chọn này xuất phát từ các tiêu chí chứ không phải từ tính mới lạ. Nó đạt
+hiệu năng cạnh tranh với các kết quả tốt nhất đã công bố (C1) trong khi vẫn khả
+thi trên phần cứng khiêm tốn, vì thành phần tốn kém là một backbone 2D có chi phí
+trên mỗi lát cắt nhỏ và dễ dàng xử lý theo lô (C2, C3). Nó huấn luyện trên nhãn
+mức lát cắt, thứ mà tập dữ liệu RSNA cung cấp với số lượng lớn, còn giai đoạn mô
+hình chuỗi không đòi hỏi gán nhãn (annotation) bổ sung (C4). Cấu trúc hai giai
+đoạn là một lợi thế cho triển khai chứ không đơn thuần là bất tiện khi huấn
+luyện: bộ mã hoá và mô hình chuỗi có thể tách ra trên các máy khác nhau, và tại
+một cơ sở hạn chế tài nguyên, riêng bộ mã hoá cũng có thể đóng vai trò một bộ
+phân loại theo lát cắt tuy suy giảm nhưng vẫn hoạt động được.
+
+Việc dựng đầu vào tuân theo Mục~\ref{sec:windowing}: các giá trị lưu trữ được
+chuyển sang đơn vị Hounsfield theo Công thức~\ref{eq:hu}, sau đó ba cửa sổ (não,
+dưới màng cứng, xương) được ghép thành ba kênh đầu vào.
+
+\subsection{Giai đoạn phân vùng bổ trợ}
+
+Chỉ riêng phân loại không cho ra thể tích khối máu tụ (haematoma volume), vốn là
+một đầu vào trực tiếp cho các quyết định điều trị. Do đó một giai đoạn phân vùng
+(segmentation) dùng U-Net được đề xuất như một lượt xử lý thứ hai tuỳ chọn, chỉ
+kích hoạt trên những ca chụp được bộ phân loại đánh dấu là dương tính. Việc đặt
+điều kiện trên kết quả phân loại dương tính giúp giới hạn chi phí của nó, vì nó
+chỉ chạy trên một phần nhỏ của thông lượng (throughput), và khu biệt các kiểu
+thất bại của nó vào những ca mà dù sao con người cũng sẽ xem lại.
+
+\subsection{Khả năng diễn giải}
+
+Tiêu chí C5 được đáp ứng bằng hai cơ chế có mức độ chặt chẽ khác nhau. Các bản
+đồ nổi bật (saliency map) dựa trên gradient (Grad-CAM và các phương pháp kế
+thừa) phủ một bản đồ nhiệt lên lát cắt để chỉ ra các vùng đã chi phối dự đoán;
+chúng rẻ và không đòi hỏi thay đổi kiến trúc, nhưng là một mô tả thô và đôi khi
+không trung thực về lập luận của mô hình, nên cần được trình bày như một chỉ báo
+chú ý chứ không phải như một đường phân định tổn thương. Ở nơi giai đoạn phân
+vùng được chạy, mặt nạ của nó là một lời giải thích trực quan vững chắc hơn
+nhiều, vì đó là một khẳng định không gian trực tiếp mà bác sĩ chẩn đoán hình ảnh
+có thể kiểm chứng hoặc bác bỏ.
+
+Xác suất đã hiệu chuẩn (calibration) cũng là một phần không thể thiếu của khả
+năng diễn giải. Các mạng huấn luyện với hàm cross-entropy thường quá tự tin
+(overconfident) một cách hệ thống, nên cần hiệu chuẩn hậu kiểm trước khi hiển thị
+bất kỳ độ tin cậy dạng số nào cho bác sĩ lâm sàng; một con số ``94\%'' chưa hiệu
+chuẩn mời gọi một mức độ tin tưởng mà mô hình chưa xứng đáng có được.
+
+\subsection{Rủi ro và biện pháp giảm thiểu}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}X X@{}}
+\toprule
+\textbf{Rủi ro} & \textbf{Biện pháp giảm thiểu} \\
+\midrule
+Độ nhạy kém với SAH, phân nhóm khó nhất đối với cả người đọc lẫn hệ thống tự động & Báo cáo và ngưỡng riêng theo từng phân nhóm; ghi rõ trong giao diện rằng kết quả âm tính không loại trừ SAH \\
+Dịch chuyển phân phối giữa các máy chụp và các cơ sở & Giám sát phân phối đầu vào; hiệu chuẩn lại ngưỡng theo từng cơ sở trong giai đoạn nghiệm thu \\
+Xác suất quá tự tin & Hiệu chuẩn hậu kiểm; hiển thị khoảng tin cậy thay vì giá trị điểm \\
+Thiên lệch tự động hoá khi đọc song song & Ban đầu chỉ triển khai ở chế độ phân loại ưu tiên; ẩn kết quả cho đến khi người đọc đã hình thành nhận định ban đầu \\
+Mệt mỏi vì cảnh báo do dương tính giả ở tỷ lệ hiện mắc thấp & Ngưỡng được tinh chỉnh theo giá trị tiên đoán dương ở tỷ lệ hiện mắc tại chỗ, không chỉ theo độ nhạy \\
+\bottomrule
+\end{tabularx}
+\caption{Các rủi ro chính của phương pháp được lựa chọn và biện pháp giảm thiểu.}
+\label{tab:risks}
+\end{table}
