@@ -1,242 +1,541 @@
 \section{Đề xuất kiến trúc phần mềm}
 \label{sec:architecture}
 
-Mục này được trình bày theo hai tầng. Trước hết là \emph{mô hình chung}
-(Mục~\ref{sec:common}): những gì đúng với mọi bệnh viện, gồm các thành phần,
-luồng xử lý một ca chụp, yêu cầu lưu trữ bền và cách phân tầng dữ liệu giữa
-kho tại chỗ, kho ngoài cơ sở và kho lưu trữ lạnh. Sau đó mô hình chung được áp
-vào \emph{tình hình cụ thể} của từng mẫu bối cảnh ở Mục~\ref{sec:contexts}
-(Mục~\ref{sec:percontext}), và cuối cùng được mở rộng thành mô hình liên viện
-(Mục~\ref{sec:hub}).
+\input{figures/arch/common.tex}
+
+Mục này trình bày kiến trúc theo hai lớp. Lớp thứ nhất là phần \emph{dùng chung}
+cho mọi bệnh viện: năm tầng chức năng (Mục~\ref{sec:layers}), cách các tầng được
+phân vùng mạng và giao tiếp với nhau (Mục~\ref{sec:network}), các luồng xử lý chạy
+qua chúng (Mục~\ref{sec:flow}), hợp đồng dữ liệu của tầng AI
+(Mục~\ref{sec:aicontract}), quy trình khử định danh (Mục~\ref{sec:archdeid}), cách
+lưu trữ bền dữ liệu (Mục~\ref{sec:storage}) và cơ chế sẵn sàng cao
+(Mục~\ref{sec:ha}). Lớp thứ hai là các \emph{kịch bản triển khai}
+(Mục~\ref{sec:scenarios}): mỗi kịch bản là một cấu hình của phần dùng chung, chỉ
+khác nhau ở một số điểm biến thiên được nêu tường minh, chủ yếu là vị trí của GPU.
+Cách tách này cho phép bổ sung kịch bản mới mà không phải thiết kế lại các tầng.
+
+Hai ràng buộc chi phối mọi lựa chọn kỹ thuật bên dưới, và một phương án vi phạm một
+trong hai bị loại dù rẻ hơn hay đơn giản hơn: (i) bác sĩ mở một ca chụp gần đây phải
+thấy ảnh đầu tiên trong vòng 2 giây, nên mọi đường đọc ảnh lâm sàng phải nằm trong
+mạng nội bộ; (ii) mất toàn bộ kết nối Internet không được làm khoa Cấp cứu ngừng đọc
+phim, nên không thành phần nào của tầng lâm sàng được gọi ra ngoài mạng nội bộ, kể cả
+khi khởi động.
 
 \subsection{Nguyên tắc thiết kế}
 
-Năm nguyên tắc, rút ra từ các phân tích ở trên, chi phối cả ba kiến trúc.
+Sáu nguyên tắc, rút ra từ các phân tích ở các mục trước, chi phối mọi kịch bản.
 
-\textbf{P1 --- Luồng xử lý hậu kỳ nằm ngoài đường tới hạn.} Việc chuyển ảnh tới
-kho lưu trữ và tới trình xem không được phụ thuộc vào bất kỳ thành phần xử lý bổ
-sung nào. Các tác vụ hậu kỳ được kích hoạt bởi một sự kiện phát ra \emph{sau}
-khi ảnh đã được lưu an toàn, nhờ đó sự cố của chúng chỉ làm hệ thống suy giảm về
-mức một PACS thông thường chứ không làm gián đoạn hoạt động khám chữa bệnh.
+\textbf{P1 --- Luồng lâm sàng không phụ thuộc AI.} Đường đi của ảnh từ máy chụp tới
+kho lưu trữ và tới trình xem không đi qua bất kỳ thành phần AI nào. AI chỉ nhận một
+bản sao \emph{sau} khi ảnh đã được lưu an toàn; khi toàn bộ tầng AI ngừng hoạt động,
+hệ thống chỉ suy giảm về mức một PACS thông thường và bác sĩ vẫn đọc phim theo thứ
+tự bình thường.
 
-\textbf{P2 --- Lõi dùng chung, ngoại vi thay đổi.} Ba kiến trúc là các cấu hình
-của cùng một tập thành phần, không phải ba hệ thống riêng biệt. Điều này giới
-hạn công sức bảo trì và cho phép một cơ sở chuyển đổi giữa các bối cảnh khi hạ
-tầng của họ được nâng cấp.
+\textbf{P2 --- Lõi dùng chung, kịch bản chỉ khác ở điểm biến thiên.} Các kịch bản là
+các cấu hình của cùng một tập thành phần, không phải các hệ thống riêng biệt. Quy tắc
+xuất dữ liệu trong PACS và giao diện của dịch vụ suy luận giống nhau ở mọi kịch bản;
+khi GPU đổi vị trí, chỉ có cổng trung gian bật thêm chức năng. Nhờ vậy một bệnh viện
+có thể chuyển từ kịch bản này sang kịch bản khác khi hạ tầng thay đổi mà không phải
+cấu hình lại PACS.
 
-\textbf{P3 --- Dữ liệu mặc định ở lại nội bộ.} Theo yêu cầu L1, cấu hình triển
-khai mặc định giữ toàn bộ dữ liệu và mọi xử lý bên trong cơ sở y tế. Việc đưa dữ
-liệu ra ngoài phạm vi bệnh viện là một cấu hình tường minh, cần được biện minh
-riêng.
+\textbf{P3 --- Đẩy dữ liệu, không cho kéo.} PACS chủ động đẩy đúng những chuỗi ảnh
+cần thiết sang tầng AI. Tầng AI không giữ bất kỳ thông tin xác thực nào để truy cập
+PACS, kể cả quyền ghi kết quả, nên việc tối thiểu hoá dữ liệu (yêu cầu L2) được bảo
+đảm bằng cấu trúc chứ không chỉ bằng cấu hình: dù tầng AI bị chiếm quyền, kẻ tấn công
+cũng chỉ thấy những gì PACS đã chủ động gửi sang.
 
-\textbf{P4 --- Hệ thống hỗ trợ, không thay thế chuyên môn.} Nền tảng cung cấp
-thông tin phục vụ chẩn đoán nhưng không đưa ra kết luận chẩn đoán. Mọi dữ liệu
-do hệ thống sinh ra đều phải truy được nguồn gốc, có thể xem xét lại và không
-bao giờ được ghi vào hồ sơ bệnh án nếu không có thao tác của bác sĩ.
+\textbf{P4 --- Hệ thống hỗ trợ, không thay thế chuyên môn.} AI phục vụ hai mục đích:
+\emph{báo động} để ca nghi xuất huyết được đọc sớm hơn, và \emph{lớp phủ} (overlay)
+vùng nghi xuất huyết để bác sĩ có thêm căn cứ khi đọc phim. AI chỉ \emph{nâng} mức ưu
+tiên của ca nghi dương tính, không bao giờ hạ mức ưu tiên của ca không được gắn cờ.
+Kết quả AI luôn được hiển thị là chưa xác nhận, mặc định tắt trên trình xem, và không
+bao giờ trở thành kết luận chẩn đoán nếu không có thao tác của bác sĩ. Điều này phù
+hợp với quy định coi phần mềm phục vụ chẩn đoán là trang thiết bị y tế: khi mô hình
+chưa có số lưu hành, kết quả của nó không được tự động đi vào hồ sơ bệnh án.
 
-\textbf{P5 --- Đã xác nhận là không được mất.} Khi cổng DICOM đã trả lời thành
-công cho một lệnh C-STORE, thiết bị chụp được phép xoá bản của nó; từ thời điểm
-đó nền tảng là nơi duy nhất giữ ca chụp. Vì vậy mọi đối tượng đã được xác nhận
-phải tồn tại qua bất kỳ sự cố đơn lẻ nào của phần cứng, phần mềm hay đường
-truyền (Mục~\ref{sec:durability}).
+\textbf{P5 --- Đã xác nhận là không được mất.} Khi PACS đã trả lời thành công một
+lệnh C-STORE, thiết bị chụp được phép xoá bản của nó; từ thời điểm đó nền tảng là nơi
+duy nhất giữ ca chụp. Mọi đối tượng đã xác nhận phải tồn tại qua bất kỳ sự cố đơn lẻ
+nào (Mục~\ref{sec:durability}).
 
-\subsection{Mô hình chung}
-\label{sec:common}
+\textbf{P6 --- Tách mục đích lâm sàng và nghiên cứu.} Dữ liệu dùng để gán nhãn và
+huấn luyện chỉ là bản đã khử định danh, đi qua một điểm duy nhất có cơ chế từ chối
+khi không chắc chắn (fail-closed), đúng theo yêu cầu L7. Nhãn lâm sàng (các phép đo
+bác sĩ ghi trên trình xem) và nhãn huấn luyện là hai đường riêng, không nối thẳng với
+nhau.
 
-\subsubsection{Các thành phần}
+% ---------------------------------------------------------------------------
+\subsection{Kiến trúc theo tầng}
+\label{sec:layers}
 
-\begin{figure}[H]
+Hệ thống được chia thành năm tầng (Hình~\ref{fig:arch-s1}). Thứ tự các tầng từ trên
+xuống phản ánh mức độ quan trọng đối với hoạt động khám chữa bệnh: tầng trên cùng
+không được phép ngừng, các tầng phía dưới có thể suy giảm trong một thời gian mà không
+ảnh hưởng tới việc đọc phim. Riêng tầng dữ liệu là ngoại lệ: nó nằm phía dưới vì là
+nơi lưu trạng thái cho các tầng phía trên, nhưng độ sẵn sàng của nó quyết định trực
+tiếp độ sẵn sàng của tầng lâm sàng.
+
+\begin{sidewaysfigure}
 \centering
-\begin{tikzpicture}[
-    node distance=1.1cm and 2.4cm,
-    box/.style={draw, rounded corners=2pt, minimum width=2.5cm, minimum height=0.85cm,
-                align=center, font=\small},
-    aux/.style={box, fill=blue!8},
-    stor/.style={box, fill=green!8},
-    flow/.style={->, >=stealth, thick},
-    evt/.style={->, >=stealth, thick, dashed}
-]
-\node[box] (mod) {Máy chụp CT};
-\node[box, right=of mod] (gw) {Cổng DICOM\\\scriptsize(Orthanc)};
-\node[box, right=of gw] (view) {Trình xem web\\\scriptsize(OHIF)};
-\node[stor, below=of mod] (hot) {Kho ảnh tại chỗ\\\scriptsize(tầng nóng/ấm)};
-\node[aux, below=of gw] (orch) {Bộ điều phối};
-\node[aux, below=of orch] (task) {Dịch vụ xử lý\\hậu kỳ};
-\node[box, right=of task] (store) {Kho siêu dữ liệu\\+ nhật ký truy vết};
-\node[stor, below=of hot] (queue) {Hàng đợi đồng bộ\\\scriptsize(bền vững, trên đĩa)};
-\node[stor, below=of queue, fill=gray!12] (off) {Kho ngoài cơ sở\\\scriptsize(sao lưu, lưu trữ lạnh)};
+\resizebox{\linewidth}{!}{\input{figures/arch/scenario1.tex}}
+\caption{Kiến trúc năm tầng, thể hiện theo Kịch bản 1 (GPU trong mạng nội bộ). Nét
+liền đậm màu đen: luồng lâm sàng; nét màu xanh: luồng suy luận AI; nét xám: luồng
+dữ liệu nội bộ và nghiên cứu; nét đứt: sao lưu và khôi phục. Số trong vòng tròn có
+dạng \emph{luồng.bước}, ví dụ 2.3 là bước 3 của Luồng 2 (Mục~\ref{sec:flow}).
+Khung nét đứt là khối trừu tượng chưa chốt công cụ.}
+\label{fig:arch-s1}
+\end{sidewaysfigure}
 
-\draw[flow] (mod) -- node[above,font=\scriptsize] {C-STORE} (gw);
-\draw[flow] (gw) -- node[above,font=\scriptsize] {DICOMweb} (view);
-\draw[flow] (gw) -- node[pos=0.4,above,font=\scriptsize,sloped] {ghi rồi mới ACK} (hot);
-\draw[evt] (gw) -- node[right,font=\scriptsize] {sự kiện} (orch);
-\draw[flow] (orch) -- node[right,font=\scriptsize] {đã khử định danh} (task);
-\draw[flow] (task) -- (store);
-\draw[flow] (store.east) -- ++(0.7,0) |- (view.east);
-\draw[evt] (orch) -- node[above,font=\scriptsize,sloped] {xếp hàng} (queue);
-\draw[evt] (queue) -- node[right,font=\scriptsize] {bất đồng bộ, thử lại} (off);
-\end{tikzpicture}
-\caption{Mô hình thành phần dùng chung. Luồng nét liền từ máy chụp tới kho tại chỗ
-và trình xem độc lập với các luồng nét đứt tới xử lý hậu kỳ và tới kho ngoài cơ
-sở, hiện thực hoá nguyên tắc~P1.}
-\label{fig:common}
-\end{figure}
+\subsubsection{Tầng lâm sàng (Clinical)}
 
-\begin{description}[leftmargin=3.2cm,style=nextline]
-\item[Cổng DICOM] Tiếp nhận ca chụp qua C-STORE, ghi bền xuống kho tại chỗ rồi
-      mới xác nhận, và cung cấp lại qua DICOMweb. Phát ra một sự kiện khi ảnh
-      đến. Orthanc đảm nhiệm vai trò này, với cơ chế callback Lua trên sự kiện
-      lưu đối tượng ảnh cung cấp sẵn cơ chế phát sự kiện \cite{jodogne2018orthanc}.
-\item[Kho ảnh tại chỗ] Nơi giữ bản gốc còn định danh. Dữ liệu điểm ảnh được lưu
-      dưới dạng tệp DICOM nguyên vẹn (có thể nén không mất mát,
-      Mục~\ref{sec:transfersyntax}), trên đĩa cục bộ hoặc trên kho đối tượng
-      tương thích S3 thông qua plugin lưu trữ đối tượng của Orthanc
-      \cite{orthancbook}.
-\item[Bộ điều phối] Tiêu thụ sự kiện ảnh đến, lọc theo loại thiết bị và vùng
-      giải phẫu, khử định danh theo Mục~\ref{sec:deid}, ghép các đối tượng
-      ảnh thành một ca chụp hoàn chỉnh, chuyển tới các tác vụ hậu kỳ và đưa
-      các bản cần gửi ra ngoài vào hàng đợi đồng bộ. Bộ điều phối nắm giữ
-      logic thử lại và kiểm soát tải, và là thành phần giữ cho các lỗi không
-      lan rộng.
-\item[Dịch vụ xử lý hậu kỳ] Thực hiện các tác vụ không nằm trên đường tới
-      hạn, chẳng hạn trích xuất siêu dữ liệu, kiểm tra tính toàn vẹn của
-      chuỗi ảnh, sinh ảnh thu nhỏ phục vụ duyệt nhanh, và chuẩn bị gói dữ
-      liệu cho việc đọc từ xa. Dịch vụ này phi trạng thái, do đó có thể mở
-      rộng theo chiều ngang. Đây cũng là điểm mở rộng dành cho các thành
-      phần phân tích ảnh tự động trong các giai đoạn sau.
-\item[Kho siêu dữ liệu và nhật ký truy vết] Lưu chỉ mục ca chụp theo khoá là
-      UID kèm dấu thời gian, vị trí và tầng lưu trữ hiện tại của từng ca,
-      tổng kiểm tra (checksum) của từng đối tượng, cùng với nhật ký truy cập
-      chỉ ghi thêm theo yêu cầu L4. Kho này tách khỏi dữ liệu điểm ảnh; với
-      Orthanc, chỉ mục có thể đặt trên PostgreSQL thay cho SQLite mặc định.
-\item[Hàng đợi đồng bộ] Hàng đợi bền vững nằm trên đĩa cục bộ, chứa các bản
-      cần gửi ra ngoài cơ sở. Phần tử chỉ bị xoá sau khi phía nhận xác nhận đã
-      lưu và tổng kiểm tra khớp.
-\item[Kho ngoài cơ sở] Nhận bản sao lưu đã mã hoá và, nếu được bật, bản đã khử
-      định danh phục vụ đọc từ xa hay nghiên cứu. Đặt trong lãnh thổ Việt Nam
-      theo L1.
-\item[Trình xem] Hiển thị ảnh cho bác sĩ. OHIF đảm nhiệm vai trò này
-      \cite{ziegler2020ohif}.
+\textbf{Vai trò.} Đây là luồng làm việc hiện có của bệnh viện và là phần duy nhất mà
+bác sĩ phải chờ. Máy chụp CT gửi ảnh trực tiếp tới PACS; PACS lưu trữ ảnh và cung cấp
+các dịch vụ để trình xem truy xuất, nhờ đó bác sĩ đọc phim và chẩn đoán cho bệnh nhân.
+Mục tiêu của tầng này là độ trễ thấp và tính sẵn sàng cao; nó không phụ thuộc vào
+Internet hay vào bất kỳ tầng AI nào.
+
+\textbf{Thành phần.}
+\begin{description}[leftmargin=3.4cm,style=nextline]
+\item[Máy chụp CT] Thiết bị chụp (modality). Ca chụp được gửi bằng DICOM C-STORE
+      thẳng tới PACS, không qua bộ định tuyến trung gian, nên không có thêm chặng truyền
+      hay thành phần nào có thể hỏng trên đường tới hạn. Máy chụp lấy danh sách bệnh
+      nhân cần chụp từ Modality Worklist của PACS, nhờ đó thông tin hành chính trên ảnh
+      khớp với chỉ định.
+\item[PACS] dcm4chee-arc-light \cite{dcm4chee}, chạy trên máy chủ ứng dụng WildFly.
+      PACS nhận ảnh qua DICOM (cổng 11112), phục vụ ảnh qua DICOMweb (QIDO-RS để truy
+      vấn, WADO-RS để tải), nhận chỉ định qua HL7 v2 (cổng 2575) và dựng Modality
+      Worklist, áp dụng chính sách lưu trữ và quy tắc xuất dữ liệu sang tầng AI. dcm4chee
+      không giữ trạng thái trong tiến trình: ảnh nằm trên SeaweedFS, chỉ mục và các tác
+      vụ đang chờ nằm trong PostgreSQL, cấu hình nằm trong OpenLDAP. Vì vậy có thể chạy
+      nhiều nút song song sau một bộ cân bằng tải (Mục~\ref{sec:ha}).
+\item[Trình xem] OHIF \cite{ziegler2020ohif}, ứng dụng web tĩnh chạy trên trình duyệt
+      của máy trạm, đứng sau một reverse proxy có kiểm tra token đăng nhập. Trình xem mở
+      được ca chụp ngay khi các chuỗi ảnh sau vẫn đang được gửi tới, và hiển thị lớp phủ
+      AI khi có. Lớp phủ mặc định tắt với bác sĩ chẩn đoán hình ảnh, để kết quả AI không
+      định hướng trước cách đọc.
+\item[Đăng nhập] Keycloak \cite{keycloak}: đăng nhập một lần qua OpenID Connect, xác
+      thực đa yếu tố bằng khoá phần cứng (FIDO2) với mã TOTP làm phương án dự phòng; không
+      dùng SMS hay email vì cả hai phụ thuộc mạng bên ngoài. Keycloak có cơ sở dữ liệu
+      riêng và phải chạy được khi mất Internet.
+\item[HIS/RIS] Hệ thống sẵn có của bệnh viện, ngoài phạm vi đề tài: gửi chỉ định và
+      thông tin hành chính (HL7 ADT, ORM) để PACS dựng worklist, và nhận cờ ưu tiên do
+      AI phát ra (HL7 ORU hoặc FHIR).
 \end{description}
 
-\subsubsection{Luồng xử lý chung của một ca chụp}
+\textbf{Quyết định thiết kế.} Máy chụp gửi thẳng tới PACS thay vì qua một cổng DICOM
+riêng: mỗi thành phần thêm vào đường tới hạn là một điểm có thể hỏng và một chặng làm
+tăng độ trễ. Các chức năng mà một cổng như vậy thường đảm nhận (lọc theo thiết bị, định
+tuyến sang AI) được chuyển ra sau điểm lưu trữ và do chính PACS điều khiển bằng quy tắc
+xuất dữ liệu.
+
+\textbf{Khi có sự cố.} Tầng này không được phép ngừng; mọi thành phần đều có dự phòng
+N+1. Phương án cuối cùng khi máy chủ đăng nhập không dùng được là một máy trạm khẩn cấp
+đọc ảnh trực tiếp từ PACS, không qua OpenID Connect, và mỗi lần sử dụng đều sinh cảnh
+báo để kiểm tra lại sau.
+
+\subsubsection{Tầng suy luận AI (AI Inference)}
+
+\textbf{Vai trò.} Tầng này dự đoán một ca chụp có dấu hiệu xuất huyết não hay không
+và, nếu có, thông báo cho bác sĩ để ca đó được đọc sớm hơn. Tầng này được cô lập với
+tầng lâm sàng: tầng lâm sàng không gọi và không chờ tầng AI, nên tầng AI có thể ngừng
+hoạt động trong một thời gian mà việc đọc phim vẫn diễn ra bình thường (nguyên tắc
+P1).
+
+\textbf{Thành phần.}
+\begin{description}[leftmargin=3.4cm,style=nextline]
+\item[Cổng trung gian] Orthanc \cite{jodogne2018orthanc}, là thành phần duy nhất của
+      phía AI nói chuyện với PACS. Cổng nhận các chuỗi ảnh PACS đẩy sang (DICOM, cổng
+      4242), giữ một bản làm việc để dịch vụ suy luận đọc nhiều lần (tiền xử lý, chạy lại
+      khi lỗi, chạy lại khi đổi mô hình) mà không tạo tải lên PACS, nhận kết quả AI và gửi
+      lại PACS bằng C-STORE, đồng thời tạo bản đã khử định danh cho tầng nghiên cứu. Logic
+      riêng của đề tài (khử định danh, kiểm tra rò rỉ, chuẩn bị dữ liệu) chạy trong plugin
+      Python của Orthanc. Cổng chạy nhiều nút song song (active-active), dùng chung chỉ
+      mục PostgreSQL và lưu tệp trên SeaweedFS.
+\item[Bộ điều phối tác vụ] Nhận sự kiện ``ca chụp đã đủ ảnh'' từ cổng, tạo một tác vụ
+      suy luận cho mỗi ca, gán hạn chót và độ ưu tiên (ca cấp cứu trước), và loại bỏ tác
+      vụ trùng khi nhiều nút cổng cùng phát sự kiện cho một ca (khoá theo Study Instance
+      UID). Thành phần này là mã nguồn riêng của đề tài.
+\item[Dịch vụ suy luận AI] Khối trừu tượng, công cụ cụ thể chưa chốt; các ứng viên là
+      ứng dụng MONAI Deploy chạy mô hình phân đoạn 3D trên một máy chủ suy luận như
+      NVIDIA Triton. Hợp đồng đầu vào, đầu ra của khối này được cố định ở
+      Mục~\ref{sec:aicontract}, nên thay đổi công cụ không ảnh hưởng các tầng khác.
+\end{description}
+
+\textbf{Quyết định thiết kế.} Dịch vụ suy luận không đọc thẳng từ PACS và cũng không
+có tài khoản trên PACS. PACS không hỗ trợ sẵn một tài khoản ``chỉ được ghi'' cho
+DICOMweb, nên kết quả AI đi về PACS qua cổng trung gian, bằng C-STORE tới một AE riêng
+chỉ cho phép lưu (Mục~\ref{sec:network}). Việc giữ cổng trung gian cả khi GPU nằm
+ngay trong bệnh viện là chủ ý: cổng là đích nhận dữ liệu đẩy sang, là điểm khử định
+danh duy nhất, và là chỗ duy nhất phải thay đổi khi chuyển sang kịch bản có GPU bên
+ngoài.
+
+\textbf{Khi có sự cố.} Trình xem và worklist hiển thị trạng thái ``AI tạm ngừng'' để
+không ai hiểu nhầm việc không có cờ là âm tính; ca chụp được đọc theo thứ tự thông
+thường. Khi cổng không nhận được dữ liệu, PACS giữ tác vụ xuất trong hàng đợi và tự
+thử lại.
+
+\subsubsection{Tầng nghiên cứu AI (AI Research)}
+
+\textbf{Vai trò.} Tầng này nâng cấp khả năng dự đoán của mô hình theo thời gian. Người
+gán nhãn vẽ hoặc chỉnh vùng xuất huyết, dữ liệu được đóng băng thành các phiên bản
+dataset, kỹ sư ML huấn luyện, đánh giá rồi đăng ký mô hình mới, và chỉ mô hình đã được
+duyệt mới được đưa sang tầng suy luận.
+
+\textbf{Thành phần.}
+\begin{description}[leftmargin=3.4cm,style=nextline]
+\item[Gán nhãn] MONAI Label \cite{monailabel} làm máy chủ gán nhãn, với 3D Slicer hoặc
+      OHIF làm công cụ phía người dùng. Công cụ đọc ảnh đã khử định danh và ghi nhãn
+      (DICOM SEG) qua DICOMweb của cổng trung gian, không đọc trực tiếp từ kho đối tượng.
+\item[Huấn luyện và registry] Khối trừu tượng: huấn luyện trên GPU, đánh giá trên tập
+      kiểm tra giữ riêng, và lưu mô hình kèm số đo, phiên bản dataset và trạng thái duyệt
+      trong một registry. Registry là điểm bàn giao duy nhất giữa nghiên cứu và suy luận.
+\end{description}
+
+\textbf{Quy tắc về nhãn.} Nhãn huấn luyện không được lấy từ kết quả AI mà bác sĩ đã
+chấp nhận, vì như vậy mô hình sẽ học lại chính đầu ra của nó. Gợi ý từ mô hình hiện tại
+(bản nháp) được phép dùng cho tập huấn luyện để giảm công vẽ, nhưng tập kiểm định, tập
+kiểm tra và các ca bác sĩ bất đồng phải được gán nhãn mù hoàn toàn với AI, đọc đôi và
+có người phân xử. Mô hình đang huấn luyện không được dùng để tạo bản nháp cho chính nó.
+
+\textbf{Khi có sự cố.} Không ảnh hưởng tới khám chữa bệnh. Nhãn đã lưu được sao chép
+ngay sang SeaweedFS nên không mất khi một nút cổng gặp sự cố.
+
+\subsubsection{Tầng dữ liệu (Data)}
+\label{sec:datalayer}
+
+\textbf{Vai trò.} Tính sẵn sàng và độ trễ của toàn hệ thống phụ thuộc vào tầng này, vì
+cả PACS lẫn cổng trung gian đều không giữ trạng thái riêng. Tầng dữ liệu được chia
+theo vai trò thành \emph{data plane} (tệp ảnh, dung lượng lớn, đọc ghi theo luồng) và
+\emph{control plane} (chỉ mục, tác vụ, kết quả; dung lượng nhỏ, cần nhất quán giao
+dịch).
+
+\textbf{Thành phần.}
+\begin{description}[leftmargin=3.4cm,style=nextline]
+\item[SeaweedFS] \emph{Data plane}: kho đối tượng phân tán, giấy phép Apache 2.0, có
+      giao diện tương thích S3 \cite{seaweedfs}. Một cụm duy nhất phục vụ ba bucket:
+      \texttt{pacs} (ảnh định danh của PACS, ghi qua lớp lưu trữ S3 của dcm4chee), bucket
+      của cổng trung gian (bản làm việc cho AI, ghi qua plugin lưu trữ đối tượng của
+      Orthanc) và \texttt{research} (nhãn và dataset đã khử định danh). Mỗi bucket có
+      quyền truy cập riêng; bucket \texttt{research} chỉ cổng trung gian được ghi. Tệp
+      được nhân bản qua nhiều nút để chịu được hỏng một nút.
+\item[PostgreSQL] \emph{Control plane}: các cơ sở dữ liệu tách riêng cho chỉ mục ca
+      chụp và hàng đợi tác vụ của PACS, chỉ mục của cổng trung gian, kết quả AI và
+      Keycloak. Hai nút chính và dự phòng được Patroni tự động chuyển đổi khi có sự cố
+      \cite{patroni}; Patroni cần một cụm etcd ba nút để quyết định nút nào là nút chính.
+\item[OpenLDAP] Lưu \emph{cấu hình} của dcm4chee: thiết bị, AE title, kết nối mạng,
+      quy tắc xuất dữ liệu, hàng đợi. dcm4chee lưu cấu hình theo hồ sơ quản lý cấu hình
+      ứng dụng của DICOM PS3.15, vốn định nghĩa sẵn một lược đồ LDAP; mọi nút PACS đọc
+      chung một cấu hình. Đây không phải nơi lưu tài khoản người dùng; tài khoản do
+      Keycloak quản lý.
+\item[Cổng sao lưu] pgBackRest cho cơ sở dữ liệu và rclone cho tệp, gom bản sao lưu
+      để gửi lên đám mây (Luồng 4).
+\end{description}
+
+\textbf{Quyết định thiết kế.} SeaweedFS được chọn thay cho MinIO vì kho mã nguồn bản
+cộng đồng của MinIO đã ngừng bảo trì và bản miễn phí không còn hỗ trợ chế độ phân tán.
+Một cụm SeaweedFS chung cho cả PACS lẫn AI được chấp nhận để giữ hệ thống đơn giản;
+nếu lưu lượng đọc của AI làm chậm việc đọc ảnh lâm sàng, bucket của cổng trung gian
+được chuyển sang đĩa riêng mà không đổi giao diện. Bản mẫu cho thấy tải một chuỗi ảnh
+từ SeaweedFS chậm hơn đĩa cục bộ từ 2 tới 4 lần nhưng vẫn dưới nửa giây
+(Mục~\ref{sec:poc}).
+
+\subsubsection{Tầng đám mây (Cloud)}
+
+\textbf{Vai trò.} Tầng đám mây phục vụ khôi phục sau thảm hoạ và lưu trữ dài hạn: nó
+nhận bản sao lưu của dữ liệu bệnh viện và lưu nhật ký truy vết với thời hạn tới 10
+năm. Đám mây không nằm trên đường đọc phim.
+
+\textbf{Ràng buộc.} Dữ liệu chỉ đi ra theo một chiều, qua một tường lửa đầu ra duy
+nhất chỉ cho phép HTTPS tới đúng các điểm cuối lưu trữ đã đăng ký; đám mây không bao
+giờ kết nối ngược vào bệnh viện. Dữ liệu được mã hoá bằng khoá do bệnh viện nắm giữ
+trước khi rời bệnh viện, nên nhà cung cấp chỉ giữ dữ liệu đã mã hoá. Các bucket được
+khoá ghi một lần (Object Lock, chế độ WORM) để cả người vận hành lẫn mã độc đều không
+xoá được trước hạn. Kho đặt trong lãnh thổ Việt Nam theo yêu cầu L1 và được ràng buộc
+bằng hợp đồng xử lý dữ liệu.
+
+\textbf{Khi có sự cố.} Bản sao lưu xếp hàng chờ gửi; chỉ những ca rất cũ đã không còn
+bản tại chỗ là tạm thời không mở được, vì vậy ca cũ của bệnh nhân có lịch tái khám được
+nạp trước (Mục~\ref{sec:tiering}).
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}l Y Y@{}}
+\toprule
+\textbf{Tầng} & \textbf{Vai trò} & \textbf{Khi tầng ngừng hoạt động} \\
+\midrule
+Lâm sàng & Đọc phim và chẩn đoán & Không được phép xảy ra: dự phòng N+1 cho mọi thành phần; máy trạm khẩn cấp là phương án cuối \\
+Suy luận AI & Báo động ca nghi xuất huyết, lớp phủ hỗ trợ đọc & Ca chụp được đọc theo thứ tự thông thường; trình xem và worklist hiển thị ``AI tạm ngừng'' \\
+Nghiên cứu AI & Gán nhãn, huấn luyện, duyệt mô hình & Không ảnh hưởng tới khám chữa bệnh \\
+Dữ liệu & Lưu tệp ảnh, chỉ mục, cấu hình & Ảnh hưởng trực tiếp tới tầng lâm sàng, vì vậy mỗi kho có cơ chế sẵn sàng cao riêng \\
+Đám mây & Sao lưu, lưu trữ dài hạn, nhật ký 10 năm & Bản sao lưu xếp hàng chờ gửi; chỉ ca rất cũ chưa có bản tại chỗ là tạm thời không mở được \\
+\bottomrule
+\end{tabularx}
+\caption{Năm tầng của kiến trúc và hệ quả khi mỗi tầng ngừng hoạt động.}
+\label{tab:layers}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\subsection{Phân vùng mạng và giao diện}
+\label{sec:network}
+
+Mỗi tầng là một vùng mạng riêng (VLAN). Lưu lượng giữa các vùng mặc định bị chặn bởi
+tường lửa nội bộ, và chỉ những kết nối trong Bảng~\ref{tab:interfaces} được mở, theo
+đúng chiều khởi tạo ghi trong bảng. Hai điểm đáng chú ý: cổng trung gian không có
+đường nào tới cổng DICOM chính hay giao diện web của PACS, chỉ tới một AE riêng nhận
+kết quả; và vùng nghiên cứu chỉ được gọi DICOMweb tới cổng trung gian để đọc bản đã khử
+định danh và ghi nhãn.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}p{2.6cm} p{2.6cm} p{3.0cm} Y@{}}
+\toprule
+\textbf{Từ} & \textbf{Tới} & \textbf{Giao thức, cổng} & \textbf{Nội dung} \\
+\midrule
+Máy chụp CT & PACS & DICOM, 11112 (TLS nếu thiết bị hỗ trợ) & Ca chụp (C-STORE); truy vấn worklist (C-FIND) \\
+HIS/RIS & PACS & HL7 v2 qua MLLP, 2575 & Thông tin bệnh nhân, chỉ định (ADT, ORM) \\
+Trình xem & PACS & HTTPS, qua reverse proxy & QIDO-RS, WADO-RS; token đăng nhập được kiểm tra tại proxy \\
+Trình xem & Keycloak & HTTPS & Đăng nhập OpenID Connect \\
+PACS & Cổng trung gian & DICOM, 4242 & Xuất chuỗi ảnh (C-STORE), do PACS khởi tạo \\
+Cổng trung gian & PACS (AE \texttt{AI\_RESULTS}) & DICOM, 11113 & Chỉ C-STORE kết quả AI; AE này không nhận truy vấn \\
+Cổng trung gian & Dịch vụ suy luận & API nội bộ & Giao tác vụ, trả mặt nạ (Mục~\ref{sec:aicontract}) \\
+Dịch vụ suy luận & HIS/RIS & HL7 ORU hoặc FHIR & Cờ ưu tiên \\
+Công cụ gán nhãn & Cổng trung gian & HTTPS (DICOMweb) & Đọc bản đã khử định danh, ghi nhãn SEG \\
+PACS, cổng & SeaweedFS & S3 qua HTTP & Tệp ảnh (bucket riêng cho mỗi bên) \\
+PACS, cổng, Keycloak & PostgreSQL & PostgreSQL, 5432, TLS & Chỉ mục, tác vụ, kết quả \\
+PACS & OpenLDAP & LDAP, 389/636 & Cấu hình \\
+PostgreSQL & Cổng sao lưu & pgBackRest, TLS & WAL và bản sao lưu đầy đủ \\
+Cổng sao lưu & Đám mây & HTTPS 443, chỉ chiều ra & Bản sao lưu đã mã hoá, nhật ký truy vết \\
+\bottomrule
+\end{tabularx}
+\caption{Các kết nối được phép giữa các vùng. Cột ``Từ'' là phía khởi tạo kết nối. Số
+cổng là giá trị tham chiếu, thay bằng giá trị thực tế của bệnh viện khi triển khai.}
+\label{tab:interfaces}
+\end{table}
+
+AE title của DICOM chỉ là \emph{định danh}, không phải \emph{xác thực}: bất kỳ máy nào
+cũng có thể tự xưng một AE title đã được chấp nhận. Bản mẫu xác nhận điều này và cho
+thấy rào chắn thực sự là việc tách cổng mạng (Mục~\ref{sec:poc}); vì vậy danh sách AE
+được chấp nhận chỉ là lớp bảo vệ thứ hai, sau phân vùng mạng, và cần được bổ sung DICOM
+TLS ở những thiết bị hỗ trợ.
+
+% ---------------------------------------------------------------------------
+\subsection{Các luồng xử lý}
 \label{sec:flow}
 
-Luồng dưới đây giống nhau ở mọi bối cảnh; các bối cảnh chỉ khác nhau ở chỗ bước
-nào được bật và mỗi kho được đặt ở đâu.
+Năm luồng dưới đây chạy qua các tầng. Số thứ tự của từng bước trùng với số trong vòng
+tròn trên Hình~\ref{fig:arch-s1}. Luồng 1, 3, 4 và 5 giống nhau ở mọi kịch bản; Luồng
+2 phụ thuộc vị trí GPU nên được mô tả riêng trong từng kịch bản
+(Mục~\ref{sec:scenarios}).
 
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[
-    node distance=0.55cm,
-    stepbox/.style={draw, rounded corners=2pt, minimum width=11cm, minimum height=0.7cm,
-                 align=left, font=\small, inner xsep=8pt},
-    local/.style={stepbox, fill=green!6},
-    cloudy/.style={stepbox, fill=blue!6},
-    gate/.style={draw, diamond, aspect=3.4, inner sep=1pt, font=\scriptsize, align=center},
-    arr/.style={->, >=stealth, thick}
-]
-\node[local] (s1) {\textbf{B1.} Thiết bị chụp gửi ảnh qua C-STORE tới cổng DICOM};
-\node[local, below=of s1] (s2) {\textbf{B2.} Ghi bền xuống kho tại chỗ, tính checksum, rồi mới xác nhận cho thiết bị};
-\node[local, below=of s2] (s3) {\textbf{B3.} Phát sự kiện ``ảnh đã đến'' tới bộ điều phối};
-\node[local, below=of s3] (s4) {\textbf{B4.} Bác sĩ đã có thể đọc ảnh trên trình xem};
-\node[local, below=of s4] (s5) {\textbf{B5.} Ghép đủ chuỗi ảnh, khử định danh, xử lý hậu kỳ};
-\node[local, below=of s5] (s6) {\textbf{B6.} Lưu siêu dữ liệu, ghi nhật ký truy vết};
-\node[gate, below=of s6, yshift=-0.12cm] (g) {Có cấu hình đích\\ngoài cơ sở?};
-\node[cloudy, below=of g, yshift=-0.12cm] (s7) {\textbf{B7.} Đưa bản sao lưu mã hoá và (nếu bật) bản đã khử định danh vào hàng đợi};
-\node[cloudy, below=of s7] (s8) {\textbf{B8.} Tiến trình nền gửi dần, thử lại khi lỗi, đối chiếu checksum rồi mới xoá};
-\node[local, below=of s8] (s9) {\textbf{B9.} Vòng đời: chuyển tầng theo tuổi, nạp trước ca cũ, xoá khi hết hạn};
-
-\foreach \a/\b in {s1/s2, s2/s3, s3/s4, s4/s5, s5/s6, s6/g, g/s7, s7/s8, s8/s9}
-    \draw[arr] (\a) -- (\b);
-\draw[arr] (g.east) -- node[above,font=\scriptsize] {không} (g.east -| s8.east) -- ++(0.6,0) |- (s9.east);
-\end{tikzpicture}
-\caption{Luồng xử lý chung của một ca chụp. Các bước nền xanh lá diễn ra hoàn toàn
-trong mạng nội bộ bệnh viện; chỉ hai bước nền xanh dương liên quan tới kho ngoài
-cơ sở, và chúng nằm sau thời điểm bác sĩ đã đọc được ảnh.}
-\label{fig:flow}
-\end{figure}
-
-Diễn giải từng bước:
-
-\begin{description}[leftmargin=1.4cm,style=nextline]
-\item[B1] Thiết bị chụp mở một liên kết DICOM tới cổng DICOM và gửi từng lát
-      cắt bằng lệnh C-STORE. Đây là cấu hình duy nhất cần thay đổi trên thiết
-      bị chụp khi lắp đặt hệ thống.
-\item[B2] Cổng DICOM ghi từng đối tượng ảnh xuống kho lưu trữ tại chỗ, tính và
-      lưu tổng kiểm tra, rồi mới trả mã xác nhận thành công cho thiết bị chụp.
-      Thứ tự này là hiện thực của nguyên tắc P5: chỉ khi dữ liệu đã nằm bền
-      trên đĩa thì phía gửi mới được phép coi là đã gửi xong. Nếu cổng DICOM
-      lỗi trước khi xác nhận, thiết bị chụp vẫn giữ bản của nó và gửi lại;
-      trách nhiệm giữ dữ liệu vì thế không bao giờ bị ``rơi'' giữa hai bên.
-\item[B3] Sau khi ghi xong, cổng DICOM phát một sự kiện nội bộ báo có ảnh
-      mới. Trong bản mẫu, cơ chế này được hiện thực bằng callback Lua của
-      Orthanc gọi tới bộ điều phối. Sự kiện được phát theo kiểu ``bắn và
-      quên'': nếu bộ điều phối không phản hồi, cổng DICOM vẫn tiếp tục nhận
-      các ảnh tiếp theo bình thường.
-\item[B4] Ngay tại thời điểm này, trước khi bất kỳ xử lý hậu kỳ nào diễn ra,
-      bác sĩ đã có thể mở trình xem và đọc ca chụp qua DICOMweb. Đây chính là
-      biểu hiện cụ thể của nguyên tắc P1: giá trị lâm sàng cơ bản của hệ
-      thống, tức việc xem được ảnh, không phụ thuộc vào các thành phần phụ
-      trợ.
-\item[B5] Bộ điều phối chờ cho tới khi nhận đủ số lát cắt của một chuỗi ảnh,
-      lọc theo loại thiết bị và vùng giải phẫu, thực hiện khử định danh theo
-      Mục~\ref{sec:deid}, rồi chuyển dữ liệu đã khử định danh tới dịch vụ xử
-      lý hậu kỳ. Toàn bộ quá trình này chạy trong mạng nội bộ, không ra ngoài
-      Internet.
-\item[B6] Siêu dữ liệu được ghi vào kho kèm dấu thời gian, đồng thời một bản
-      ghi được thêm vào nhật ký truy vết chỉ ghi thêm theo yêu cầu L4.
-\item[B7] Nếu cơ sở đã cấu hình đích ngoài cơ sở, hai loại bản sao được đưa vào
-      hàng đợi bền vững trên đĩa cục bộ: \emph{bản sao lưu} của bản gốc, được
-      mã hoá bằng khoá do bệnh viện nắm giữ trước khi rời máy chủ, và, nếu
-      chức năng chia sẻ được bật, \emph{bản đã khử định danh}. Bản gốc ở dạng
-      rõ không bao giờ đi vào hàng đợi này.
-\item[B8] Một tiến trình nền lấy từng phần tử khỏi hàng đợi và gửi đi, sử dụng
-      cơ chế thử lại với khoảng chờ tăng dần khi gặp lỗi mạng. Phần tử chỉ bị
-      xoá khỏi hàng đợi sau khi phía nhận xác nhận đã lưu thành công và tổng
-      kiểm tra khớp. Nhờ vậy, mất kết nối chỉ làm hàng đợi dài thêm chứ không
-      gây mất dữ liệu.
-\item[B9] Độc lập với B7--B8, chính sách vòng đời định kỳ chuyển các ca chụp
-      cũ xuống tầng thấp hơn, nạp trước các ca cũ của một bệnh nhân vừa có chỉ
-      định mới lên tầng nóng, và xoá có căn cứ khi hết thời hạn lưu trữ theo
-      L6 (Mục~\ref{sec:tiering}).
+\paragraph{Luồng 1: từ máy chụp tới chẩn đoán.} Đây là đường bác sĩ thực sự phải chờ,
+tính từ khi chụp xong tới khi ảnh đầu tiên hiện trên màn hình. Toàn bộ luồng nằm trong
+mạng nội bộ.
+\begin{description}[leftmargin=1.2cm,style=nextline]
+\item[1.1] Máy chụp mở một liên kết DICOM (association) tới PACS và gửi từng ảnh bằng
+      C-STORE. Các nút PACS đứng sau bộ cân bằng tải tầng 4, nên máy chụp luôn gặp một
+      nút còn hoạt động. PACS chỉ chấp nhận các AE title đã khai báo
+      (\texttt{dcmAcceptedCallingAETitle}).
+\item[1.2] PACS ghi tệp ảnh vào bucket \texttt{pacs} trên SeaweedFS và chỉ mục vào
+      PostgreSQL rồi mới trả lời thành công cho máy chụp (nguyên tắc P5). Ca chụp truy
+      vấn được ngay khi những ảnh đầu tiên đã được lưu; bản mẫu đo được 0{,}4--1{,}6 giây
+      kể từ khi bắt đầu gửi.
+\item[1.3] Trình xem truy vấn danh sách chuỗi ảnh bằng QIDO-RS rồi tải siêu dữ liệu và
+      điểm ảnh bằng WADO-RS. Ca chụp mở được ngay cả khi các chuỗi ảnh sau vẫn đang được
+      gửi tới; bác sĩ không phải chờ máy chụp gửi xong toàn bộ.
+\item[1.4] HIS/RIS gửi chỉ định qua HL7. PACS dựng worklist cho máy chụp từ chỉ định,
+      và dùng chính sự kiện có chỉ định mới để nạp trước các ca cũ của bệnh nhân.
+\item[1.5] Bác sĩ đọc phim và chẩn đoán. Khi kết quả AI có sẵn (Luồng 2), lớp phủ xuất
+      hiện trên trình xem dưới dạng kết quả chưa xác nhận, và cờ ưu tiên đưa ca lên đầu
+      worklist. Bác sĩ xác nhận, sửa hoặc bỏ qua kết quả AI; chỉ kết luận do bác sĩ ký mới
+      đi vào hồ sơ bệnh án.
 \end{description}
+
+\paragraph{Luồng 2: suy luận AI.} PACS xuất các chuỗi ảnh phù hợp sang cổng trung
+gian; dịch vụ suy luận phân tích và trả kết quả theo hai đường: lớp phủ trở về PACS qua
+cổng, còn cảnh báo và cờ ưu tiên đi tới bác sĩ và HIS/RIS. Phần dùng chung của luồng
+này (quy tắc xuất dữ liệu, hàng đợi, ghi kết quả) được mô tả ngay dưới đây; các bước
+phụ thuộc vị trí GPU nằm ở Mục~\ref{sec:scenario1} và Mục~\ref{sec:scenario2}.
+
+\emph{Quy tắc xuất dữ liệu.} Trong dcm4chee, một \emph{export rule} gắn với một
+\emph{exporter} trỏ tới cổng trung gian. Quy tắc làm việc ở mức chuỗi ảnh
+(\texttt{dcmEntity: Series}), chờ một khoảng sau ảnh cuối cùng của chuỗi
+(\texttt{dcmDuration}) và chỉ khớp các chuỗi thoả điều kiện (\texttt{dcmProperty}), ví
+dụ \texttt{Modality=CT}, mô tả chuỗi là ảnh trục, và AE gửi là máy chụp thật. Điều kiện
+về AE gửi giúp các ca cũ nhập từ hệ thống lưu trữ trước đây không bị đẩy sang AI hàng
+loạt. Khi cần ca cũ để so sánh, có thể dùng quy tắc xuất ca cũ
+(\texttt{dcmExportPriorsRule}) hoặc gọi xuất theo yêu cầu qua REST của dcm4chee.
+
+\emph{Hàng đợi và thử lại.} Mỗi lần xuất là một tác vụ được lưu trong PostgreSQL, nằm
+trong một hàng đợi có số lần thử lại tối đa, khoảng chờ và hệ số tăng khoảng chờ. Khi
+cổng ngừng hoạt động, tác vụ chuyển sang trạng thái chờ thử lại; khi cổng hoạt động trở
+lại, tác vụ hoàn tất mà không cần can thiệp. Mặc định dcm4chee chỉ quét tác vụ mỗi phút
+một lần và lần thử lại đầu tiên sau 30 giây, tăng dần tới 10 phút; với ca cấp cứu, các
+khoảng thời gian này phải được rút ngắn tường minh, nếu không riêng phần chờ đã chiếm hết
+ngân sách độ trễ của AI (Bảng~\ref{tab:latency}).
+
+\paragraph{Luồng 3: gán nhãn và phát triển mô hình.} Luồng này không cấp thời và lặp
+lại theo tuần, theo tháng.
+\begin{description}[leftmargin=1.2cm,style=nextline]
+\item[3.1] Với các ca được chọn cho nghiên cứu, cổng trung gian tạo bản đã khử định
+      danh (Mục~\ref{sec:archdeid}) và đánh dấu bản đó để chỉ công cụ gán nhãn được thấy.
+      Công cụ gán nhãn đọc bản này qua DICOMweb; người gán nhãn không bao giờ thấy danh
+      tính bệnh nhân và không có đường nào tới PACS.
+\item[3.2] Nhãn được lưu ngược về cổng dưới dạng DICOM SEG. Cổng sao chép ngay mỗi nhãn
+      sang bucket \texttt{research} trên SeaweedFS, nên nhãn, vốn là công sức không tạo
+      lại được, không phụ thuộc vào bản làm việc của cổng.
+\item[3.3] Một phiên bản dataset (danh sách ca, ảnh, nhãn và phiên bản quy trình tiền
+      xử lý) được đóng băng trong bucket \texttt{research} và chuyển cho bước huấn luyện;
+      mỗi mô hình về sau truy được tới đúng dữ liệu đã dùng để huấn luyện nó.
+\item[3.4] Kỹ sư ML huấn luyện, đánh giá trên tập kiểm tra giữ riêng và đăng ký mô hình
+      ứng viên vào registry. Chỉ phiên bản được bác sĩ và nhóm AI duyệt mới được đánh dấu
+      hợp lệ. Trước khi bật cảnh báo cho bác sĩ, mô hình mới chạy ở chế độ ``im lặng'': có
+      kết quả để so sánh nhưng không hiển thị và không gửi cờ.
+\item[3.5] Dịch vụ suy luận nạp phiên bản đã duyệt. Công cụ gán nhãn dùng mô hình hợp lệ
+      mới nhất để sinh bản nháp cho tập huấn luyện, khép kín vòng gán nhãn theo các quy tắc
+      về nhãn ở tầng nghiên cứu.
+\end{description}
+
+\paragraph{Luồng 4: sao lưu và nhân bản lên đám mây.} Luồng chạy nền, một chiều, và
+không bao giờ xoá dữ liệu trên đám mây.
+\begin{description}[leftmargin=1.2cm,style=nextline]
+\item[4.1] PostgreSQL gửi liên tục nhật ký giao dịch (WAL) và định kỳ bản sao lưu đầy
+      đủ tới cổng sao lưu bằng pgBackRest, cho phép khôi phục về một thời điểm bất kỳ.
+      Đây là bản sao lưu duy nhất của cơ sở dữ liệu nên được giám sát chặt.
+\item[4.2] Cổng sao lưu sao chép các tệp mới từ SeaweedFS bằng rclone ở chế độ chỉ sao
+      chép (\texttt{copy}, không phải \texttt{sync}), nên một lệnh xoá tại bệnh viện,
+      dù nhầm hay do mã độc, không kéo theo xoá trên đám mây.
+\item[4.3] Mọi dữ liệu đi ra qua tường lửa đầu ra duy nhất, chỉ HTTPS chiều ra, tới
+      đúng các điểm cuối lưu trữ đã đăng ký. Không hệ thống nào khác trong bệnh viện ra
+      được Internet.
+\item[4.4] Đám mây lưu ảnh theo các lớp lưu trữ (Bảng~\ref{tab:tiers}), bản sao lưu cơ
+      sở dữ liệu và nhật ký truy vết, tất cả được mã hoá bằng khoá của bệnh viện và khoá
+      ghi một lần. Quy tắc vòng đời chuyển ảnh xuống lớp rẻ hơn theo tuổi và xoá khi hết
+      thời hạn, trừ ca bị giữ vì lý do pháp lý.
+\end{description}
+
+\paragraph{Luồng 5: khôi phục.} Dữ liệu chỉ được lấy về từ đám mây khi cần, có phê
+duyệt và qua một tài khoản riêng chỉ có quyền đọc. Ba tình huống điển hình là: bác sĩ cần
+một ca cũ đã không còn bản tại chỗ (vài phút tới vài giờ tuỳ lớp lưu trữ, nên ca của bệnh
+nhân có lịch tái khám được nạp trước một hai ngày); dữ liệu bị xoá nhầm hoặc hỏng, khi đó
+nút dự phòng không giúp được vì nó đã sao chép cả lỗi, và cơ sở dữ liệu được khôi phục về
+thời điểm ngay trước sự cố; và mất toàn bộ phòng máy, khi đó hạ tầng được dựng lại và dữ
+liệu được khôi phục từ đám mây trong vài ngày.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}Y p{3.0cm} Y@{}}
+\toprule
+\textbf{Chặng} & \textbf{Mục tiêu} & \textbf{Ghi chú} \\
+\midrule
+Mở ca chụp gần đây tới khi thấy ảnh đầu tiên & dưới 2 giây (p95) & Ràng buộc bất biến; mọi đường đọc nằm trong mạng nội bộ \\
+Từ khi bắt đầu gửi tới khi ca truy vấn được & vài giây & Bản mẫu: 0{,}4--1{,}6 giây \\
+Từ ảnh cuối của chuỗi tới khi chuỗi tới cổng & vài giây & Bản mẫu: 7--9 giây; phụ thuộc \texttt{dcmDuration} và chu kỳ quét tác vụ \\
+Toàn bộ vòng đời AI, ca thường & dưới 3 phút & Từ ảnh cuối tới khi có lớp phủ và cờ \\
+Toàn bộ vòng đời AI, ca cấp cứu & dưới 90 giây & Quá hạn chót thì hiển thị ``không có kết quả AI'' \\
+Ghi kết quả AI về PACS & dưới 1 giây & Bản mẫu: 80--113~ms \\
+\bottomrule
+\end{tabularx}
+\caption{Ngân sách độ trễ (mục tiêu thiết kế, đo ở phân vị 95). Số đo của bản mẫu thực
+hiện trên một máy, không tải, nên chỉ cho thấy bậc độ lớn.}
+\label{tab:latency}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\subsection{Hợp đồng dữ liệu của tầng AI}
+\label{sec:aicontract}
+
+Dịch vụ suy luận là khối trừu tượng, nên giao diện của nó được cố định trước để mọi
+công cụ hiện thực sau này đều lắp vào được mà không đổi các tầng khác.
+
+\textbf{Đầu vào.} Mô hình chỉ làm việc với chuỗi CT sọ não không tiêm thuốc cản quang,
+lát mỏng, mặt phẳng trục. Nếu ca chụp không có chuỗi như vậy, ca được gắn trạng thái
+``không phân tích được'' chứ không bao giờ được coi là âm tính.
+
+\textbf{Đầu ra.} Một lần suy luận sinh ra ba sản phẩm. \emph{Cờ ưu tiên}: suy ra từ mặt
+nạ bằng ngưỡng xác suất và thể tích tối thiểu, gửi ngay khi có để không phải chờ phần định
+lượng. \emph{Mặt nạ phân đoạn} (DICOM SEG): dùng làm lớp phủ trên trình xem.
+\emph{Báo cáo có cấu trúc} (DICOM SR theo mẫu TID 1500): ghi thể tích vùng xuất huyết và
+các số đo, được tạo sau cờ ưu tiên.
+
+\textbf{Siêu dữ liệu bắt buộc.} Mỗi kết quả phải mang phiên bản mô hình, mã băm của quy
+trình tiền xử lý, thời điểm chạy và trạng thái xác nhận. Thiếu bất kỳ trường nào thì kết
+quả không được ghi, vì khi đó không thể truy vết kết quả về đúng mô hình và đúng dữ liệu
+đã tạo ra nó.
+
+\textbf{Trạng thái hiển thị.} Trình xem phân biệt rõ bốn trạng thái: chưa chạy AI; AI
+thất bại hoặc quá hạn (``không có kết quả AI''); không phân tích được (thiếu chuỗi phù
+hợp); và AI đã có kết quả, chờ bác sĩ xác nhận. Không trạng thái nào được hiển thị giống
+một kết quả âm tính.
+
+% ---------------------------------------------------------------------------
+\subsection{Khử định danh tại cổng trung gian}
+\label{sec:archdeid}
+
+Cổng trung gian là điểm khử định danh duy nhất của hệ thống, áp dụng cho dữ liệu đi sang
+tầng nghiên cứu và, ở Kịch bản 2, cho dữ liệu đi ra cơ sở GPU bên ngoài. Quy trình chạy
+trong plugin Python của Orthanc, cho mỗi ca được chọn:
+
+\begin{enumerate}[leftmargin=1.2cm]
+\item \textbf{Lọc ảnh có nguy cơ chứa chữ trên điểm ảnh.} Loại bỏ ảnh định vị (thuộc
+      tính \texttt{ImageType} chứa \texttt{LOCALIZER}), ảnh thuộc lớp Secondary Capture
+      (thường là ảnh chụp màn hình hoặc báo cáo liều) và mọi ảnh có
+      \texttt{BurnedInAnnotation} bằng \texttt{YES}. Chức năng khử định danh của Orthanc
+      chỉ xử lý thẻ DICOM, không xử lý chữ in trên điểm ảnh; với CT sọ não trục lát mỏng,
+      vốn thường không có chữ in, quy tắc loại bỏ này là đủ.
+\item \textbf{Khử định danh thẻ.} Áp dụng hồ sơ khử định danh cơ bản của DICOM PS3.15
+      (Mục~\ref{sec:deid}), thay toàn bộ UID bằng UID mới và thay mã bệnh nhân bằng một
+      mã giả danh ổn định, để các ca của cùng một người vẫn liên kết được với nhau trong
+      dataset.
+\item \textbf{Kiểm tra rò rỉ.} So khớp mọi thẻ dạng văn bản của bản đã khử định danh
+      với các giá trị định danh đã biết của ca gốc (tên, mã bệnh nhân, ngày sinh, số tiếp
+      nhận). Có bất kỳ trùng khớp nào thì toàn bộ ca bị từ chối.
+\item \textbf{Giữ hoặc từ chối.} Chỉ khi mọi bước trên thành công, bản đã khử định danh
+      mới được giữ lại và đánh dấu cho tầng nghiên cứu; nếu không, không có gì được tạo ra
+      và sự kiện được ghi vào nhật ký (fail-closed).
+\end{enumerate}
+
+Bảng ánh xạ từ mã giả danh về bệnh nhân thật nằm ở bệnh viện, chỉ người quản lý dữ liệu
+(data steward) được truy cập, dùng khi một phát hiện ngẫu nhiên trong quá trình nghiên
+cứu cần được báo lại cho bác sĩ điều trị. Bước kiểm tra rò rỉ chỉ phát hiện được những
+giá trị định danh hệ thống đã biết; nó không thay thế được việc rà soát chữ trên điểm
+ảnh. Khi tầng nghiên cứu cần thêm các loại ảnh khác (X-quang, ảnh chụp màn hình), việc
+che chữ trên điểm ảnh bằng nhận dạng ký tự quang học được bổ sung dưới dạng một bước mới
+trong plugin của cổng.
+
+% ---------------------------------------------------------------------------
+\subsection{Lưu trữ và độ bền}
+\label{sec:storage}
 
 \subsubsection{Nguyên tắc ghi cục bộ trước}
 \label{sec:localfirst}
 
-Cả ba kiến trúc đều tuân theo một nguyên tắc lưu trữ chung: ảnh chụp luôn được
-ghi xuống kho cục bộ tại bệnh viện trước, và chỉ sau khi việc ghi đó hoàn tất
-thì dữ liệu mới được cân nhắc gửi ra ngoài cơ sở. Đây không phải lựa chọn tuỳ
-tiện mà là hệ quả bắt buộc của bốn ràng buộc đã phân tích ở các mục trước.
+Ở mọi kịch bản, ảnh chụp luôn được ghi xuống tầng dữ liệu tại bệnh viện trước, và chỉ
+sau khi việc ghi đó hoàn tất thì dữ liệu mới được cân nhắc gửi ra ngoài. Đây là hệ quả
+bắt buộc của bốn ràng buộc.
 
 \textbf{Thứ nhất, ràng buộc pháp lý.} Theo yêu cầu L1 rút ra từ
 Mục~\ref{sec:legal}, dữ liệu hình ảnh còn định danh phải nằm trong phạm vi bệnh
-viện, hoặc ít nhất trong lãnh thổ Việt Nam. Luật Bảo vệ dữ liệu cá nhân yêu cầu
-lập và gửi hồ sơ đánh giá tác động khi chuyển dữ liệu cá nhân xuyên biên giới
-\cite{pdpl2025}. Nếu hệ thống gửi thẳng ảnh lên một dịch vụ đám mây đặt ngoài
-lãnh thổ trước khi lưu cục bộ thì hành vi chuyển dữ liệu đã xảy ra ngay tại thời
-điểm đó và không thể thu hồi. Ghi cục bộ trước bảo đảm luôn tồn tại một bản gốc
-hợp pháp nằm trong tầm kiểm soát của bệnh viện, còn việc đưa dữ liệu ra ngoài
-trở thành một quyết định tách rời, có thể kiểm soát, có thể từ chối và có thể
-ghi nhật ký.
+viện, hoặc ít nhất trong lãnh thổ Việt Nam \cite{pdpl2025}. Nếu ảnh được gửi thẳng lên
+một dịch vụ bên ngoài trước khi lưu cục bộ thì hành vi chuyển dữ liệu đã xảy ra ngay tại
+thời điểm đó và không thể thu hồi. Ghi cục bộ trước bảo đảm luôn tồn tại một bản gốc hợp
+pháp trong tầm kiểm soát của bệnh viện, còn việc đưa dữ liệu ra ngoài trở thành một
+quyết định tách rời, có thể kiểm soát, có thể từ chối và có thể ghi nhật ký.
 
-\textbf{Thứ hai, an toàn lâm sàng.} Theo nguyên tắc P1, các tác vụ phụ trợ không
-được nằm trên đường tới hạn của việc chuyển ảnh tới bác sĩ. Nếu bước ghi dữ liệu
-phụ thuộc vào kết nối Internet thì một sự cố đường truyền sẽ chặn đứng cả việc
-lưu ảnh lẫn việc đọc ảnh, biến một sự cố hạ tầng thông thường thành một sự cố an
-toàn người bệnh. Kho cục bộ đóng vai trò điểm cam kết dữ liệu: sau khi ảnh được
-ghi thành công xuống đĩa tại chỗ, ca chụp đã an toàn và bác sĩ có thể đọc được,
-bất kể mọi thành phần phía sau có hoạt động hay không.
+\textbf{Thứ hai, an toàn lâm sàng.} Nếu bước ghi phụ thuộc vào Internet thì một sự cố
+đường truyền sẽ chặn cả việc lưu lẫn việc đọc ảnh, biến một sự cố hạ tầng thông thường
+thành một sự cố an toàn người bệnh. Tầng dữ liệu tại chỗ là điểm cam kết: khi ảnh đã nằm
+trên SeaweedFS và chỉ mục đã nằm trong PostgreSQL, ca chụp đã an toàn và bác sĩ đọc được,
+bất kể đám mây có hoạt động hay không.
 
-\textbf{Thứ ba, đặc tính của đường truyền.} Một ca chụp CT sọ não thường gồm vài
-trăm lát cắt với dung lượng từ 100 đến 500~MB. Hình~\ref{fig:transfer} cho thấy
-thời gian truyền một ca theo băng thông: trên mạng nội bộ 1~Gbps, việc ghi mất
-vài giây; trên đường truyền 5~Mbps điển hình của một kết nối yếu ở bối cảnh C,
-một ca 500~MB cần khoảng 19 phút, và vẫn cần khoảng 8 phút ngay cả khi đã nén
-không mất mát. Truyền đồng bộ một khối dữ liệu như vậy dễ thất bại giữa chừng;
-ghi cục bộ trước đẩy phần việc chậm và dễ lỗi này sang một tiến trình nền có khả
-năng thử lại.
+\textbf{Thứ ba, đặc tính của đường truyền.} Một ca CT sọ não gồm vài trăm lát cắt, từ
+100 đến 500~MB. Hình~\ref{fig:transfer} cho thấy trên mạng nội bộ 1~Gbps việc ghi mất
+vài giây, còn trên đường truyền 5~Mbps một ca 500~MB cần khoảng 19 phút và vẫn cần
+khoảng 8 phút sau khi nén không mất mát. Truyền đồng bộ một khối dữ liệu như vậy dễ thất
+bại giữa chừng; ghi cục bộ trước đẩy phần việc chậm và dễ lỗi này sang một tiến trình nền
+có khả năng thử lại.
 
 \begin{figure}[H]
 \centering
@@ -248,423 +547,310 @@ hiệu suất sử dụng đường truyền giả định 70\% và tỉ lệ n�
 \label{fig:transfer}
 \end{figure}
 
-\textbf{Thứ tư, tối thiểu hoá dữ liệu.} Theo yêu cầu L2, chỉ dữ liệu thực sự cần
-thiết mới được truyền đi. Khử định danh và mã hoá là các bước xử lý cần thực
-hiện trên bản gốc. Nếu dữ liệu được đẩy ra ngoài ngay khi vừa đến thì sẽ không
-còn thời điểm nào để chèn các bước này vào giữa. Kho cục bộ tạo ra chính khoảng
-thời gian đó.
+\textbf{Thứ tư, tối thiểu hoá dữ liệu.} Theo yêu cầu L2, chỉ dữ liệu thực sự cần thiết
+mới được truyền đi. Khử định danh và mã hoá phải được thực hiện trên bản gốc trước khi dữ
+liệu rời bệnh viện; kho cục bộ tạo ra chính khoảng thời gian để chèn các bước này.
 
 \subsubsection{Yêu cầu lưu trữ bền}
 \label{sec:durability}
 
-Nguyên tắc P5 biến độ bền của kho lưu trữ thành yêu cầu chức năng. Cần phân biệt
-bốn đại lượng: \emph{độ bền} (xác suất một đối tượng đã xác nhận không bị mất),
-\emph{tính sẵn sàng} (tỉ lệ thời gian ảnh đọc được), \emph{RPO} (lượng dữ liệu tối
-đa có thể mất, đo bằng thời gian) và \emph{RTO} (thời gian tối đa để khôi phục
-dịch vụ). Một kho có thể sẵn sàng cao mà độ bền thấp, chẳng hạn một máy chủ chạy
-ổn định trên một ổ đĩa duy nhất, và ngược lại. Nền tảng đạt độ bền bằng các cơ
-chế chồng lớp sau, mỗi cơ chế chống lại một loại sự cố khác nhau.
+Nguyên tắc P5 biến độ bền thành yêu cầu chức năng. Cần phân biệt \emph{độ bền} (xác
+suất một đối tượng đã xác nhận không bị mất), \emph{tính sẵn sàng} (tỉ lệ thời gian ảnh
+đọc được), \emph{RPO} (lượng dữ liệu tối đa có thể mất, đo bằng thời gian) và
+\emph{RTO} (thời gian tối đa để khôi phục dịch vụ). Một kho có thể sẵn sàng cao mà độ
+bền thấp, và ngược lại. Nền tảng đạt độ bền bằng các cơ chế chồng lớp, mỗi cơ chế chống
+một loại sự cố.
 
 \begin{enumerate}[label=D\arabic*.,leftmargin=1.2cm]
-\item \textbf{Cam kết trước khi xác nhận.} Như bước B2: đối tượng được ghi
-      xuống phương tiện bền và chỉ mục được cập nhật trước khi trả lời C-STORE.
-      Cơ chế này chống mất dữ liệu trong khoảnh khắc chuyển giao giữa thiết bị
-      chụp và nền tảng.
-\item \textbf{Dự phòng phần cứng.} Trên một máy chủ đơn lẻ, đĩa được ghép
-      RAID~1 hoặc RAID~6; trên cụm nhiều máy, kho đối tượng phân tán như Ceph
-      \cite{weil2006ceph} hoặc MinIO nhân bản hay mã hoá xoá (erasure coding)
-      dữ liệu qua nhiều nút. Cơ chế này chống hỏng đĩa hoặc hỏng một nút, nhưng
-      \emph{không} phải là sao lưu: một lệnh xoá nhầm hay mã độc tống tiền sẽ
-      được nhân bản ngay lập tức.
-\item \textbf{Toàn vẹn.} Tổng kiểm tra của từng đối tượng được tính khi tiếp
-      nhận và lưu trong chỉ mục; Orthanc hỗ trợ sẵn việc lưu MD5 cho mỗi tệp.
-      Mỗi lần sao chép sang tầng khác hay ra ngoài cơ sở đều được đối chiếu
-      tổng kiểm tra, và một tác vụ nền quét định kỳ toàn bộ kho để phát hiện
-      hỏng dữ liệu âm thầm trên đĩa.
-\item \textbf{Sao lưu theo quy tắc 3-2-1.} Ít nhất ba bản, trên hai loại
-      phương tiện, trong đó một bản ở ngoài cơ sở. Bản ngoài cơ sở là bản sao
-      lưu đã mã hoá ở bước B7, chống các sự cố mất toàn bộ địa điểm như cháy,
-      ngập, trộm thiết bị.
-\item \textbf{Bất biến.} Nhật ký truy vết và bản sao lưu ngoài cơ sở được ghi
-      theo chế độ ghi một lần (WORM, hay khoá đối tượng trên kho tương thích
-      S3) trong suốt thời hạn lưu trữ, để cả người vận hành lẫn mã độc đều
-      không sửa hay xoá được trước hạn.
-\item \textbf{Chỉ mục là dữ liệu dẫn xuất.} Vì mỗi tệp DICOM tự mô tả, mang
-      đầy đủ siêu dữ liệu bên trong (Mục~\ref{sec:dicom}), kho điểm ảnh là
-      nguồn dữ liệu gốc còn chỉ mục có thể dựng lại bằng cách quét lại kho. Chỉ
-      mục vẫn được sao lưu (kèm nhật ký giao dịch nếu dùng PostgreSQL) để khôi
-      phục nhanh, nhưng mất chỉ mục không đồng nghĩa với mất ảnh.
-\item \textbf{Diễn tập khôi phục.} Việc khôi phục từ bản sao lưu được thực
-      hiện thử định kỳ và đo thời gian; một bản sao lưu chưa từng được khôi phục
-      thử thì chưa thể coi là bản sao lưu.
+\item \textbf{Cam kết trước khi xác nhận.} PACS ghi tệp và chỉ mục trước khi trả lời
+      C-STORE (bước 1.2), chống mất dữ liệu trong khoảnh khắc chuyển giao từ máy chụp.
+      Nếu PACS hỏng trước khi xác nhận, máy chụp vẫn giữ bản của nó và gửi lại; trách nhiệm
+      giữ dữ liệu không bao giờ bị ``rơi'' giữa hai bên.
+\item \textbf{Dự phòng phần cứng.} SeaweedFS nhân bản tệp qua nhiều nút; PostgreSQL
+      có nút dự phòng do Patroni quản lý. Cơ chế này chống hỏng đĩa hoặc hỏng một nút,
+      nhưng \emph{không} phải là sao lưu: một lệnh xoá nhầm hay mã độc tống tiền sẽ được
+      nhân bản ngay lập tức.
+\item \textbf{Toàn vẹn.} Mỗi đối tượng có tổng kiểm tra được đối chiếu ở mọi lần sao
+      chép, và một tác vụ nền quét định kỳ để phát hiện hỏng dữ liệu âm thầm trên đĩa.
+\item \textbf{Sao lưu theo quy tắc 3-2-1.} Ít nhất ba bản, trên hai loại phương tiện,
+      trong đó một bản ở ngoài cơ sở: bản sao lưu đã mã hoá trên đám mây (Luồng 4),
+      chống các sự cố mất toàn bộ địa điểm như cháy, ngập, trộm thiết bị.
+\item \textbf{Bất biến.} Bản sao lưu và nhật ký truy vết trên đám mây được khoá ghi
+      một lần (Object Lock) trong suốt thời hạn lưu trữ, để cả người vận hành lẫn mã
+      độc đều không sửa hay xoá được trước hạn.
+\item \textbf{Chỉ mục là dữ liệu dẫn xuất.} Mỗi tệp DICOM tự mô tả
+      (Mục~\ref{sec:dicom}), nên chỉ mục có thể dựng lại bằng cách quét lại kho tệp;
+      chỉ mục vẫn được sao lưu liên tục để khôi phục nhanh, nhưng mất chỉ mục không đồng
+      nghĩa với mất ảnh.
+\item \textbf{Diễn tập khôi phục.} Việc khôi phục được thử định kỳ và đo thời gian;
+      một bản sao lưu chưa từng được khôi phục thử thì chưa thể coi là bản sao lưu. Vì
+      cơ sở dữ liệu chỉ có bản sao lưu trên đám mây, diễn tập phải đo được thời gian khôi
+      phục thực tế qua đường Internet của bệnh viện.
 \end{enumerate}
 
 \subsubsection{Phân tầng lưu trữ theo vòng đời}
 \label{sec:tiering}
 
-Tần suất truy cập ảnh y khoa giảm theo tuổi của ca chụp một cách khá dự đoán
-được: cao trong vài tháng đầu cho việc đọc và tái khám, giảm mạnh sau 6--12 tháng
-và hiếm khi được truy cập sau 2--3 năm \cite{awspacs2026}, trong khi thời hạn lưu
-trữ hồ sơ bệnh án theo quy định kéo dài nhiều năm. Giữ toàn bộ dữ liệu trên
-phương tiện đắt tiền nhất là lãng phí; ngược lại, đưa ca chụp của tuần trước
-xuống kho lạnh sẽ làm hỏng trải nghiệm đọc ảnh. Nền tảng vì vậy chia kho thành
-bốn tầng (Bảng~\ref{tab:tiers}, Hình~\ref{fig:tiers}).
+Tần suất truy cập ảnh y khoa giảm theo tuổi của ca chụp một cách khá dự đoán được: cao
+trong vài tháng đầu cho việc đọc và tái khám, giảm mạnh sau 6--12 tháng và hiếm khi được
+truy cập sau vài năm \cite{awspacs2026}, trong khi thời hạn lưu trữ kéo dài tới 10 năm.
+Giữ toàn bộ dữ liệu trên phương tiện đắt nhất là lãng phí; ngược lại, đưa ca chụp của
+tuần trước xuống kho lạnh sẽ làm hỏng trải nghiệm đọc ảnh. Dữ liệu vì vậy được chia theo
+tuổi (Bảng~\ref{tab:tiers}).
 
 \begin{table}[H]
 \centering
 \small
-\begin{tabularx}{\textwidth}{@{}l Y Y Y p{2.3cm}@{}}
+\begin{tabularx}{\textwidth}{@{}l Y Y p{2.6cm}@{}}
 \toprule
-\textbf{Tầng} & \textbf{Vị trí và phương tiện} & \textbf{Dữ liệu} & \textbf{Vai trò} & \textbf{Truy xuất} \\
+\textbf{Tuổi ca chụp} & \textbf{Vị trí} & \textbf{Vai trò} & \textbf{Truy xuất} \\
 \midrule
-T0 -- Nóng & Tại chỗ; SSD hoặc HDD RAID gắn với cổng DICOM & Ca chụp đến 12 tháng tuổi và mọi ca đang được đọc hoặc vừa được nạp trước & Phục vụ đọc ảnh & mili giây \\
-T1 -- Ấm & Tại chỗ; kho đối tượng tương thích S3 (MinIO, Ceph RGW) hoặc NAS dung lượng lớn & Ca chụp 1--3 năm tuổi & So sánh với ca cũ, tái khám & dưới 1 giây -- vài giây \\
-T2 -- Ngoài cơ sở & Trung tâm dữ liệu tuyến trên hoặc đám mây đặt tại Việt Nam & Bản sao lưu mã hoá của mọi ca; bản đã khử định danh nếu bật chia sẻ & Sao lưu 3-2-1, đọc từ xa & giây -- phút qua WAN \\
-T3 -- Lạnh & Ngoài cơ sở; lớp lưu trữ lạnh của kho đối tượng hoặc băng từ & Bản sao lưu của ca trên 3 năm tuổi & Lưu trữ tuân thủ thời hạn & giờ \\
+0 -- 90 ngày & SeaweedFS tại chỗ, kèm bản sao trên lớp Standard của đám mây & Đọc phim, so sánh, tái khám & mili giây (tại chỗ) \\
+90 ngày -- 1 năm & Lớp Infrequent Access trên đám mây & So sánh với ca cũ & phút \\
+1 -- 10 năm & Lớp Archive trên đám mây & Lưu trữ tuân thủ thời hạn & giờ \\
+Sau 10 năm & Xoá có căn cứ, trừ ca bị giữ vì lý do pháp lý & --- & --- \\
 \bottomrule
 \end{tabularx}
-\caption{Bốn tầng lưu trữ của nền tảng. Ngưỡng tuổi là giá trị mặc định, cấu hình
-được theo từng cơ sở.}
+\caption{Phân tầng lưu trữ theo tuổi ca chụp. Ngưỡng là giá trị mặc định, cấu hình
+được theo từng cơ sở. Nhật ký truy vết được giữ 10 năm trên đám mây ở chế độ ghi một
+lần.}
 \label{tab:tiers}
 \end{table}
 
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[
-    tier/.style={draw, rounded corners=2pt, text width=7.0cm, minimum height=1.0cm,
-                 align=left, font=\small, inner xsep=6pt},
-    lat/.style={font=\scriptsize, align=left, text width=2.4cm},
-    arr/.style={->, >=stealth, thick}
-]
-\node[tier, fill=red!8] (t0) {\textbf{T0 -- Nóng} (tại chỗ)\\\scriptsize SSD/HDD RAID gắn với cổng DICOM; ca $\le$ 12 tháng};
-\node[tier, fill=orange!10, below=1.0cm of t0] (t1) {\textbf{T1 -- Ấm} (tại chỗ)\\\scriptsize kho đối tượng tương thích S3 hoặc NAS; 1--3 năm};
-\node[tier, fill=blue!8, below=1.0cm of t1] (t2) {\textbf{T2 -- Ngoài cơ sở} (trong lãnh thổ Việt Nam)\\\scriptsize bản sao lưu mã hoá của mọi ca; bản khử định danh};
-\node[tier, fill=gray!12, below=1.0cm of t2] (t3) {\textbf{T3 -- Lạnh} (ngoài cơ sở)\\\scriptsize lớp lưu trữ lạnh hoặc băng từ; $>$ 3 năm};
-\node[lat, right=0.3cm of t0] {mili giây};
-\node[lat, right=0.3cm of t1] {dưới 1 giây -- vài giây};
-\node[lat, right=0.3cm of t2] {giây -- phút (qua WAN)};
-\node[lat, right=0.3cm of t3] {giờ};
-\draw[arr] ([xshift=-1.6cm]t0.south) -- node[left,font=\scriptsize] {chuyển tầng theo tuổi} ([xshift=-1.6cm]t1.north);
-\draw[arr] ([xshift=1.6cm]t1.north) -- node[right,font=\scriptsize] {nạp trước ca cũ} ([xshift=1.6cm]t0.south);
-\draw[arr, dashed] (t0.west) -- ++(-2.5,0) |- node[pos=0.25,left,font=\scriptsize,align=right] {sao chép\\bất đồng bộ\\(B7--B8)} (t2.west);
-\draw[arr] ([xshift=-1.6cm]t2.south) -- node[left,font=\scriptsize] {chuyển tầng theo tuổi} ([xshift=-1.6cm]t3.north);
-\end{tikzpicture}
-\caption{Phân tầng lưu trữ. Hai tầng trên nằm tại bệnh viện và phục vụ đọc ảnh; hai
-tầng dưới nằm ngoài cơ sở và phục vụ độ bền (quy tắc 3-2-1) cùng thời hạn lưu trữ.
-Bên phải là thời gian truy xuất điển hình.}
-\label{fig:tiers}
-\end{figure}
+Ba quyết định đi kèm việc phân tầng. \emph{Chỉ mục luôn ở tại chỗ}: dù tệp ảnh đã chuyển
+lên đám mây, chỉ mục của mọi ca trong 10 năm vẫn nằm trong PostgreSQL tại bệnh viện, nên
+khi mất Internet bác sĩ vẫn tra cứu được toàn bộ lịch sử và chỉ không mở được ảnh cũ.
+\emph{Nạp trước theo chỉ định}: khi HIS/RIS phát một chỉ định mới (Mục~\ref{sec:his}),
+các ca cũ của cùng bệnh nhân được lấy về tầng dữ liệu tại chỗ trước khi bệnh nhân được
+chụp, để bác sĩ so sánh được ngay khi ca mới đến. \emph{Xoá có căn cứ}: khi hết thời hạn
+theo L6, việc xoá được ghi vào nhật ký truy vết và không áp dụng cho ca đang bị giữ.
 
-Ba quyết định thiết kế đi kèm việc phân tầng:
-
-\begin{itemize}
-\item \textbf{Một giao diện lưu trữ cho mọi tầng.} Kho tương thích S3 được dùng
-      cho cả T1 tại chỗ lẫn T2--T3 ngoài cơ sở, nên cổng DICOM chỉ cần một
-      plugin lưu trữ đối tượng, và việc chuyển tầng trở thành chính sách vòng
-      đời của kho chứ không phải mã nguồn riêng. Điều này phù hợp với P2: cùng
-      một bản cài đặt, khác nhau ở cấu hình đích lưu trữ.
-\item \textbf{Nạp trước theo chỉ định.} Khi HIS/RIS phát một chỉ định mới
-      (Mục~\ref{sec:his}), bộ điều phối kéo các ca cũ của cùng bệnh nhân từ T1
-      hoặc T2 lên T0 trước khi bệnh nhân được chụp, để bác sĩ so sánh được ngay
-      khi ca mới đến. Đây là thực hành chuẩn của PACS và là lý do T1 phải
-      truy xuất được trong vài giây chứ không phải vài giờ.
-\item \textbf{Xoá có căn cứ.} Khi một ca hết thời hạn lưu trữ theo L6, việc xoá
-      được thực hiện đồng thời ở mọi tầng, được ghi vào nhật ký truy vết, và
-      không áp dụng cho các ca đang bị giữ lại vì lý do pháp lý.
-\end{itemize}
-
-Hình~\ref{fig:storage} ước lượng quy mô dữ liệu, chỉ tính riêng CT sọ não với
-100~MB mỗi ca sau khi nén không mất mát. Một cơ sở bối cảnh A với khoảng 60 ca
-mỗi ngày tích luỹ khoảng 2{,}2~TB mỗi năm, bối cảnh B với khoảng 30 ca mỗi ngày
-khoảng 1{,}1~TB mỗi năm, và bối cảnh C với khoảng 5 ca mỗi ngày chỉ khoảng
-0{,}18~TB mỗi năm. Điểm quan trọng là tầng nóng T0 \emph{không} tăng theo thời
-gian: nó dừng ở mức một năm dữ liệu, trong khi toàn bộ phần tăng trưởng dồn vào
-các tầng rẻ hơn. Toàn bộ khoa chẩn đoán hình ảnh, gồm các vùng chụp khác, MRI và
-X-quang, sẽ lớn hơn nhiều lần; con số cần được tính lại theo thống kê thực tế của
-từng cơ sở khi triển khai.
+Hình~\ref{fig:storage} ước lượng quy mô dữ liệu, chỉ tính riêng CT sọ não với 100~MB
+mỗi ca sau khi nén không mất mát. Điểm quan trọng là phần lưu tại chỗ \emph{không}
+tăng theo thời gian: nó dừng ở mức 90 ngày dữ liệu, trong khi toàn bộ phần tăng trưởng
+dồn vào các lớp rẻ hơn trên đám mây. Toàn bộ khoa chẩn đoán hình ảnh, gồm các vùng chụp
+khác, MRI và X-quang, sẽ lớn hơn nhiều lần; con số cần được tính lại theo thống kê thực
+tế của từng cơ sở khi triển khai.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/fig_storage_growth.png}
 \caption{Ước lượng dung lượng lưu trữ CT sọ não: (a) tích luỹ theo mẫu bối cảnh;
 (b) bối cảnh B phân theo tầng lưu trữ. Giả định 250~MB/ca, nén không mất mát
-2{,}5:1, ngưỡng tầng 1 và 3 năm. Mã nguồn: \texttt{figures/src/fig\_storage\_growth.py}.}
+2{,}5:1, ngưỡng 90 ngày và 1 năm. Mã nguồn: \texttt{figures/src/fig\_storage\_growth.py}.}
 \label{fig:storage}
 \end{figure}
 
-\subsubsection{Vai trò của kho ngoài cơ sở}
-\label{sec:offsite}
+% ---------------------------------------------------------------------------
+\subsection{Tính sẵn sàng cao}
+\label{sec:ha}
 
-Kho ngoài cơ sở không tham gia vào việc cung cấp hình ảnh cho bác sĩ đọc tại
-chỗ. Nó phục vụ ba mục đích, mỗi mục đích nhận một loại bản sao khác nhau:
-
-\begin{enumerate}
-\item \textbf{Sao lưu và lưu trữ dài hạn.} Nhận bản sao lưu của bản gốc, được
-      mã hoá trước khi rời bệnh viện bằng khoá do bệnh viện quản lý, nên bên
-      vận hành kho ngoài cơ sở chỉ giữ dữ liệu đã mã hoá. Để tránh hoàn toàn
-      câu hỏi về chuyển dữ liệu xuyên biên giới, kho này được đặt trong lãnh
-      thổ Việt Nam và được ràng buộc bằng hợp đồng xử lý dữ liệu.
-\item \textbf{Chẩn đoán hình ảnh từ xa.} Nhận bản đã khử định danh để bác sĩ
-      tuyến trên đọc (Mục~\ref{sec:percontext}, bối cảnh C). Bảng ánh xạ từ
-      định danh giả về định danh thật chỉ nằm tại cơ sở gửi, nên kết quả đọc
-      trả về được gắn lại đúng bệnh nhân tại chỗ.
-\item \textbf{Tích luỹ dữ liệu phục vụ nghiên cứu.} Dữ liệu đã khử định danh
-      kèm kết quả đọc của bác sĩ tạo thành tập dữ liệu phục vụ các nghiên cứu
-      về sau. Theo yêu cầu L7, mục đích này phải có căn cứ pháp lý riêng,
-      tách bạch với mục đích khám chữa bệnh.
-\end{enumerate}
-
-Không mục đích nào trong ba mục đích trên mang tính cấp thời, nên kho ngoài cơ sở
-có thể ngừng hoạt động mà hệ thống vẫn phục vụ đầy đủ chức năng lâm sàng: đây là
-thuộc tính thiết kế quan trọng nhất của mô hình lưu trữ này. Tuy nhiên, \emph{chức
-năng} không phụ thuộc vào kho ngoài cơ sở không có nghĩa là \emph{độ bền} không phụ
-thuộc: ở nơi chỉ có một máy chủ, bản sao lưu ngoài cơ sở là lớp bảo vệ duy nhất
-trước sự cố mất toàn bộ địa điểm (D4).
+Mỗi thành phần có mô hình dự phòng riêng (Bảng~\ref{tab:ha}). Sẵn sàng cao không thay
+thế sao lưu: nút dự phòng chống hỏng máy chủ, còn bản sao lưu chống xoá nhầm, hỏng dữ
+liệu và mã độc.
 
 \begin{table}[H]
 \centering
 \small
-\begin{tabularx}{\textwidth}{@{}l Y Y Y@{}}
+\begin{tabularx}{\textwidth}{@{}l p{3.4cm} Y@{}}
 \toprule
-\textbf{Tiêu chí} & \textbf{Kho tại chỗ (T0--T1)} & \textbf{Sao lưu ngoài cơ sở (T2--T3)} & \textbf{Bản chia sẻ (T2)} \\
+\textbf{Thành phần} & \textbf{Mô hình} & \textbf{Khi một nút gặp sự cố} \\
 \midrule
-Dữ liệu & Bản gốc còn định danh & Bản gốc, đã mã hoá & Bản đã khử định danh \\
-Tính bắt buộc & Bắt buộc & Khuyến nghị; bắt buộc nếu chỉ có một máy chủ & Tuỳ chọn, mặc định tắt \\
-Thời điểm ghi & Đồng bộ, trước khi xác nhận & Bất đồng bộ, sau B6 & Bất đồng bộ, sau B6 \\
-Khi mất mạng & Không ảnh hưởng & Hàng đợi dài thêm, không mất dữ liệu & Hàng đợi dài thêm \\
-Vai trò trong đọc ảnh & Nguồn dữ liệu chính & Chỉ dùng khi khôi phục & Đọc từ xa \\
-Ràng buộc pháp lý & Thuộc phạm vi bệnh viện & Đặt tại Việt Nam, hợp đồng xử lý dữ liệu & Khử định danh theo PS3.15; mục đích L7 \\
+PACS (dcm4chee) & N+1 nút sau bộ cân bằng tải & Ứng dụng không giữ trạng thái nên nút nào cũng phục vụ được mọi yêu cầu. Tác vụ dở dang được lưu trong PostgreSQL và nút khác tiếp tục; yêu cầu đang xử lý dở được phía gọi gửi lại (máy chụp gửi lại ảnh, trình xem gửi lại truy vấn) \\
+Cổng trung gian (Orthanc) & Active-active, N+1 nút sau bộ cân bằng tải & Các nút dùng chung chỉ mục PostgreSQL và tệp trên SeaweedFS, nên không mất dữ liệu; PACS tự thử lại các lần xuất bị gián đoạn. Mỗi nút tự phát hiện ca chụp đã đủ ảnh và trạng thái này không được chia sẻ, nên bộ điều phối tác vụ loại bỏ tác vụ trùng theo Study Instance UID \\
+PostgreSQL & Chính và dự phòng (Patroni) & Patroni chuyển sang nút dự phòng trong vài giây; cần cụm etcd ba nút, vì nếu etcd mất đa số thì nút chính chuyển sang chỉ đọc và PACS ngừng nhận ảnh \\
+SeaweedFS & Nhân bản qua nhiều nút & Đọc ghi tiếp tục trên các bản sao còn lại; bản sao bị thiếu được tạo lại khi nút trở lại \\
+OpenLDAP & Nhân bản giữa hai nút & Cấu hình ít thay đổi; nút còn lại tiếp tục phục vụ \\
+Keycloak & Hai nút, cơ sở dữ liệu riêng & Nằm trên đường đăng nhập nên phải dự phòng như tầng lâm sàng \\
 \bottomrule
 \end{tabularx}
-\caption{Phân vai giữa kho tại chỗ và hai loại bản sao ngoài cơ sở.}
-\label{tab:localcloud}
+\caption{Mô hình sẵn sàng cao của từng thành phần.}
+\label{tab:ha}
 \end{table}
 
-\subsection{Áp dụng vào từng bối cảnh bệnh viện}
-\label{sec:percontext}
-
-Mỗi kiến trúc dưới đây là một cấu hình của mô hình chung, được mô tả theo cùng
-một khung: hiện trạng của cơ sở, cách triển khai, cách hiện thực các tầng lưu
-trữ, kết nối và đồng bộ, và hành vi khi có sự cố.
-
-\subsubsection{Kiến trúc A: bệnh viện tuyến trung ương, tích hợp dạng đi kèm}
-
-\textbf{Hiện trạng.} Cơ sở đã có PACS hoặc VNA thương mại vận hành ổn định, có
-sao lưu, tích hợp với HIS/RIS qua HL7, có phòng CNTT và mạng nội bộ dự phòng.
-Khối lượng trên 50 ca CT sọ não mỗi ngày, bác sĩ chẩn đoán hình ảnh trực 24/7.
-Yêu cầu là không làm xáo trộn quy trình và không thay thế hệ thống sẵn có.
-
-\textbf{Triển khai.} Cổng DICOM được triển khai không phải như kho lưu trữ mà
-như một thành phần \emph{đi kèm} (sidecar): PACS được cấu hình để chuyển tiếp các
-ca chụp CT sọ não tới nó bằng luật định tuyến C-STORE, và nền tảng ghi kết quả
-xử lý ngược trở lại dưới dạng đối tượng DICOM Structured Report hoặc Secondary
-Capture, hoặc thông qua giao diện danh sách chờ đọc của nhà cung cấp nếu có.
-Để đáp ứng thông lượng, dịch vụ xử lý hậu kỳ phi trạng thái được nhân bản theo
-chiều ngang, và nhiều phiên bản cổng DICOM dùng chung một chỉ mục PostgreSQL và
-một kho đối tượng.
-
-\textbf{Lưu trữ.} PACS sẵn có là nguồn dữ liệu gốc và tự đảm nhận T1--T3 cùng
-sao lưu. Nền tảng chỉ giữ một bộ đệm T0 cuốn chiếu, chẳng hạn 90 ngày, tương
-đương khoảng 0{,}55~TB với khối lượng trên, cộng với các kết quả do nó sinh ra;
-các kết quả này được ghi ngược về PACS nên cũng được PACS lưu trữ dài hạn. Vì
-vậy yêu cầu độ bền với nền tảng ở bối cảnh này nhẹ hơn hẳn: mất bộ đệm chỉ cần
-lấy lại từ PACS bằng C-MOVE. Nguyên tắc chung là trách nhiệm về độ bền thuộc về
-nơi giữ bản gốc.
-
-\textbf{Kết nối.} Chỉ mạng nội bộ; không có đích ngoài cơ sở.
-
-\textbf{Khi có sự cố.} Tính chất cốt yếu là gỡ bỏ nền tảng sẽ đưa bệnh viện trở
-lại đúng trạng thái trước đó: không một thành phần sẵn có nào phụ thuộc vào nó.
-Nếu nền tảng ngừng hoạt động, luật chuyển tiếp của PACS xếp hàng và gửi lại khi
-nền tảng hoạt động trở lại.
-
-\subsubsection{Kiến trúc B: bệnh viện tuyến tỉnh, triển khai tích hợp}
-
-\textbf{Hiện trạng.} Có PACS nhưng có thể là sản phẩm đời cũ, dung lượng hạn
-chế, hỗ trợ DICOMweb không chắc chắn. Có một đến hai nhân sự CNTT đa năng và một
-số máy chủ; GPU chưa chắc có. Khối lượng 10--50 ca CT sọ não mỗi ngày; bác sĩ chẩn
-đoán hình ảnh chỉ có mặt trong giờ hành chính. Đây là trường hợp phổ biến nhất và
-là mục tiêu chính.
-
-\textbf{Triển khai.} Nền tảng cung cấp cả cổng DICOM lẫn trình xem, hoạt động
-song song với PACS. Khi PACS hỗ trợ DICOMweb, nền tảng đọc dữ liệu từ đó; khi
-không, thiết bị chụp được cấu hình gửi đồng thời tới cả PACS và cổng DICOM, việc
-trùng lặp này được ưu tiên hơn so với phụ thuộc vào một giao diện có thể không
-hoạt động. Toàn bộ dịch vụ đóng gói container trên một đến hai máy chủ, đặt sau
-reverse proxy đảm nhiệm kết thúc TLS và chuyển tiếp các yêu cầu DICOMweb. Đây là
-cấu hình mà bản mẫu hiện tại hiện thực.
-
-\textbf{Lưu trữ.} Nền tảng giữ bản gốc của riêng nó và hiện thực đủ bốn tầng.
-T0 là mảng RAID trên máy chủ cổng DICOM, giữ khoảng một năm dữ liệu, tức cỡ
-1{,}1~TB cho CT sọ não. T1 là kho đối tượng tương thích S3 tại chỗ, trên ba nút
-trở lên nếu có đủ máy chủ, hoặc một NAS RAID~6 nếu không; sau mười năm, phần này
-chứa phần lớn trong khoảng 11~TB tích luỹ (Hình~\ref{fig:storage}b). T2--T3 là
-bản sao lưu mã hoá gửi tới trung tâm dữ liệu của tuyến trung ương hoặc một dịch
-vụ đám mây đặt tại Việt Nam. Với chỉ một đến hai nhân sự CNTT, sao lưu, quét toàn
-vẹn và diễn tập khôi phục phải được tự động hoá hoàn toàn và báo cáo qua giám sát
-chứ không dựa vào thao tác thủ công.
-
-\textbf{Kết nối.} Đọc ảnh trong giờ hành chính qua mạng nội bộ. Ngoài giờ, bác sĩ
-trực từ xa truy cập trình xem qua VPN hoặc qua reverse proxy có xác thực; với
-đường truyền 50~Mbps, một ca 250~MB cần khoảng một phút (Hình~\ref{fig:transfer}),
-và cơ chế tải lũy tiến (Mục~\ref{sec:transfersyntax}) cho phép bắt đầu đọc sớm
-hơn nữa. Cơ sở tuyến tỉnh cũng là ứng viên tự nhiên để làm trung tâm cho các cơ
-sở tuyến huyện trong tỉnh (Mục~\ref{sec:hub}).
-
-\textbf{Khi có sự cố.} Hỏng một đĩa: RAID che giấu, không gián đoạn. Hỏng máy chủ
-cổng DICOM: PACS vẫn nhận ảnh nhờ gửi song song; nền tảng được dựng lại và khôi
-phục từ T1 hoặc T2 trong vài giờ. Mất Internet: đọc tại chỗ không ảnh hưởng, chỉ
-hàng đợi sao lưu dài thêm và đọc từ xa ngoài giờ bị gián đoạn.
-
-\subsubsection{Kiến trúc C: bệnh viện tuyến huyện, thiết bị trọn gói}
-
-\textbf{Hiện trạng.} Có máy CT nhưng không có PACS; hình ảnh nằm trên ổ cứng của
-máy trạm thiết bị chụp, dung lượng có hạn và thường bị ghi đè khi đầy, nên rủi ro
-mất ảnh là tình trạng sẵn có chứ không phải rủi ro mới. Không có phòng máy chủ,
-không có nhân sự CNTT, không có bác sĩ chẩn đoán hình ảnh tại chỗ; nguồn điện và
-kết nối mạng có thể không ổn định. Khối lượng dưới 10 ca CT sọ não mỗi ngày.
-
-\textbf{Triển khai.} Nền tảng được chuyển giao dưới dạng một thiết bị trọn gói đã
-cấu hình sẵn: một máy duy nhất, các dịch vụ đóng gói container, bộ lưu điện kèm
-cơ chế tắt máy an toàn, quy trình lắp đặt chỉ gồm kết nối vật lý và một thay đổi
-cấu hình trên thiết bị chụp. Cổng DICOM đóng luôn vai trò PACS của bệnh viện. Thiết
-bị tự giám sát và gửi cảnh báo (đĩa, dung lượng, độ dài hàng đợi, nhiệt độ) tới đơn
-vị hỗ trợ ở tuyến trên, vì tại chỗ không có ai đọc được bảng giám sát.
-
-\textbf{Lưu trữ.} T0 và T1 gộp làm một trên thiết bị: hai ổ đĩa ghép RAID~1. Với
-khoảng 0{,}18~TB CT sọ não mỗi năm, hai ổ vài TB đủ cho nhiều năm; con số cần được
-tính lại theo tổng số ca của khoa. Vì chỉ có một thiết bị tại một địa điểm, bản sao
-lưu mã hoá ngoài cơ sở (T2), đặt tại cơ sở tuyến tỉnh làm trung tâm, là lớp bảo vệ
-duy nhất trước việc mất toàn bộ thiết bị; ở bối cảnh này nó là bắt buộc chứ không
-còn là khuyến nghị.
-
-\textbf{Kết nối và đồng bộ.} Toàn bộ chức năng tiếp nhận, lưu trữ và hiển thị chạy
-cục bộ, nên mất kết nối không làm vô hiệu hoá hệ thống. Liên kết với tuyến trên là
-\emph{theo cơ hội}: khi có kết nối, hàng đợi được giải phóng dần theo khả năng của
-đường truyền. Trên đường truyền 5~Mbps, một ca 250~MB đã nén cần khoảng bốn phút
-(Hình~\ref{fig:transfer}), nên hàng đợi cần phân mức ưu tiên: ca được đánh dấu
-cần đọc từ xa đi trước, bản sao lưu đi sau và được giới hạn băng thông trong giờ
-cao điểm. Bản gửi đọc từ xa là bản đã khử định danh; bảng ánh xạ định danh giả
-nằm trên thiết bị, nên kết quả đọc trả về được gắn lại đúng bệnh nhân tại chỗ.
-
-\textbf{Khi có sự cố.} Mất mạng: hàng đợi dài thêm, không mất dữ liệu. Hỏng một
-đĩa: RAID~1 che giấu, thiết bị cảnh báo để thay đĩa. Mất điện: bộ lưu điện cho
-phép tắt máy an toàn, và nhờ nguyên tắc P5 thiết bị chụp sẽ gửi lại các lát cắt
-chưa được xác nhận. Mất toàn bộ thiết bị: thay thiết bị mới và khôi phục từ bản
-sao lưu tại tuyến trên; RPO bằng độ trễ của hàng đợi sao lưu tại thời điểm sự cố.
-
-Vì không có bác sĩ chẩn đoán hình ảnh tại chỗ, giá trị chính của cấu hình này nằm
-ở hai điểm: không còn mất ảnh do máy trạm bị ghi đè, và rút ngắn thời gian đưa hình
-ảnh tới người đọc có chuyên môn ở tuyến trên, thay vì chờ chuyển bệnh nhân hoặc
-chuyển dữ liệu thủ công qua đĩa quang.
-
-\subsubsection{So sánh}
+Ở cấp toàn hệ thống, Bảng~\ref{tab:failures} tóm tắt hệ quả của các sự cố điển hình và
+mức độ ảnh hưởng tới việc đọc phim. Nguyên tắc chung là: mọi sự cố ngoài tầng lâm sàng và
+tầng dữ liệu chỉ làm mất tính năng, không làm ngừng khám chữa bệnh.
 
 \begin{table}[H]
 \centering
 \small
-\begin{tabularx}{\textwidth}{@{}l Y Y Y@{}}
+\begin{tabularx}{\textwidth}{@{}p{3.6cm} Y p{2.6cm}@{}}
 \toprule
-& \textbf{A: Đi kèm} & \textbf{B: Tích hợp} & \textbf{C: Trọn gói} \\
+\textbf{Sự cố} & \textbf{Hệ quả} & \textbf{Đọc phim} \\
 \midrule
-Nguồn dữ liệu gốc & PACS sẵn có & Nền tảng, song song PACS & Nền tảng \\
-Tầng T0 & Bộ đệm cuốn chiếu $\sim$90 ngày & RAID trên máy chủ, $\sim$1 năm & RAID~1 trên thiết bị (gộp T0--T1) \\
-Tầng T1 & Do PACS đảm nhận & Kho đối tượng S3 hoặc NAS tại chỗ & Gộp vào T0 \\
-Tầng T2--T3 & Do PACS đảm nhận & Sao lưu mã hoá tới tuyến trên hoặc đám mây trong nước & Sao lưu mã hoá tới trung tâm tuyến tỉnh (bắt buộc) \\
-Dung lượng CT sọ não & $\sim$2{,}2~TB/năm & $\sim$1{,}1~TB/năm & $\sim$0{,}18~TB/năm \\
-Trình xem & Sẵn có & Nền tảng (OHIF) & Nền tảng (OHIF) \\
-Trả kết quả & DICOM SR về PACS & Hiển thị trên trình xem & Trình xem + kết quả đọc từ xa \\
-Phụ thuộc mạng & Chỉ mạng nội bộ & Mạng nội bộ; Internet cho đọc ngoài giờ & Chịu được mất kết nối \\
-Hỏng máy chủ & Không ảnh hưởng lâm sàng & Khôi phục trong vài giờ từ T1/T2 & Thay thiết bị, khôi phục từ tuyến trên \\
-Vai trò lâm sàng & Bổ trợ quy trình sẵn có & Hỗ trợ ngoài giờ & Lưu trữ an toàn, kết nối tuyến trên \\
+Mất Internet & Bản sao lưu xếp hàng chờ gửi; ca cũ chỉ còn trên đám mây tạm thời không mở được & Bình thường \\
+GPU hoặc dịch vụ suy luận ngừng & Không có cảnh báo và lớp phủ; trình xem báo ``AI tạm ngừng'' & Bình thường, theo thứ tự thông thường \\
+Mọi nút cổng trung gian ngừng & PACS giữ tác vụ xuất trong hàng đợi và thử lại & Bình thường \\
+Một nút PACS ngừng & Bộ cân bằng tải chuyển sang nút khác & Bình thường \\
+Nút chính PostgreSQL ngừng & Patroni chuyển nút; vài giây gián đoạn ghi & Gián đoạn ngắn \\
+Xoá nhầm, hỏng dữ liệu, mã độc & Khôi phục cơ sở dữ liệu về thời điểm trước sự cố, tệp từ bản sao trên đám mây & Gián đoạn tới khi khôi phục xong \\
+Mất toàn bộ phòng máy & Dựng lại hạ tầng, khôi phục từ đám mây & Gián đoạn nhiều ngày; dùng quy trình giấy \\
 \bottomrule
 \end{tabularx}
-\caption{So sánh ba kiến trúc được đề xuất.}
-\label{tab:arch}
+\caption{Các sự cố điển hình và mức ảnh hưởng tới việc đọc phim.}
+\label{tab:failures}
 \end{table}
 
-\subsection{Mở rộng liên viện: mô hình trục--nan}
+% ---------------------------------------------------------------------------
+\subsection{Kịch bản triển khai}
+\label{sec:scenarios}
+
+Các kịch bản khác nhau ở một số điểm biến thiên cố định (Bảng~\ref{tab:scenarios});
+mọi thứ khác giữ nguyên. Mỗi kịch bản được mô tả theo cùng một khung: bối cảnh áp dụng,
+điểm khác biệt so với phần dùng chung, các bước của Luồng 2, hành vi khi có sự cố, và
+các vấn đề còn mở. Một kịch bản mới chỉ cần xác định giá trị cho từng điểm biến thiên và
+mô tả theo khung đó; các tầng, Luồng 1, 3, 4, 5 và quy tắc xuất dữ liệu của PACS không
+thay đổi.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.6cm} Y Y@{}}
+\toprule
+\textbf{Điểm biến thiên} & \textbf{Kịch bản 1: GPU trong mạng nội bộ} & \textbf{Kịch bản 2: GPU bên ngoài} \\
+\midrule
+Bối cảnh phù hợp & Bệnh viện có sẵn GPU tại chỗ (bối cảnh A, một phần B) & Bệnh viện có GPU ở cơ sở khác hoặc thuê trung tâm dữ liệu \\
+Vị trí GPU suy luận & Mạng nội bộ, lớp suy luận AI & Cơ sở bên ngoài \\
+Dữ liệu rời bệnh viện cho AI & Không & Chỉ tensor đã khử định danh và mã hoá \\
+Chức năng của cổng trung gian & Lưu bản làm việc, khử định danh cho nghiên cứu & Thêm khử định danh cho suy luận, cắt và chuẩn hoá ảnh, mã hoá, lưu rồi chuyển tiếp \\
+Bảo vệ đường truyền & Mạng nội bộ phân vùng & Kênh riêng, TLS hai chiều (mTLS) \\
+Tối ưu độ trễ & Không cần cơ chế đặc biệt & Gửi một tensor mỗi ca thay vì từng lát cắt \\
+Khi mất GPU & Ca được đọc theo thứ tự thông thường & Quá hạn chót thì huỷ tác vụ, hiển thị ``không có kết quả AI'' \\
+Vị trí huấn luyện & Mạng nội bộ & Cơ sở bên ngoài, chỉ dữ liệu đã khử định danh \\
+\bottomrule
+\end{tabularx}
+\caption{Các điểm biến thiên giữa các kịch bản triển khai.}
+\label{tab:scenarios}
+\end{table}
+
+\input{contents/scenarios/scenario1}
+\input{contents/scenarios/scenario2}
+
+% ---------------------------------------------------------------------------
+\subsection{Bản mẫu}
+\label{sec:poc}
+
+Một bản mẫu đóng gói container đã được dựng để kiểm chứng các giả định quan trọng nhất
+của Kịch bản 1 với phần mềm mã nguồn mở thật: dcm4chee-arc-light 5.35.2 cùng OpenLDAP
+và PostgreSQL dùng các image chính thức của dự án, Orthanc làm cổng trung gian với một
+plugin Python cho bước khử định danh, SeaweedFS làm kho đối tượng, và một bộ chuyển tiếp
+mạng đóng vai tường lửa nội bộ, chỉ mở đúng hai cổng DICOM giữa PACS và cổng trung gian.
+Dữ liệu là một ca CT tổng hợp 63 ảnh trong ba chuỗi (33~MB), không chứa dữ liệu bệnh nhân
+thật. Toàn bộ chạy trên một máy với khoảng 1{,}7~GB bộ nhớ; mọi phép đo không có tải và
+không bật TLS, nên chỉ cho thấy bậc độ lớn.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}Y p{5.6cm}@{}}
+\toprule
+\textbf{Kiểm chứng} & \textbf{Kết quả} \\
+\midrule
+Máy chụp gửi thẳng tới PACS bằng C-STORE & Đạt; gửi 63 ảnh mất 2{,}5--4{,}8~s, ca chụp truy vấn được sau 0{,}4--1{,}6~s kể từ khi bắt đầu gửi \\
+Trình xem truy xuất qua DICOMweb & Đạt; QIDO-RS trung vị 10--21~ms; tải một chuỗi 60 lát (31{,}5~MB) mất 0{,}08--0{,}25~s từ đĩa cục bộ và 0{,}46~s từ SeaweedFS \\
+Quy tắc xuất chỉ gửi chuỗi CT trục & Đạt; 60/63 ảnh được gửi, 7--9~s sau ảnh cuối \\
+Cổng ngừng hoạt động thì PACS xếp hàng và thử lại & Đạt; tác vụ ở trạng thái chờ thử lại, ca được giao khoảng 25~s sau khi cổng hoạt động trở lại \\
+Ca cũ không bị đẩy tự động, nhưng xuất lại được theo yêu cầu & Đạt; xuất theo yêu cầu qua REST mất khoảng 1~s \\
+Tầng AI không truy cập được PACS & Đạt; mọi truy vấn từ phía cổng đều bị từ chối, kể cả khi giả mạo AE title của máy chụp \\
+Kết quả AI trở về PACS qua cổng bằng C-STORE tới AE chỉ cho phép lưu & Đạt; 80--113~ms, ca kết quả truy vấn được trên PACS \\
+Khử định danh từ chối khi không chắc chắn & Đạt; ca còn tên bệnh nhân trong một thẻ văn bản bị chặn hoàn toàn \\
+Loại bỏ ảnh có nguy cơ chứa chữ trên điểm ảnh & Đạt; ảnh định vị, Secondary Capture và ảnh có \texttt{BurnedInAnnotation} bị loại (57/60 ảnh được giữ) \\
+Bản đã khử định danh phục vụ qua DICOMweb của cổng & Đạt; không còn giá trị định danh nào trong siêu dữ liệu \\
+PACS lưu tệp ảnh trên SeaweedFS & Đạt; không còn tệp nào trên đĩa cục bộ của PACS \\
+OHIF, cổng chạy active-active, sẵn sàng cao, chịu tải, xác thực & Chưa kiểm chứng \\
+\bottomrule
+\end{tabularx}
+\caption{Kết quả bản mẫu Kịch bản 1.}
+\label{tab:poc}
+\end{table}
+
+Bản mẫu cũng chỉ ra bốn điểm cần xử lý khi triển khai thật. Thứ nhất, cổng trung gian
+cần một địa chỉ cố định, vì sau khi cổng khởi động lại với địa chỉ mới, PACS vẫn bám địa
+chỉ cũ trong khoảng năm phút. Thứ hai, ca đầu tiên sau khi PACS khởi động phải chờ
+khoảng một phút vì bộ lập lịch tác vụ chưa chạy, và chu kỳ quét mặc định cũng là một phút;
+các giá trị này phải được đặt tường minh cho ca cấp cứu. Thứ ba, AE title chỉ là định
+danh, nên việc chặn truy cập dựa vào tách cổng mạng và cần bổ sung DICOM TLS. Thứ tư,
+Orthanc không có sẵn bước ``khử định danh, kiểm tra, rồi giữ hoặc từ chối'', nên bước này
+là mã nguồn riêng, khoảng 110 dòng Python, và vì bản đã khử định danh nằm cùng Orthanc
+với bản gốc, công cụ gán nhãn cần một quy tắc phân quyền chỉ cho thấy các bản đã đánh
+dấu.
+
+% ---------------------------------------------------------------------------
+\subsection{Kiến trúc an toàn thông tin}
+
+Bảng~\ref{tab:security} đối chiếu các yêu cầu ở Mục~\ref{sec:legal} với cơ chế hiện
+thực trong kiến trúc. Cấu hình cho phép truy cập ẩn danh và truyền dữ liệu ở dạng rõ
+trong bản mẫu là tiện lợi phục vụ phát triển và bị cấm khi triển khai thật.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.2cm} Y@{}}
+\toprule
+\textbf{Yêu cầu} & \textbf{Cơ chế} \\
+\midrule
+L1 Nơi lưu trú dữ liệu & Dữ liệu định danh chỉ nằm tại bệnh viện; đám mây đặt tại Việt Nam và chỉ nhận dữ liệu đã mã hoá bằng khoá của bệnh viện \\
+L2 Tối thiểu hoá & PACS đẩy đúng các chuỗi cần thiết; tầng AI không có quyền truy cập PACS; ở Kịch bản 2 chỉ tensor đã khử định danh rời bệnh viện \\
+L3 Kiểm soát truy cập & Keycloak với OpenID Connect và xác thực đa yếu tố; phân quyền theo vai trò giữa bác sĩ, người gán nhãn, kỹ sư ML và quản trị viên; reverse proxy kiểm tra token trước mọi truy cập DICOMweb; kết quả AI vào PACS qua một AE chỉ cho phép lưu trên cổng riêng \\
+L4 Truy vết & Nhật ký truy cập chỉ ghi thêm cho mọi lượt xem và tiết lộ dữ liệu, ghi đồng bộ trước khi trả kết quả, lưu 10 năm trên đám mây ở chế độ ghi một lần \\
+L5 Mã hoá & TLS cho DICOMweb và HTTPS; DICOM TLS hoặc phân vùng mạng riêng cho DICOM cổ điển \cite{iheiti}; TLS hai chiều cho kênh tới cơ sở GPU bên ngoài; mã hoá khi lưu cho mọi bản sao trên đám mây \\
+L6 Thời hạn lưu trữ & Quy tắc vòng đời theo Bảng~\ref{tab:tiers}; xoá có căn cứ, ghi nhật ký, trừ ca bị giữ \\
+L7 Giới hạn mục đích & Tầng nghiên cứu là vùng mạng riêng, chỉ thấy bản đã khử định danh qua một điểm duy nhất có cơ chế fail-closed; bảng ánh xạ giả danh chỉ người quản lý dữ liệu truy cập \\
+L8 Khả năng phục hồi & Cơ chế độ bền D1--D7 (Mục~\ref{sec:durability}) và diễn tập khôi phục định kỳ \\
+\bottomrule
+\end{tabularx}
+\caption{Đối chiếu yêu cầu pháp lý với cơ chế an toàn thông tin.}
+\label{tab:security}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\subsection{Hướng mở rộng}
 \label{sec:hub}
 
-Khi nhiều cơ sở tuyến huyện cùng gửi ca chụp lên một cơ sở tuyến trên, các kiến
-trúc C riêng lẻ ghép lại thành mô hình trục--nan (hub-and-spoke), tương tự kiến
-trúc PACS lai mà AWS đề xuất cho các mạng lưới nhiều bệnh viện \cite{awspacs2026}:
-mỗi cơ sở giữ kho cục bộ và phục vụ đọc tại chỗ ở tốc độ mạng nội bộ, còn trung
-tâm nhận bản sao bất đồng bộ và giữ một chỉ mục chung chỉ chứa siêu dữ liệu (ca
-chụp nào đang nằm ở cơ sở nào, ở tầng nào, đã đồng bộ tới đâu), không chứa dữ liệu
-điểm ảnh.
+Khung kịch bản ở Mục~\ref{sec:scenarios} cho phép bổ sung các cấu hình khác mà không
+đổi các tầng. Hai hướng đang được cân nhắc là: (i) bệnh viện không có GPU, thuê GPU
+trên đám mây đặt tại Việt Nam, về bản chất là Kịch bản 2 với cơ sở bên ngoài là nhà
+cung cấp đám mây, cần thêm đánh giá về hợp đồng xử lý dữ liệu; và (ii) mô hình trục--nan
+(hub-and-spoke) cho nhiều cơ sở tuyến dưới chưa có PACS (bối cảnh C), tương tự kiến
+trúc PACS lai mà AWS đề xuất cho mạng lưới nhiều bệnh viện \cite{awspacs2026}: mỗi cơ sở
+giữ kho cục bộ và phục vụ đọc tại chỗ ở tốc độ mạng nội bộ, còn trung tâm nhận bản sao
+bất đồng bộ đã mã hoá hoặc đã khử định danh và giữ một chỉ mục chung chỉ chứa siêu dữ liệu
+(Hình~\ref{fig:hubspoke}).
 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
     site/.style={draw, rounded corners=2pt, align=center, font=\small,
-                 minimum width=3.0cm, minimum height=1.1cm, fill=green!6},
+                 minimum width=3.0cm, minimum height=1.1cm, fill=black!4},
     hubbox/.style={draw, rounded corners=3pt, align=left, font=\small,
-                   fill=blue!6, text width=6.6cm, inner sep=6pt},
+                   fill=white, text width=6.6cm, inner sep=6pt},
     arr/.style={->, >=stealth, thick},
     sync/.style={->, >=stealth, thick, dashed}
 ]
 \node[hubbox] (hub) {\textbf{Trung tâm}: bệnh viện tuyến tỉnh hoặc trung tâm dữ liệu trong nước\\[2pt]
   \scriptsize $\bullet$ chỉ mục vị trí ca chụp (chỉ siêu dữ liệu)\\
-  \scriptsize $\bullet$ kho sao lưu mã hoá (T2--T3) của các cơ sở\\
+  \scriptsize $\bullet$ kho sao lưu mã hoá của các cơ sở\\
   \scriptsize $\bullet$ kho ca chụp đã khử định danh chờ đọc từ xa\\
   \scriptsize $\bullet$ trình xem cho bác sĩ đọc từ xa};
-\node[site, fill=orange!8, above=1.1cm of hub] (a) {Bệnh viện tuyến trung ương\\\scriptsize hội chẩn khi cần};
-\node[site, below left=1.5cm and 0.6cm of hub] (c1) {Cơ sở C$_1$\\\scriptsize thiết bị trọn gói};
-\node[site, below=1.5cm of hub] (c2) {Cơ sở C$_2$\\\scriptsize thiết bị trọn gói};
-\node[site, below right=1.5cm and 0.6cm of hub] (c3) {Cơ sở C$_3$\\\scriptsize thiết bị trọn gói};
+\node[site, above=1.1cm of hub] (a) {Bệnh viện tuyến trung ương\\\scriptsize hội chẩn khi cần};
+\node[site, below left=1.5cm and 0.6cm of hub] (c1) {Cơ sở C$_1$};
+\node[site, below=1.5cm of hub] (c2) {Cơ sở C$_2$};
+\node[site, below right=1.5cm and 0.6cm of hub] (c3) {Cơ sở C$_3$};
 \foreach \c in {c1, c2, c3} {
   \draw[sync] (\c) to[bend left=12] (hub);
   \draw[arr] (hub) to[bend left=12] (\c);
 }
 \draw[sync] (hub) -- node[right,font=\scriptsize] {ca cần hội chẩn} (a);
 \end{tikzpicture}
-\caption{Mô hình trục--nan. Nét đứt: dữ liệu đi lên, bất đồng bộ qua hàng đợi (bản sao
-lưu mã hoá và bản đã khử định danh). Nét liền: kết quả đọc trả về cơ sở dưới dạng
-DICOM SR và được gắn lại định danh tại chỗ.}
+\caption{Mô hình trục--nan, một hướng mở rộng. Nét đứt: dữ liệu đi lên, bất đồng bộ
+(bản sao lưu mã hoá và bản đã khử định danh). Nét liền: kết quả đọc trả về cơ sở dưới
+dạng DICOM SR và được gắn lại định danh tại chỗ.}
 \label{fig:hubspoke}
 \end{figure}
 
-Mô hình này tiếp thu ba điểm từ kiến trúc tham chiếu của AWS: tách chỉ mục khỏi
-điểm ảnh, sao chép bất đồng bộ không chặn luồng lâm sàng, và phân tầng lưu trữ tại
-trung tâm theo vòng đời. Nó khác ở ba giả định. Thứ nhất, trung tâm đặt tại hạ tầng
-trong nước, không đặt tại một vùng đám mây ở nước ngoài, theo L1. Thứ hai, kết nối
-giữa cơ sở và trung tâm là đường Internet không ổn định chứ không phải kênh riêng,
-nên mọi tương tác đều bất đồng bộ và cơ sở không bao giờ phải chờ trung tâm. Thứ ba,
-trung tâm chỉ thấy bản sao lưu đã mã hoá và bản đã khử định danh; do đó nó chưa có
-chỉ mục bệnh nhân chung (MPI) liên kết các ca của cùng một người ở nhiều cơ sở. Việc
-liên kết đó đòi hỏi xử lý dữ liệu định danh ở trung tâm, chẳng hạn dựa trên số định
-danh cá nhân khi hồ sơ bệnh án điện tử đã kết nối cơ sở dữ liệu quốc gia về dân cư,
-và cần căn cứ pháp lý riêng; đây là câu hỏi mở cho các giai đoạn sau.
-
-\subsection{Bản mẫu}
-
-Một bản mẫu hiện thực Kiến trúc B đã được xây dựng nhằm kiểm chứng mô hình thành
-phần. Bản mẫu gồm các dịch vụ đóng gói container: Orthanc mở cổng DICOM cổ điển
-để nhận dữ liệu từ thiết bị chụp và DICOMweb cho trình xem; OHIF chạy sau một
-reverse proxy chuyển tiếp \texttt{/dicom-web} và \texttt{/wado} tới Orthanc, nhờ
-đó tránh được các vấn đề về cross-origin; và một dịch vụ xử lý hậu kỳ được gọi
-bởi callback Lua của Orthanc kích hoạt khi đối tượng ảnh đến.
-
-Bản mẫu xác nhận cơ chế kích hoạt theo sự kiện và hướng tích hợp với trình xem.
-Nó \emph{chưa} sẵn sàng triển khai: xác thực bị tắt và kênh truyền chưa được mã
-hoá. Mỗi điểm trong số đó tương ứng với một yêu cầu ở Mục~\ref{sec:legal} và
-được lên lịch xử lý trong Giai đoạn~2, cùng với các tầng T1--T3, hàng đợi đồng bộ
-và các cơ chế độ bền D3--D7.
-
-\subsection{Kiến trúc an toàn thông tin}
-
-Việc hiện thực các yêu cầu ở Mục~\ref{sec:legal} đòi hỏi: kết thúc TLS tại
-reverse proxy, với DICOM cổ điển được giới hạn trong một phân đoạn mạng riêng
-hoặc bọc trong đường hầm, và xác thực nút mạng theo hồ sơ IHE ATNA khi DICOM đi qua
-mạng không tin cậy \cite{iheiti}; xác thực người dùng qua một máy chủ định danh
-OpenID Connect như Keycloak, liên kết với hệ thống thư mục của bệnh viện nếu có,
-và phân quyền cho Orthanc qua plugin phân quyền nâng cao cùng orthanc-auth-service
-\cite{keycloak,orthancauth}, kèm phân tách vai trò giữa bác sĩ chẩn đoán hình ảnh,
-bác sĩ chỉ định và quản trị viên; mã hoá khi lưu trữ cho cả kho ảnh lẫn kho siêu
-dữ liệu, với khoá mã hoá bản sao lưu ngoài cơ sở do bệnh viện nắm giữ; nhật ký truy
-vết chỉ ghi thêm cho mọi lượt truy cập, lưu giữ theo L6; và khử định danh áp dụng
-tại ranh giới của bộ điều phối, để các thuộc tính định danh không bao giờ rời khỏi
-phạm vi kiểm soát. Việc cho phép truy cập ẩn danh và truyền dữ liệu ở dạng rõ
-trong bản mẫu là những tiện lợi phục vụ phát triển, và bị cấm khi triển khai thực
-tế.
+Khác với kiến trúc tham chiếu của AWS, trung tâm đặt tại hạ tầng trong nước theo L1,
+kết nối từ cơ sở là đường Internet không ổn định nên mọi tương tác đều bất đồng bộ và cơ
+sở không bao giờ phải chờ trung tâm, và trung tâm chưa có chỉ mục bệnh nhân chung liên
+kết các ca của cùng một người ở nhiều cơ sở; việc liên kết đó cần xử lý dữ liệu định
+danh ở trung tâm, do đó cần căn cứ pháp lý riêng và là câu hỏi mở cho các giai đoạn sau.

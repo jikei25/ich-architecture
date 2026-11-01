@@ -1,0 +1,59 @@
+\subsubsection{Kịch bản 1: GPU trong mạng nội bộ}
+\label{sec:scenario1}
+
+\textbf{Bối cảnh áp dụng.} Bệnh viện đã có hạ tầng đầy đủ, kể cả GPU đặt tại chỗ, và
+có đội ngũ công nghệ thông tin vận hành được một cụm máy chủ. Mọi xử lý, kể cả suy luận
+AI, gán nhãn và huấn luyện, diễn ra trong mạng nội bộ; đám mây chỉ dùng để sao lưu và
+lưu trữ dài hạn. Kiến trúc của kịch bản này là Hình~\ref{fig:arch-s1}.
+
+\textbf{Điểm khác biệt.} Không có điểm biến thiên nào được bật: dữ liệu không rời
+bệnh viện cho mục đích AI, nên luồng suy luận không cần khử định danh hay mã hoá riêng
+và không cần cơ chế đặc biệt để tối ưu độ trễ; GPU đọc thẳng bản làm việc trên cổng
+trung gian qua mạng nội bộ. Cổng trung gian vẫn được giữ, dù về lý thuyết dịch vụ suy
+luận có thể đọc thẳng từ kho đối tượng dùng chung, vì ba lý do: PACS cần một đích
+C-STORE để đẩy dữ liệu sang mà không cấp quyền truy cập cho AI; tầng nghiên cứu cần một
+điểm khử định danh duy nhất; và giữ cổng giúp Kịch bản 1 và Kịch bản 2 dùng cùng quy tắc
+xuất dữ liệu và cùng giao diện suy luận, nên một bệnh viện có thể chuyển kịch bản mà
+không cấu hình lại PACS.
+
+\textbf{Triển khai.} Các thành phần tầng lâm sàng và tầng dữ liệu chạy trên cụm máy chủ
+của bệnh viện với dự phòng N+1 (Bảng~\ref{tab:ha}). Các nút GPU suy luận và GPU huấn luyện
+tách riêng: suy luận phải chạy liên tục để phục vụ cấp cứu, còn huấn luyện là các tác vụ
+nặng chạy theo đợt, nên dùng chung GPU sẽ khiến một lần huấn luyện làm chậm cảnh báo cho
+ca cấp cứu. Vùng mạng của GPU không có đường ra Internet. Số lượng và cấu hình GPU phụ
+thuộc thời gian suy luận thực tế của mô hình trên một thể tích 3D và lưu lượng ca chụp
+của bệnh viện, nên cần được đo trên mô hình đã chọn trước khi chốt.
+
+\textbf{Luồng 2: suy luận AI.}
+\begin{description}[leftmargin=1.2cm,style=nextline]
+\item[2.1] Quy tắc xuất trong dcm4chee chọn các chuỗi ảnh AI cần (CT trục lát mỏng) và
+      đẩy sang cổng trung gian bằng C-STORE. Nếu cổng không sẵn sàng, tác vụ được xếp hàng
+      và thử lại. Khi bác sĩ cần so sánh, ca cũ của cùng bệnh nhân cũng có thể được đẩy
+      sang theo quy tắc xuất ca cũ hoặc theo yêu cầu.
+\item[2.2] Cổng lưu chuỗi ảnh (chỉ mục trong PostgreSQL, tệp trên SeaweedFS). Khi chuỗi
+      không nhận thêm ảnh nào trong một khoảng thời gian cấu hình được, cổng phát sự kiện
+      ``đã đủ ảnh''; bộ điều phối tạo một tác vụ suy luận, gán hạn chót và độ ưu tiên, và
+      bỏ qua tác vụ trùng nếu một nút cổng khác đã tạo cho cùng ca.
+\item[2.3] Dịch vụ suy luận đọc thể tích từ cổng, tiền xử lý theo đúng quy trình đã dùng
+      khi huấn luyện, chạy mô hình đã duyệt trên GPU và tạo mặt nạ vùng xuất huyết. Cờ ưu
+      tiên được suy ra trước từ mặt nạ; báo cáo định lượng được tạo sau.
+\item[2.4] Mặt nạ (DICOM SEG) và báo cáo (DICOM SR) kèm đủ siêu dữ liệu bắt buộc
+      (Mục~\ref{sec:aicontract}) trở về cổng; cổng gửi chúng vào PACS bằng C-STORE tới AE
+      \texttt{AI\_RESULTS}, vốn chỉ cho phép lưu. Kết quả nằm cùng ca chụp gốc trên PACS và
+      bác sĩ thấy lớp phủ trên trình xem như một kết quả chưa xác nhận.
+\item[2.5] Nếu nghi có xuất huyết, hệ thống gửi cảnh báo tới bác sĩ qua kênh trong mạng
+      nội bộ và gửi cờ ưu tiên tới HIS/RIS (HL7 ORU hoặc FHIR) để ca được đưa lên đầu
+      worklist. Ca không được gắn cờ giữ nguyên vị trí trong worklist.
+\end{description}
+
+\textbf{Khi có sự cố.} Khi GPU, dịch vụ suy luận hoặc cổng ngừng hoạt động, ca chụp
+vẫn được lưu và đọc bình thường, chỉ thiếu cảnh báo và lớp phủ; trình xem và worklist
+hiển thị trạng thái ``AI tạm ngừng'' để không ai hiểu nhầm việc không có cờ là âm tính.
+Khi cổng hoạt động trở lại, PACS tự gửi lại các ca đang xếp hàng. Một tác vụ vượt quá hạn
+chót (Bảng~\ref{tab:latency}) được đánh dấu ``không có kết quả AI'' thay vì chờ vô hạn.
+
+\textbf{Vấn đề còn mở.} (i) Giá trị cụ thể của khoảng chờ ``đã đủ ảnh'' và chu kỳ quét
+tác vụ của PACS để đạt mục tiêu 90 giây cho ca cấp cứu, cần đo trên máy chụp thật. (ii)
+Mọi máy CT của bệnh viện có gửi chuỗi tái tạo lát mỏng về PACS hay không; nếu không, mô
+hình 3D không có đầu vào phù hợp. (iii) HIS/RIS hiện tại có nhận và hiển thị cờ ưu tiên
+qua HL7 ORU hoặc FHIR hay không.

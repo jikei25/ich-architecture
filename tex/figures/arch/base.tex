@@ -1,0 +1,83 @@
+% Layers and components that are identical in every deployment scenario.
+% A scenario figure inputs this file, then defines \node (gw) and \node (ai),
+% then inputs links.tex.
+
+% ---------------------------------------------------------------- lanes
+\fill[archlane]    (0,10.6) rectangle (24.6,14.8);
+\fill[archlanealt] (0,7.6)  rectangle (24.6,10.6);
+\fill[archlane]    (0,4.6)  rectangle (24.6,7.6);
+\fill[archlanealt] (0,1.6)  rectangle (24.6,4.6);
+\fill[archlane]    (0,-0.8) rectangle (24.6,1.6);
+\draw[black!25] (0,-0.8) rectangle (24.6,14.8);
+\foreach \y in {10.6,7.6,4.6} \draw[black!20] (0,\y) -- (24.6,\y);
+\draw[black!70, line width=1pt, dash pattern=on 7pt off 3pt] (0,1.6) -- (24.6,1.6);
+\node[font=\sffamily\tiny\bfseries, text=black!70, anchor=south west] at (2.3,1.62) {Ranh giới bệnh viện: chỉ đi qua tường lửa đầu ra};
+
+\node[archlanetitle] at (0.15,14.65) {Lâm sàng};
+\node[archlanesub]   at (0.15,14.25) {Clinical\\luồng đọc phim hiện tại};
+\node[archlanetitle] at (0.15,10.45) {Suy luận AI};
+\node[archlanesub]   at (0.15,10.05) {AI Inference\\phân loại ưu tiên ca};
+\node[archlanetitle] at (0.15,7.45)  {Nghiên cứu AI};
+\node[archlanesub]   at (0.15,7.05)  {AI Research\\gán nhãn, huấn luyện};
+\node[archlanetitle] at (0.15,4.45)  {Dữ liệu};
+\node[archlanesub]   at (0.15,4.05)  {Data\\data plane, control plane};
+\node[archlanetitle] at (0.15,1.45)  {Đám mây};
+\node[archlanesub]   at (0.15,1.05)  {Cloud\\sao lưu, lưu trữ 10 năm};
+
+% ---------------------------------------------------------------- clinical
+\archactor{radiographer}{2.9,11.6}{Kỹ thuật viên}
+\archcomp{ct}{5.6,11.6}{archct}{Máy chụp CT}{modality}
+\archcomp{pacs}{10.2,11.6}{archserver}{PACS}{dcm4chee, N+1 nút}
+\archcomp{viewer}{14.8,11.6}{archmonitor}{Trình xem}{OHIF, overlay AI}
+\archcomp{iam}{14.8,13.5}{archlock}{Đăng nhập}{Keycloak, MFA}
+\archactor{doctor}{17.6,11.6}{Bác sĩ}
+\archcomp{his}{21.4,11.6}{archdoc}{HIS / RIS}{chỉ định, worklist}
+
+\draw[archact] (radiographer) -- (ct);
+\draw[archact] (doctor) -- (viewer);
+\draw[archclin] (ct) -- node[archlbl, below=2pt] {C-STORE} (pacs);
+\draw[archclin] (pacs) -- node[archlbl, below=2pt] {QIDO\\WADO-RS} (viewer);
+\draw[archflow, <->] (viewer) -- node[archlbl, right=2pt] {OIDC} (iam);
+\draw[archflow] (his.north) -- (21.4,14.45) -- node[archlbl, pos=0.5] {HL7 ORM: chỉ định, worklist} (9.6,14.45) -- (9.6,12.2);
+\draw[archflow] ([xshift=-1.6cm]pacs.south) -- (8.6,10.05) -- (6.4,10.05) -- (6.4,3.3) -- node[archlbl, pos=0.5, above=1pt] {ảnh, chỉ mục} (7.05,3.3);
+
+\archbadge{7.9,12.0}{1.1}
+\archbadge{6.4,6.1}{1.2}
+\archbadge{12.5,12.0}{1.3}
+\archbadge{20.0,14.45}{1.4}
+\archbadge{17.6,12.4}{1.5}
+
+% ---------------------------------------------------------------- research (shared part)
+\archactor{labeler}{9.5,6.1}{Người gán nhãn}
+\archcomp[archabstract]{annot}{12.6,6.1}{archmonitor}{Gán nhãn}{MONAI Label, 3D Slicer}
+\archactor{mle}{21.8,6.1}{Kỹ sư ML}
+\draw[archact] (labeler) -- (annot);
+
+% ---------------------------------------------------------------- data
+\archstore{seaweed}{9.2,3.3}{SeaweedFS}{data plane: tệp ảnh,\\bucket PACS + nghiên cứu}
+\archstore{pg}{13.3,3.3}{PostgreSQL}{control plane: chỉ mục,\\kết quả AI (Patroni)}
+\archstore{ldap}{17.4,3.3}{OpenLDAP}{cấu hình dcm4chee}
+\archcomp{backup}{21.6,3.3}{archserver}{Cổng sao lưu}{pgBackRest, rclone}
+\node[archgroup, fit=(seaweed)(pg)(ldap)] (datagroup) {};
+\node[archgrouplabel] at ($(datagroup.north west)+(0.2,0)$) {TRẠNG THÁI DÙNG CHUNG, MỖI KHO CÓ HA RIÊNG};
+
+\draw[archbak] (pg.south) -- (13.3,2.15) -- node[archlbl, pos=0.55] {WAL + bản sao lưu} (21.2,2.15) -- (21.2,2.7);
+\draw[archbak] (seaweed.south) -- (9.2,2.4) -- node[archlbl, pos=0.3] {sao chép tệp} (22.0,2.4) -- (22.0,2.7);
+
+% ---------------------------------------------------------------- cloud
+\archcomp[archbox, minimum width=3.6cm, minimum height=0.85cm]{egress}{21.6,1.1}{archwall}{Tường lửa đầu ra}{chỉ 443, chỉ chiều ra}
+\archcomp{cloudimg}{9.2,0.25}{archcloud}{Ảnh DICOM}{3 lớp lưu trữ, 10 năm}
+\archcomp{cloudpg}{13.3,0.25}{archcloud}{Sao lưu CSDL}{PostgreSQL, PITR}
+\archcomp{cloudaudit}{17.4,0.25}{archcloud}{Nhật ký truy vết}{WORM, lưu 10 năm}
+
+\draw[archbak] (backup.east) -- (24.1,3.3) -- node[archlbl, pos=0.15, right=1pt] {HTTPS} (24.1,1.1) -- (egress.east);
+\draw[archbak] (egress.west) -- (9.2,1.1) -- (cloudimg.north);
+\draw[archbak] (13.3,1.1) -- (cloudpg.north);
+\draw[archbak] (17.4,1.1) -- (cloudaudit.north);
+\draw[archflow, dashed] ([xshift=1.2cm]egress.north) -- node[archlbl, right=1pt, pos=0.78] {khôi phục} ([xshift=1.2cm]egress.north |- backup.south);
+
+\archbadge{14.6,2.15}{4.1}
+\archbadge{11.0,2.4}{4.2}
+\archbadge{24.1,2.4}{4.3}
+\archbadge{19.0,1.1}{4.4}
+\archbadge{22.8,1.85}{5}

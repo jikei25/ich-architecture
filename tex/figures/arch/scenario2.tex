@@ -1,0 +1,34 @@
+% Scenario 2: GPU outside the hospital, reached over a private TLS link.
+\begin{tikzpicture}[x=1cm, y=1cm]
+\input{figures/arch/base.tex}
+
+\draw[archsite, fill=none] (14.55,5.15) rectangle (20.4,10.45);
+\node[font=\sffamily\tiny\bfseries, text=black!70, anchor=north east] at (20.3,10.4) {CƠ SỞ GPU BÊN NGOÀI: chỉ dữ liệu đã khử định danh};
+\node[archlbl, font=\sffamily\tiny\bfseries, rotate=90] at (14.55,7.6) {liên kết riêng, mTLS};
+
+\archcomp{gw}{10.2,9.1}{archserver}{Gateway Orthanc}{active-active, khử\\định danh, mã hoá}
+\archcomp[archboxwide]{ai}{16.9,9.1}{archgpu}{Suy luận AI}{GPU bên ngoài\\chỉ nhận tensor}
+\archcomp[archabstract]{train}{17.9,6.1}{archgpu}{Huấn luyện}{GPU, registry mô hình}
+\input{figures/arch/links.tex}
+
+\draw[archai] ([yshift=2.5mm]gw.east) -- node[archlbl, above=1pt, pos=0.68] {tensor (TLS)} ([yshift=2.5mm]gw.east -| ai.west);
+\draw[archai] ([yshift=-2.5mm]gw.east -| ai.west) -- node[archlbl, below=1pt] {mask} ([yshift=-2.5mm]gw.east);
+\draw[archai] (11.9,9.7) -- (11.9,10.8) -- (17.6,10.8) -- (doctor-l.south);
+\draw[archai] (17.6,10.8) -- node[archlbl, above=1pt, pos=0.5] {cảnh báo, cờ ưu tiên} (21.4,10.8) -- (his.south);
+\draw[archflow] (annot) -- node[archlbl, above=3pt] {dataset (TLS)} (train);
+\draw[archflow] (17.0,6.7) -- node[archlbl, left=1pt, pos=0.78] {mô hình đã duyệt} (17.0,8.5);
+\draw[archflow, dashed] ([xshift=-1.2cm]train.south) to[bend left=22] node[archlbl, below=1pt] {bản nháp từ mô hình hiện tại} ([xshift=1.2cm]annot.south);
+\draw[archact] (mle) -- (train);
+
+\archbadge[archstepai]{9.8,10.75}{2.1}
+\archbadge[archstepai]{12.0,9.7}{2.2}
+\archbadge[archstepai]{12.5,9.62}{2.3}
+\archbadge[archstepai]{19.1,9.7}{2.4}
+\archbadge[archstepai]{10.6,10.75}{2.5}
+\archbadge[archstepai]{14.6,10.8}{2.6}
+\archbadge{11.4,8.2}{3.1}
+\archbadge{7.9,7.6}{3.2}
+\archbadge{15.25,5.75}{3.3}
+\archbadge{19.85,6.7}{3.4}
+\archbadge{17.0,7.15}{3.5}
+\end{tikzpicture}

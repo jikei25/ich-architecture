@@ -1,0 +1,100 @@
+% Shared styles and icons for the layered architecture figures.
+\definecolor{archaccent}{HTML}{1F5FA8}
+\definecolor{archline}{HTML}{333333}
+
+\tikzset{
+  archlane/.style={fill=black!4, draw=none},
+  archlanealt/.style={fill=white, draw=none},
+  archlanetitle/.style={font=\sffamily\bfseries\footnotesize, align=left, anchor=north west, text width=2.6cm},
+  archlanesub/.style={font=\sffamily\scriptsize, text=black!60, align=left, anchor=north west, text width=2.4cm},
+  archbox/.style={draw=archline, fill=white, line width=0.6pt, rounded corners=2pt,
+                  minimum width=3.6cm, minimum height=1.2cm},
+  archboxwide/.style={archbox, minimum width=4.4cm},
+  archabstract/.style={archbox, dashed},
+  archtext/.style={font=\sffamily\scriptsize, align=left, text width=2.6cm, anchor=west, inner sep=0pt},
+  archdb/.style={draw=archline, fill=white, line width=0.6pt, cylinder, shape border rotate=90,
+                 aspect=0.18, minimum width=3.4cm, minimum height=1.15cm,
+                 font=\sffamily\scriptsize, align=center, text width=3.2cm},
+  archgroup/.style={draw=black!45, densely dashed, rounded corners=4pt, inner sep=0.18cm},
+  archgrouplabel/.style={font=\sffamily\tiny\bfseries, text=black!60, fill=white, inner sep=1pt, anchor=west},
+  archsite/.style={draw=black!60, line width=0.8pt, dash pattern=on 5pt off 2pt, rounded corners=6pt, fill=white, fill opacity=0.6},
+  archclin/.style={-{Stealth[length=2.2mm]}, line width=1.1pt, draw=black},
+  archai/.style={-{Stealth[length=2.2mm]}, line width=1.0pt, draw=archaccent},
+  archflow/.style={-{Stealth[length=2mm]}, line width=0.7pt, draw=black!60},
+  archbak/.style={-{Stealth[length=2mm]}, line width=0.8pt, draw=black!60, dash pattern=on 4pt off 2pt},
+  archact/.style={-{Stealth[length=1.8mm]}, line width=0.5pt, draw=black!40},
+  archlbl/.style={font=\sffamily\tiny, text=black!75, fill=white, inner sep=1pt, align=center},
+  archstep/.style={circle, fill=black!80, text=white, font=\sffamily\tiny\bfseries, inner sep=0.6pt, minimum size=0.42cm},
+  archstepai/.style={archstep, fill=archaccent},
+}
+
+\tikzset{
+  pics/archperson/.style={code={
+    \fill[black!65] (0,0.17) circle (0.1);
+    \fill[black!65] (-0.17,-0.25) -- (-0.17,-0.02) arc[start angle=180, end angle=0, radius=0.17] -- (0.17,-0.25) -- cycle;
+  }},
+  pics/archct/.style={code={
+    \draw[black!70, line width=0.9pt] (0,0.05) circle (0.2);
+    \fill[black!70] (-0.32,-0.24) rectangle (0.32,-0.19);
+    \draw[black!70, line width=0.6pt] (-0.06,0.05) -- (0.3,0.05);
+  }},
+  pics/archmonitor/.style={code={
+    \draw[black!70, line width=0.6pt, fill=black!8] (-0.27,-0.08) rectangle (0.27,0.25);
+    \draw[black!70, line width=0.6pt] (0,-0.08) -- (0,-0.18);
+    \draw[black!70, line width=0.6pt] (-0.12,-0.2) -- (0.12,-0.2);
+  }},
+  pics/archserver/.style={code={
+    \foreach \y in {0.12,-0.03,-0.18}{
+      \draw[black!70, line width=0.5pt, fill=black!8, rounded corners=0.5pt] (-0.22,\y-0.06) rectangle (0.22,\y+0.06);
+      \fill[black!70] (0.14,\y) circle (0.018);
+    }
+  }},
+  pics/archgpu/.style={code={
+    \draw[archaccent, line width=0.6pt, fill=archaccent!12] (-0.18,-0.18) rectangle (0.18,0.18);
+    \draw[archaccent, line width=0.5pt] (-0.08,-0.08) rectangle (0.08,0.08);
+    \foreach \t in {-0.1,0,0.1}{
+      \draw[archaccent, line width=0.5pt] (\t,0.18) -- (\t,0.26) (\t,-0.18) -- (\t,-0.26) (0.18,\t) -- (0.26,\t) (-0.18,\t) -- (-0.26,\t);
+    }
+  }},
+  pics/archlock/.style={code={
+    \draw[black!70, line width=0.7pt] (-0.1,0.02) -- (-0.1,0.1) arc[start angle=180, end angle=0, radius=0.1] -- (0.1,0.02);
+    \fill[black!70] (-0.17,-0.2) rectangle (0.17,0.03);
+    \fill[white] (0,-0.08) circle (0.035);
+  }},
+  pics/archdoc/.style={code={
+    \draw[black!70, line width=0.6pt, fill=black!8] (-0.17,-0.24) -- (-0.17,0.24) -- (0.08,0.24) -- (0.17,0.15) -- (0.17,-0.24) -- cycle;
+    \foreach \y in {0.08,-0.02,-0.12}{\draw[black!60, line width=0.4pt] (-0.1,\y) -- (0.1,\y);}
+  }},
+  pics/archbrain/.style={code={
+    \draw[black!70, line width=0.6pt, fill=black!8] (0,0) ellipse (0.25 and 0.19);
+    \draw[black!70, line width=0.5pt] (0,0.19) -- (0,-0.19);
+    \draw[black!70, line width=0.4pt] (-0.14,0.06) to[bend left] (-0.06,-0.08) (0.14,0.06) to[bend right] (0.06,-0.08);
+  }},
+  pics/archwall/.style={code={
+    \draw[black!70, line width=0.5pt, fill=black!8] (-0.22,-0.18) rectangle (0.22,0.18);
+    \foreach \y in {-0.06,0.06}{\draw[black!60, line width=0.4pt] (-0.22,\y) -- (0.22,\y);}
+    \draw[black!60, line width=0.4pt] (0,0.06) -- (0,0.18) (-0.11,-0.06) -- (-0.11,0.06) (0.11,-0.06) -- (0.11,0.06) (0,-0.18) -- (0,-0.06);
+  }},
+  pics/archcloud/.style={code={
+    \draw[black!70, line width=0.6pt, fill=black!8] (-0.2,-0.12) -- (0.2,-0.12) arc[start angle=-90, end angle=90, radius=0.11] arc[start angle=0, end angle=160, radius=0.15] arc[start angle=30, end angle=200, radius=0.12] arc[start angle=90, end angle=270, radius=0.1] -- cycle;
+  }},
+}
+
+% \archcomp[box style]{name}{x,y}{icon}{title}{subtitle}
+\newcommand{\archcomp}[6][archbox]{%
+  \node[#1] (#2) at (#3) {};
+  \pic at ($(#2.west)+(0.42,0)$) {#4};
+  \node[archtext] at ($(#2.west)+(0.82,0)$) {\textbf{#5}\\#6};
+}
+% \archstore{name}{x,y}{title}{subtitle}
+\newcommand{\archstore}[4]{%
+  \node[archdb] (#1) at (#2) {\textbf{#3}\\#4};
+}
+% \archactor{name}{x,y}{label}
+\newcommand{\archactor}[3]{%
+  \node[minimum width=0.5cm, minimum height=0.7cm, inner sep=0pt] (#1) at (#2) {};
+  \pic[scale=1.3] at (#1) {archperson};
+  \node[font=\sffamily\tiny, text=black!75, anchor=north, align=center, inner sep=1pt] (#1-l) at ($(#1.south)+(0,-0.02)$) {#3};
+}
+% \archbadge[style]{x,y}{flow.step}
+\newcommand{\archbadge}[3][archstep]{\node[#1] at (#2) {#3};}

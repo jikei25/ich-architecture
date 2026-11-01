@@ -1,0 +1,78 @@
+\subsubsection{Kịch bản 2: GPU bên ngoài bệnh viện}
+\label{sec:scenario2}
+
+\textbf{Bối cảnh áp dụng.} Bệnh viện có GPU nhưng đặt ở cơ sở khác (một khu khám bệnh
+khác của cùng bệnh viện), hoặc thuê GPU tại một trung tâm dữ liệu. Toàn bộ tầng lâm
+sàng, tầng dữ liệu và phần gán nhãn vẫn ở bệnh viện như Kịch bản 1; chỉ dịch vụ suy luận
+và phần huấn luyện chuyển ra cơ sở bên ngoài (Hình~\ref{fig:arch-s2}).
+
+\textbf{Điểm khác biệt.} Dữ liệu phải rời bệnh viện để tới GPU, nên kịch bản này bật
+hai điểm biến thiên: đường truyền được bảo vệ bằng một kênh riêng có TLS hai chiều, và
+dữ liệu được khử định danh trước khi rời bệnh viện. Cơ sở bên ngoài không bao giờ nhận
+dữ liệu định danh, không giữ bảng ánh xạ giả danh và không có đường nào tới PACS. Mọi
+chức năng mới đều nằm ở cổng trung gian; PACS, quy tắc xuất dữ liệu và giao diện suy luận
+giữ nguyên, đúng nguyên tắc P2.
+
+\textbf{Kênh kết nối.} Hai cơ sở nối với nhau bằng một đường truyền riêng (kênh thuê
+riêng hoặc mạng diện rộng riêng), có độ trễ khứ hồi điển hình vài mili giây tới vài chục
+mili giây. Kênh này là một vùng mạng riêng, không đi qua tường lửa đầu ra ra Internet, nên
+mất Internet không ảnh hưởng tới AI. Mọi kết nối trên kênh dùng TLS hai chiều với chứng
+chỉ do cơ quan cấp chứng chỉ nội bộ của bệnh viện phát hành, để mỗi bên xác thực được bên
+kia. Chỉ ba loại dữ liệu được đi qua kênh: tensor đã khử định danh đi ra và mặt nạ đi về;
+dataset đã khử định danh từ bucket nghiên cứu đi ra cho huấn luyện; và mô hình đã duyệt
+được triển khai cho dịch vụ suy luận tại cơ sở bên ngoài.
+
+\textbf{Vì sao gửi tensor thay vì ảnh DICOM.} Mô hình phân đoạn 3D đọc thể tích theo các
+cửa sổ trượt chồng lấn và không theo thứ tự cố định. Nếu cơ sở bên ngoài tải từng lát cắt
+theo yêu cầu, số lượt khứ hồi trên kênh sẽ tăng lên hàng trăm lần và độ trễ của mỗi lượt
+cộng dồn thành vài chục giây. Gửi \emph{một} tensor cho mỗi ca, đã cắt quanh vùng sọ não
+và chuẩn hoá về đúng khoảng cách điểm ảnh mà mô hình cần, chỉ tốn một lượt truyền và
+khối lượng nhỏ hơn đáng kể so với ca gốc. Tensor là mảng số, không mang thẻ DICOM, nên
+không chứa thông tin hành chính; cổng giữ lại bản ghi tác vụ gồm UID của ca gốc và tham
+số cắt, chuẩn hoá để đặt mặt nạ trả về đúng vị trí trên ảnh gốc.
+
+\textbf{Luồng 2: suy luận AI qua cơ sở bên ngoài.}
+\begin{description}[leftmargin=1.2cm,style=nextline]
+\item[2.1] PACS đẩy các chuỗi ảnh phù hợp sang cổng trung gian, như Kịch bản 1.
+\item[2.2] Cổng khử định danh: lọc bỏ ảnh có nguy cơ chứa chữ trên điểm ảnh và chỉ giữ dữ liệu điểm ảnh, không giữ thẻ DICOM nào. Sau đó cổng cắt và chuẩn hoá thể tích
+      về đúng dạng mô hình cần bằng đúng các bước đã dùng khi huấn luyện (mã băm của quy
+      trình được ghi lại cùng tác vụ), rồi mã hoá tensor. Nếu một bước bất kỳ không thành
+      công, ca bị chặn, không có gì rời bệnh viện, và ca được đánh dấu ``không có kết quả
+      AI''.
+\item[2.3] Cổng gửi tensor qua kênh TLS và giữ nó trên SeaweedFS cho tới khi cơ sở bên
+      ngoài xác nhận đã nhận (lưu rồi chuyển tiếp). Vì bản ghi tác vụ nằm trong PostgreSQL
+      dùng chung, bất kỳ nút cổng nào cũng tiếp tục được việc gửi khi một nút gặp sự cố.
+\item[2.4] Cơ sở bên ngoài chạy mô hình đã duyệt và trả về mặt nạ trên cùng kênh; nó
+      không biết bệnh nhân là ai.
+\item[2.5] Cổng giải mã, đặt mặt nạ trở lại hệ toạ độ của ca chụp gốc, tạo DICOM SEG và
+      SR kèm đủ siêu dữ liệu bắt buộc, rồi gửi vào PACS bằng C-STORE tới AE
+      \texttt{AI\_RESULTS}, như bước 2.4 của Kịch bản 1.
+\item[2.6] Cổng gửi cảnh báo tới bác sĩ và cờ ưu tiên tới HIS/RIS. Các thông báo này
+      xuất phát từ bệnh viện chứ không từ cơ sở bên ngoài, vì cơ sở bên ngoài không có
+      đường vào mạng lâm sàng.
+\end{description}
+
+\textbf{Khi có sự cố.} Mọi lời gọi ra cơ sở bên ngoài đều có thời gian chờ rõ ràng và
+một bộ ngắt mạch (circuit breaker): khi số lỗi liên tiếp vượt ngưỡng, bộ ngắt mạch mở và
+các tác vụ mới được đánh dấu ``không có kết quả AI'' ngay thay vì chờ; sau một khoảng thời
+gian, một vài tác vụ thử được cho đi qua để kiểm tra kênh đã phục hồi chưa. Quá hạn chót
+(120 giây, hoặc 90 giây với ca cấp cứu), ca hiển thị ``không có kết quả AI'' và được đọc
+theo thứ tự thông thường; tác vụ bị huỷ và tensor bị xoá, không gửi lại khi kết nối phục
+hồi, nên không có kết quả hay cảnh báo nào đến muộn sau khi bác sĩ có thể đã đọc xong.
+
+\textbf{Vấn đề còn mở.} (i) Kích thước tensor sau khi cắt và chuẩn hoá phụ thuộc mô hình
+được chọn, nên băng thông tối thiểu của kênh cần được tính lại khi chốt mô hình. (ii) Nếu
+cơ sở bên ngoài là một trung tâm dữ liệu thuê, hợp đồng xử lý dữ liệu phải ràng buộc mục
+đích sử dụng, quyền kiểm tra và nghĩa vụ thông báo sự cố, dù dữ liệu đã được khử định danh.
+(iii) Kỹ sư ML truy cập máy huấn luyện từ xa qua cùng kênh; cơ chế xác thực và ghi nhật ký
+cho truy cập này cần được đặc tả riêng.
+
+\begin{sidewaysfigure}
+\centering
+\resizebox{\linewidth}{!}{\input{figures/arch/scenario2.tex}}
+\caption{Kịch bản 2: GPU suy luận và huấn luyện đặt ở cơ sở bên ngoài (khung nét đứt),
+kết nối với bệnh viện qua kênh riêng có TLS hai chiều. Cổng trung gian khử định danh, cắt
+và chuẩn hoá ảnh, mã hoá rồi gửi một tensor cho mỗi ca. Các tầng còn lại và Luồng 1, 3,
+4, 5 giống Hình~\ref{fig:arch-s1}.}
+\label{fig:arch-s2}
+\end{sidewaysfigure}

@@ -5,11 +5,10 @@ Giả định (khai báo tường minh, có thể thay đổi):
       A: 60 ca/ngày (>50), B: 30 ca/ngày (10--50), C: 5 ca/ngày (<10).
   - Dung lượng gốc 250 MB/ca (giữa khoảng 100--500 MB nêu trong báo cáo).
   - Lưu trữ ở dạng nén không mất mát tỉ lệ 2,5:1  ->  100 MB/ca trên đĩa.
-  - Phân tầng theo tuổi dữ liệu, dựa trên quan sát tần suất truy cập ảnh
-    giảm mạnh sau 6--12 tháng và hiếm khi truy cập sau 2--3 năm:
-      nóng  : ca chụp <= 1 năm tuổi
-      ấm    : 1--3 năm tuổi
-      lạnh  : > 3 năm tuổi
+  - Phân tầng theo tuổi dữ liệu (Mục Lưu trữ và độ bền của chương Kiến trúc):
+      tại chỗ (SeaweedFS) + lớp Standard trên đám mây : <= 90 ngày tuổi
+      lớp Infrequent Access trên đám mây               : 90 ngày -- 1 năm
+      lớp Archive trên đám mây                         : 1 -- 10 năm
   - Chỉ tính CT sọ não; toàn bộ khoa chẩn đoán hình ảnh sẽ lớn hơn nhiều.
 
 Chạy:  python figures/src/fig_storage_growth.py  ->  figures/fig_storage_growth.png
@@ -25,7 +24,7 @@ STUDIES_PER_DAY = {"A: Trung ương": (60, BLUE),
 RAW_MB = 250
 LOSSLESS_RATIO = 2.5
 YEARS = 10
-HOT_MAX_Y, WARM_MAX_Y = 1.0, 3.0
+HOT_MAX_Y, WARM_MAX_Y = 90 / 365, 1.0
 TIER_COLORS = ["#0d366b", "#2a78d6", "#a9c9f0"]  # một sắc độ xanh: đậm = nóng
 
 
@@ -63,7 +62,7 @@ def main():
     hot, warm, cold = tiers(t, nB)
     ax2.stackplot(t, hot, warm, cold, colors=TIER_COLORS,
                   edgecolor="white", linewidth=0.8)
-    labels = ["nóng (≤ 1 năm)", "ấm (1–3 năm)", "lạnh (> 3 năm)"]
+    labels = ["tại chỗ (≤ 90 ngày)", "Infrequent Access (90 ngày–1 năm)", "Archive (1–10 năm)"]
     ys = [hot[-1] / 2, hot[-1] + warm[-1] / 2,
           hot[-1] + warm[-1] + cold[-1] / 2]
     for lab, y, v in zip(labels, ys, [hot[-1], warm[-1], cold[-1]]):
@@ -81,7 +80,7 @@ def main():
     for name, (n, _) in STUDIES_PER_DAY.items():
         r = tb_per_year(n)
         print(f"{name:16s}: {r:.2f} TB/năm, sau {YEARS} năm {r*YEARS:.1f} TB; "
-              f"tầng nóng ổn định ở {r*HOT_MAX_Y:.2f} TB")
+              f"tầng tại chỗ ổn định ở {r*HOT_MAX_Y:.2f} TB")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,5 @@
+% Links between the shared layers and the scenario-specific gateway (gw).
+\draw[archai] (9.8,11.0) -- node[archlbl, left=2pt, pos=0.5] {export\\C-STORE} (9.8,9.7);
+\draw[archai] (10.6,9.7) -- node[archlbl, right=2pt, pos=0.55] {SEG + SR} (10.6,11.0);
+\draw[archflow] (gw.west |- 0,8.75) -- (7.9,8.75) -- node[archlbl, left=1pt, pos=0.5] {nhãn,\\dataset} (7.9,3.95);
+\draw[archflow, <->] (11.4,8.5) -- node[archlbl, right=2pt, pos=0.62] {DICOMweb\\đã khử định danh} (11.4,6.7);

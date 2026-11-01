@@ -1,0 +1,30 @@
+% Scenario 1: GPU inside the hospital LAN.
+\begin{tikzpicture}[x=1cm, y=1cm]
+\input{figures/arch/base.tex}
+
+\archcomp{gw}{10.2,9.1}{archserver}{Gateway Orthanc}{active-active,\\khử định danh}
+\archcomp[archboxwide]{ai}{15.9,9.1}{archgpu}{Suy luận AI}{GPU trong LAN\\cờ ưu tiên, overlay}
+\archcomp[archabstract]{train}{17.9,6.1}{archgpu}{Huấn luyện}{GPU, registry mô hình}
+\input{figures/arch/links.tex}
+
+\draw[archai] ([yshift=2.5mm]gw.east) -- node[archlbl, above=1pt, pos=0.72] {series} ([yshift=2.5mm]gw.east -| ai.west);
+\draw[archai] ([yshift=-2.5mm]gw.east -| ai.west) -- node[archlbl, below=1pt] {mask} ([yshift=-2.5mm]gw.east);
+\draw[archai] (17.6,9.7) -- node[archlbl, right=1pt, pos=0.72] {cảnh báo} (doctor-l.south);
+\draw[archai] (ai.east) -- (21.4,9.1) -- node[archlbl, right=1pt, pos=0.4] {cờ ưu tiên (HL7 ORU)} (his.south);
+\draw[archflow] (annot) -- node[archlbl, above=3pt] {dataset} (train);
+\draw[archflow] (17.0,6.7) -- node[archlbl, left=1pt, pos=0.78] {mô hình đã duyệt} (17.0,8.5);
+\draw[archflow, dashed] ([xshift=-1.2cm]train.south) to[bend left=22] node[archlbl, below=1pt] {bản nháp từ mô hình hiện tại} ([xshift=1.2cm]annot.south);
+\draw[archact] (mle) -- (train);
+
+\archbadge[archstepai]{9.8,10.75}{2.1}
+\archbadge[archstepai]{12.35,9.62}{2.2}
+\archbadge[archstepai]{18.1,9.7}{2.3}
+\archbadge[archstepai]{10.6,10.75}{2.4}
+\archbadge[archstepai]{17.6,10.0}{2.5}
+\archbadge[archstepai]{19.8,9.1}{2.5}
+\archbadge{11.4,8.2}{3.1}
+\archbadge{7.9,7.6}{3.2}
+\archbadge{15.25,5.75}{3.3}
+\archbadge{19.85,6.7}{3.4}
+\archbadge{17.0,7.15}{3.5}
+\end{tikzpicture}
