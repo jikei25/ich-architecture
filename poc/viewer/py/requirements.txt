@@ -1,0 +1,9 @@
+numpy==2.1.3
+scipy==1.14.1
+pydicom==3.0.2
+pynetdicom==3.0.4
+highdicom==0.28.2
+dicomweb-client==0.61.2
+requests==2.32.3
+fastapi==0.115.6
+uvicorn==0.32.1

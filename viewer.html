@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICH Viewer PoC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7fc;--card:#ffffff;--text:#1c1f3a;--muted:#5b6080;--border:#d9deef;--pill:#ffffff;
+--blue:#1d4ed8;--blue-s:#e6efff;--blue-h:#d3e2ff;
+--violet:#6d28d9;--violet-s:#f1ecff;--violet-h:#e2d8ff;
+--pink:#be185d;--pink-s:#fdedf5;--pink-h:#fbd5e8;
+--emerald:#047857;--emerald-s:#e5f8ef;--emerald-h:#c8f0dd;
+--amber:#b45309;--amber-s:#fff5e1;--amber-h:#fde5b3;
+--cyan:#0e7490;--cyan-s:#e3f8fc;--cyan-h:#c2eef7;
+--slate:#475569;--slate-s:#f1f3f8;--slate-h:#e0e5ef;
+--rose:#e11d48;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0e1124;--card:#171b34;--text:#eceefb;--muted:#a3a8c8;--border:#2c3257;--pill:#171b34;
+--blue:#93c5fd;--blue-s:#14213f;--blue-h:#1b3160;--violet:#c4b5fd;--violet-s:#1d1838;--violet-h:#33255f;
+--pink:#f9a8d4;--pink-s:#2a1324;--pink-h:#4a1a3a;--emerald:#6ee7b7;--emerald-s:#0f2a24;--emerald-h:#0f3b2e;
+--amber:#fcd34d;--amber-s:#2c210b;--amber-h:#42300a;--cyan:#67e8f9;--cyan-s:#0f2a33;--cyan-h:#123b46;
+--slate:#cbd5e1;--slate-s:#1a1f36;--slate-h:#2a3150;--rose:#fb7185;}}
+:root[data-theme="dark"]{--bg:#0e1124;--card:#171b34;--text:#eceefb;--muted:#a3a8c8;--border:#2c3257;--pill:#171b34;
+--blue:#93c5fd;--blue-s:#14213f;--blue-h:#1b3160;--violet:#c4b5fd;--violet-s:#1d1838;--violet-h:#33255f;
+--pink:#f9a8d4;--pink-s:#2a1324;--pink-h:#4a1a3a;--emerald:#6ee7b7;--emerald-s:#0f2a24;--emerald-h:#0f3b2e;
+--amber:#fcd34d;--amber-s:#2c210b;--amber-h:#42300a;--cyan:#67e8f9;--cyan-s:#0f2a33;--cyan-h:#123b46;
+--slate:#cbd5e1;--slate-s:#1a1f36;--slate-h:#2a3150;--rose:#fb7185;}
+
+.bg{fill:var(--card)}
+.h1{fill:var(--text);font-size:22px;font-weight:700}
+.h2{fill:var(--muted);font-size:14px}
+.lane{stroke:none}
+.f-slate{fill:var(--slate-s)}.f-blue{fill:var(--blue-s)}.f-violet{fill:var(--violet-s)}.f-pink{fill:var(--pink-s)}.f-emerald{fill:var(--emerald-s)}.f-amber{fill:var(--amber-s)}.f-cyan{fill:var(--cyan-s)}
+.h-slate{fill:var(--slate-h)}.h-blue{fill:var(--blue-h)}.h-violet{fill:var(--violet-h)}.h-pink{fill:var(--pink-h)}.h-emerald{fill:var(--emerald-h)}.h-amber{fill:var(--amber-h)}.h-cyan{fill:var(--cyan-h)}
+.t-slate{fill:var(--slate)}.t-blue{fill:var(--blue)}.t-violet{fill:var(--violet)}.t-pink{fill:var(--pink)}.t-emerald{fill:var(--emerald)}.t-amber{fill:var(--amber)}.t-cyan{fill:var(--cyan)}
+.lt{font-size:16px;font-weight:700}.ls{font-size:12.5px;font-weight:600;opacity:.85}
+.frame{fill:none;stroke:var(--border);stroke-width:1}
+.bx,.cy,.cyt{fill:var(--card);stroke-width:1.6}
+.cyt{fill:var(--card)}
+.s-slate{stroke:var(--slate)}.s-blue{stroke:var(--blue)}.s-violet{stroke:var(--violet)}.s-pink{stroke:var(--pink)}.s-emerald{stroke:var(--emerald)}.s-amber{stroke:var(--amber)}.s-cyan{stroke:var(--cyan)}
+.bt{fill:var(--text);font-size:13.5px;font-weight:700}
+.bs{fill:var(--muted);font-size:11.5px}
+.abs{stroke-width:2;stroke-dasharray:8 5}
+.af-violet{fill:var(--violet-s)}.af-pink{fill:var(--pink-s)}
+.big{font-size:16px}
+.tagbg{stroke:none}.tagt{font-size:10.5px;font-weight:700;letter-spacing:.04em}
+.grp{fill:none;stroke:var(--emerald);stroke-width:1.3;stroke-dasharray:6 4}
+.grpt{fill:var(--emerald);font-size:12px;font-weight:700}
+.a.loop{stroke:var(--violet);stroke-width:1.8;stroke-dasharray:3 4}
+.lbv{fill:var(--violet);font-size:11px;font-weight:600}
+.note{fill:var(--muted);font-size:12.5px;font-style:italic}
+.a{fill:none;stroke-linejoin:round;stroke-linecap:round}
+.a.crit{stroke:var(--rose);stroke-width:2.4}
+.a.ai{stroke:var(--violet);stroke-width:2.2}
+.a.flow{stroke:var(--muted);stroke-width:1.6}
+.a.bak{stroke:var(--amber);stroke-width:2.8}
+.a.rest{stroke:var(--cyan);stroke-width:2;stroke-dasharray:7 5}
+.a.life{stroke:var(--cyan);stroke-width:2;stroke-dasharray:2 4}
+.pill{fill:var(--pill);stroke:var(--border);stroke-width:.8;opacity:.96}
+.lb{fill:var(--text);font-size:11px;font-weight:500}
+.lbc{fill:var(--cyan);font-size:11px;font-weight:600}
+.boundary{stroke:var(--cyan);stroke-width:2.5;stroke-dasharray:12 6}
+.btag{fill:var(--cyan);font-size:12px;font-weight:700}
+.legend{fill:var(--bg);stroke:var(--border)}
+.lgh{fill:var(--text);font-size:15px;font-weight:700}
+.lgt{fill:var(--text);font-size:13px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.page{max-width:1180px;margin:0 auto;padding:32px 16px 80px}
+.hero{background:linear-gradient(135deg,#4338ca,#0e7490);color:#fff;border-radius:22px;padding:38px 36px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-90px;top:-90px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hero .eyebrow{font-size:13px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;opacity:.85;position:relative}
+.hero h1{font-size:32px;line-height:1.25;margin:10px 0 12px;position:relative}
+.hero p{font-size:17px;max-width:860px;opacity:.93;margin:0;position:relative}
+.hero a{color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;position:relative}
+.chips span{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600}
+nav.toc{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 22px;margin:24px 0}
+nav.toc b{color:var(--violet)}
+nav.toc ol{margin:8px 0 0;padding-left:22px;columns:2;column-gap:36px}
+nav.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border)}
+nav.toc a:hover{color:var(--violet)}
+h2.sec{font-size:24px;margin:54px 0 14px;display:flex;align-items:center;gap:12px;line-height:1.3}
+h2.sec .n{flex:none;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#0e7490);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
+p{margin:8px 0}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.86em;background:var(--slate-s);border:1px solid var(--border);padding:1px 6px;border-radius:6px}
+.figure{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;margin:16px 0}
+.figscroll{overflow-x:auto;border-radius:12px}
+#arch{display:block;width:100%;min-width:1100px;height:auto}
+#arch .a[data-g]{transition:opacity .25s}
+#arch[data-focus] .a[data-g]{opacity:.1}
+#arch[data-focus="clinical"] .a[data-g="clinical"],#arch[data-focus="triage"] .a[data-g="triage"],#arch[data-focus="ai"] .a[data-g="ai"],#arch[data-focus="backup"] .a[data-g="backup"],#arch[data-focus="restore"] .a[data-g="restore"]{opacity:1}
+.focusbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 4px 12px}
+.focusbar span{font-size:14px;color:var(--muted);margin-right:4px}
+.focusbar button{font:inherit;font-size:14px;font-weight:600;padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer}
+.focusbar button[aria-pressed="true"]{background:var(--text);color:var(--card);border-color:var(--text)}
+.figcap{font-size:14px;color:var(--muted);margin:10px 4px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;border-top-width:5px}
+.card h4{margin:0 0 4px;font-size:17px}
+.card .v{font-size:13px;font-weight:700;margin-bottom:6px}
+.card p{font-size:15px;color:var(--text)}
+.c-slate{border-top-color:var(--slate)}.c-blue{border-top-color:var(--blue)}.c-violet{border-top-color:var(--violet)}.c-pink{border-top-color:var(--pink)}.c-emerald{border-top-color:var(--emerald)}.c-amber{border-top-color:var(--amber)}.c-cyan{border-top-color:var(--cyan)}
+.tc-slate{color:var(--slate)}.tc-blue{color:var(--blue)}.tc-violet{color:var(--violet)}.tc-pink{color:var(--pink)}.tc-emerald{color:var(--emerald)}.tc-amber{color:var(--amber)}.tc-cyan{color:var(--cyan)}.tc-rose{color:var(--rose)}
+.tbl{overflow-x:auto;margin:14px 0;border:1px solid var(--border);border-radius:16px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:11px 15px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--slate-s);font-weight:700;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.k{font-weight:700;white-space:nowrap}
+.pilltag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--slate-s);border:1px solid var(--border);white-space:nowrap}
+ol.flow{list-style:none;counter-reset:f;padding:0;margin:14px 0;position:relative}
+ol.flow>li{counter-increment:f;position:relative;padding:14px 18px 14px 66px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin:10px 0}
+ol.flow>li::before{content:var(--fp,"") counter(f);position:absolute;left:16px;top:14px;width:32px;height:32px;border-radius:10px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--fc)}
+ol.flow>li b.t{display:block}
+ol.flow>li .pr{display:inline-block;margin-top:4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--muted);background:var(--slate-s);border:1px solid var(--border);border-radius:8px;padding:1px 8px}
+.f-clin{--fc:var(--rose)}.f-tri{--fc:var(--violet)}.f-ai{--fc:var(--pink)}.f-bak{--fc:var(--amber)}.f-rest{--fc:var(--cyan)}
+.callout{border-left:5px solid var(--violet);background:var(--violet-s);padding:14px 18px;border-radius:0 12px 12px 0;margin:18px 0}
+.callout.amber{border-left-color:var(--amber);background:var(--amber-s)}
+.callout.cyan{border-left-color:var(--cyan);background:var(--cyan-s)}
+.callout.rose{border-left-color:var(--rose);background:var(--blue-s)}
+.callout ul{margin:6px 0 0;padding-left:20px}
+.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:14px 0}
+.timeline div{border-radius:12px;padding:12px 14px;border-top:5px solid}
+.timeline b{display:block;font-size:15px}.timeline span{font-size:13px;color:var(--muted)}
+.t1{background:var(--emerald-s);border-color:var(--emerald)!important}.t2{background:var(--amber-s);border-color:var(--amber)!important}.t3{background:var(--cyan-s);border-color:var(--cyan)!important}.t4{background:var(--slate-s);border-color:var(--slate)!important}
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
+@media (max-width:700px){.hero{padding:26px 20px}.hero h1{font-size:25px}nav.toc ol{columns:1}.timeline{grid-template-columns:1fr 1fr}ol.flow>li{padding-left:58px}}
+.stepb circle{stroke:var(--card);stroke-width:2}
+.stepb text{fill:#fff;font-size:10.5px;font-weight:700}
+.sb-clin circle{fill:var(--rose)}.sb-tri circle{fill:var(--violet)}.sb-ai circle{fill:var(--pink)}.sb-bak circle{fill:var(--amber)}.sb-rest circle{fill:var(--cyan)}
+#arch .stepb[data-g]{transition:opacity .25s}
+#arch[data-focus] .stepb[data-g]{opacity:.12}
+#arch[data-focus="clinical"] .stepb[data-g="clinical"],#arch[data-focus="triage"] .stepb[data-g="triage"],#arch[data-focus="ai"] .stepb[data-g="ai"],#arch[data-focus="backup"] .stepb[data-g="backup"],#arch[data-focus="restore"] .stepb[data-g="restore"]{opacity:1}
+.f-clin{--fp:"1."}.f-tri{--fp:"2."}.f-ai{--fp:"3."}.f-bak{--fp:"4."}
+.y{color:var(--emerald);font-weight:700}.n{color:var(--rose);font-weight:700}.p{color:var(--amber);font-weight:700}.o{color:var(--cyan);font-weight:700}
+td.win{background:var(--emerald-s)}
+th.win{background:var(--emerald-h)}
+.adr{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:16px 0}
+dl.qa{margin:14px 0}
+dl.qa dt{font-weight:700;margin-top:16px}
+dl.qa dd{margin:4px 0 0;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px}
+ol.src{font-size:14.5px;padding-left:22px}
+main a{color:var(--violet)}
+.tbl.wide table{min-width:760px;table-layout:fixed}
+.tbl.wide th:first-child{width:28%}
+.tbl td.k{white-space:normal;width:30%;min-width:140px}
+h3.dec{font-size:20px;line-height:1.35;margin:40px 0 8px;scroll-margin-top:72px;display:flex;align-items:center;gap:10px}
+.dn{flex:none;font-size:12.5px;font-weight:700;padding:3px 9px;border-radius:8px;background:var(--violet-s);color:var(--violet);border:1px solid var(--violet-h)}
+.dn.open{background:var(--cyan-s);color:var(--cyan);border-color:var(--cyan-h)}
+.idx table{min-width:860px}
+.idx td:first-child{white-space:nowrap}
+.idx a{font-weight:700;text-decoration:none}
+ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:16px 0}
+.verdict .card p{margin:6px 0 0}
+pre.code{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,Menlo,Consolas,monospace;margin:12px 0}
+pre.code .c{color:var(--muted)}
+.flowsvg{display:block;width:100%;max-width:760px;height:auto;margin:0 auto}
+.flowsvg .bxc{fill:var(--blue-s);stroke:var(--blue);stroke-width:1.2}
+.flowsvg .bxa{fill:var(--violet-s);stroke:var(--violet);stroke-width:1.2}
+.flowsvg .tt{fill:var(--text);font:700 14px Inter,system-ui,sans-serif}
+.flowsvg .ts{fill:var(--muted);font:12px Inter,system-ui,sans-serif}
+.flowsvg .ln{fill:none;stroke:var(--muted);stroke-width:1.5}
+.flowsvg .lv{fill:none;stroke:var(--violet);stroke-width:1.6}
+.flowsvg .gap{fill:none;stroke:var(--rose);stroke-width:1.6;stroke-dasharray:6 4}
+.flowsvg .gt{fill:var(--rose);font:600 12.5px Inter,system-ui,sans-serif}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin:16px 0}
+.shots figure{margin:0;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.shots img{display:block;width:100%;height:auto;cursor:zoom-in}
+.shots figcaption{font-size:14px;padding:10px 14px;color:var(--text)}
+.shots figcaption b{color:var(--violet)}
+.ok{color:var(--emerald);font-weight:700}.part{color:var(--amber);font-weight:700}.no{color:var(--rose);font-weight:700}
+td.st{white-space:nowrap}
+</style>
+<link rel="stylesheet" href="assets/site.css">
+<script>try{var t=localStorage.getItem("ich-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+</head><body>
+<header class="topbar"><div class="topbar-in">
+  <a class="brand" href="index.html"><span class="logo">ICH</span><span class="brand-t">ICH AI system · architecture</span></a>
+  <nav class="scen" aria-label="Deployment scenario">
+    <a href="index.html"><b>Scenario 1</b><span>All on-premise</span></a>
+    <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
+    <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
+    <a href="viewer.html" aria-current="page"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
+  </nav>
+  <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
+</div><div class="progress"><span></span></div></header>
+<div class="page">
+<header class="hero">
+  <div class="eyebrow">Intracerebral hemorrhage AI system · Trình xem (D10) · luồng 1.3, 1.4, 1.5 và 2.4–2.5</div>
+  <h1>OHIF có đáp ứng luồng hiện tại không? Giải thích và bản mẫu (PoC)</h1>
+  <p>Trang này trả lời bốn câu hỏi: trình xem nói chuyện với PACS bằng gì (QIDO-RS, WADO-RS, STOW-RS); luồng 1.4 chạm vào PACS và trình xem ra sao; OHIF có hiển thị được lớp phủ AI và ưu tiên/thông báo một ca không; và nếu thiếu thì tự làm phần nào, dùng lại gì từ OHIF. Mọi kết luận về OHIF ở đây đã được chạy thử trên một PoC thật (dcm4chee 5.35.2 + OHIF 3.13.14), kèm hướng dẫn demo cho team.</p>
+  <div class="chips"><span>Lớp phủ SEG: đáp ứng</span><span>Ưu tiên + thông báo: phải tự làm</span><span>PoC chạy được, có kịch bản demo</span><span>Dữ liệu CT tổng hợp, không có bệnh nhân thật</span></div>
+</header>
+
+<div class="layout">
+<nav class="toc"><b>Mục lục</b><ol>
+<li><a href="#verdict">Kết luận nhanh</a></li>
+<li><a href="#basics">Kiến thức nền: DICOM và DICOMweb</a></li>
+<li><a href="#journey">Luồng 1.4 và hành trình một ca</a></li>
+<li><a href="#dicomweb">Trình xem nói chuyện với PACS</a></li>
+<li><a href="#ohif">OHIF đáp ứng tới đâu</a></li>
+<li><a href="#gap">Ưu tiên và thông báo: tự làm thế nào</a></li>
+<li><a href="#poc">PoC: thành phần và ảnh chụp</a></li>
+<li><a href="#findings">Những gì PoC phát hiện</a></li>
+<li><a href="#run">Cách demo cho team</a></li>
+<li><a href="#next">Việc tiếp theo</a></li>
+<li><a href="#refs">Tài liệu tham khảo</a></li>
+</ol></nav>
+<main>
+
+<h2 class="sec" id="verdict"><span class="n">1</span>Kết luận nhanh</h2>
+<div class="verdict">
+  <div class="card c-emerald"><h4>Đọc ảnh từ PACS</h4><div class="v tc-emerald">Đáp ứng · đã kiểm chứng</div><p>OHIF đọc thẳng dcm4chee qua QIDO-RS và WADO-RS, chỉ cần cấu hình data source. Không viết mã.</p></div>
+  <div class="card c-emerald"><h4>Lớp phủ AI (DICOM SEG)</h4><div class="v tc-emerald">Đáp ứng · đã kiểm chứng</div><p>Mask AI lưu trong PACS dưới dạng SEG chuẩn, OHIF hiện thành chuỗi riêng và chỉ vẽ khi bác sĩ bật: đúng nguyên tắc "mặc định tắt".</p></div>
+  <div class="card c-amber"><h4>Báo cáo SR, mask về muộn</h4><div class="v tc-amber">Một phần</div><p>OHIF không vẽ SR thể tích (TID 1500 tham chiếu SEG). Mask về sau khi ca đã mở không tự hiện, phải nạp lại.</p></div>
+  <div class="card c-pink"><h4>Ưu tiên + thông báo</h4><div class="v" style="color:var(--rose)">Không có sẵn · tự làm</div><p>QIDO không có trường "nghi xuất huyết", OHIF không có kênh đẩy sự kiện. PoC lấp bằng dịch vụ kết quả AI + panel trong OHIF.</p></div>
+</div>
+<div class="callout"><b>Khuyến nghị:</b> giữ OHIF làm trình xem, không tự viết viewer. Phần còn thiếu là một <b>dịch vụ kết quả AI</b> nhỏ (API + Server-Sent Events) và một <b>extension OHIF</b> (panel trạng thái AI, xác nhận/bác bỏ, thông báo, tự nạp SEG mới), cộng một danh sách ca ưu tiên nếu HIS/RIS của bệnh viện không nhận được cờ ưu tiên. PoC đã chứng minh từng mảnh chạy được.</div>
+
+<h2 class="sec" id="basics"><span class="n">2</span>Kiến thức nền: DICOM và DICOMweb</h2>
+<p>Mỗi ca chụp có cấu trúc <b>Patient → Study (ca chụp) → Series (chuỗi ảnh) → Instance (một lát)</b>, mỗi cấp có một UID. Kết quả AI cũng là Instance, nằm trong <b>Series riêng của cùng Study</b>: mask là <code>Modality = SEG</code>, báo cáo số đo là <code>Modality = SR</code>. Nhờ đó kết quả AI đi theo ca chụp gốc, và trình xem nào đọc được DICOM chuẩn cũng thấy.</p>
+<p>PACS nói hai "ngôn ngữ". Trình duyệt không nói được DIMSE, nên <b>OHIF chỉ dùng DICOMweb</b>.</p>
+<div class="tbl"><table>
+<tr><th>Việc</th><th>DIMSE (DICOM cổ điển, TCP)</th><th>DICOMweb (REST qua HTTP)</th></tr>
+<tr><td class="k">Ai dùng</td><td>Máy chụp, cổng Orthanc</td><td>Trình xem web (OHIF), dịch vụ kết quả AI</td></tr>
+<tr><td class="k">Tìm kiếm</td><td>C-FIND (cả tra worklist)</td><td><b>QIDO-RS</b>: <code>GET /studies?...</code>, trả JSON</td></tr>
+<tr><td class="k">Lấy ảnh</td><td>C-MOVE / C-GET</td><td><b>WADO-RS</b>: <code>GET .../metadata</code>, <code>GET .../frames/1</code></td></tr>
+<tr><td class="k">Lưu</td><td>C-STORE</td><td><b>STOW-RS</b>: <code>POST /studies</code></td></tr>
+<tr><td class="k">Worklist có ưu tiên</td><td>C-FIND MWL</td><td>MWL qua REST (<code>/mwlitems</code>), UPS-RS (<code>/workitems</code>)</td></tr>
+</table></div>
+
+<h2 class="sec" id="journey"><span class="n">3</span>Luồng 1.4 và hành trình một ca</h2>
+<p><b>Luồng 1.4</b> (Mục 1.4 trong tài liệu kiến trúc): HIS/RIS gửi chỉ định qua HL7, PACS dựng Modality Worklist cho máy chụp và dùng chính sự kiện có chỉ định để nạp trước các ca cũ của bệnh nhân. <b>1.4 không chạm trực tiếp vào trình xem.</b> Nó bảo đảm ảnh mang đúng định danh (PatientID, AccessionNumber, Study Instance UID) và ca cũ đã sẵn tại chỗ khi bác sĩ cần so sánh. Lớp phủ và ưu tiên thuộc luồng 1.5 và 2.4–2.5.</p>
+<div class="figure">
+<svg class="flowsvg" viewBox="0 0 680 440" role="img" aria-labelledby="fl-t fl-d"><title id="fl-t">Các luồng giữa HIS/RIS, máy CT, PACS, OHIF và tầng AI</title><desc id="fl-d">PACS ở giữa. Máy CT gửi ảnh và lấy worklist, HIS/RIS gửi chỉ định HL7, OHIF đọc qua QIDO/WADO-RS và ghi qua STOW-RS, tầng AI nhận ảnh xuất và trả SEG/SR, rồi gửi cờ ưu tiên tới HIS/RIS. Giữa OHIF và kết quả AI có một khoảng trống: viewer không biết ca nào được ưu tiên.</desc>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="bxc" x="40" y="40" width="170" height="56" rx="8"/><text class="tt" x="125" y="63" text-anchor="middle">Máy CT</text><text class="ts" x="125" y="83" text-anchor="middle">modality</text>
+<rect class="bxc" x="470" y="40" width="170" height="56" rx="8"/><text class="tt" x="555" y="63" text-anchor="middle">HIS / RIS</text><text class="ts" x="555" y="83" text-anchor="middle">chỉ định, worklist đọc</text>
+<rect class="bxc" x="250" y="170" width="180" height="56" rx="8"/><text class="tt" x="340" y="193" text-anchor="middle">PACS (dcm4chee)</text><text class="ts" x="340" y="213" text-anchor="middle">lưu ảnh, MWL, DICOMweb</text>
+<rect class="bxc" x="40" y="300" width="170" height="56" rx="8"/><text class="tt" x="125" y="323" text-anchor="middle">OHIF viewer</text><text class="ts" x="125" y="343" text-anchor="middle">web app tĩnh</text>
+<rect class="bxa" x="470" y="300" width="170" height="56" rx="8"/><text class="tt" x="555" y="323" text-anchor="middle">Tầng AI</text><text class="ts" x="555" y="343" text-anchor="middle">Orthanc + suy luận</text>
+<path class="ln" d="M125 96 L125 198 L246 198" marker-end="url(#ah)"/>
+<text class="ts" x="133" y="128">1.1 ảnh (C-STORE)</text><text class="ts" x="133" y="146">1.4 lấy MWL (C-FIND)</text>
+<path class="ln" d="M555 96 L555 198 L434 198" marker-end="url(#ah)"/>
+<text class="ts" x="547" y="137" text-anchor="end">1.4 HL7 ORM</text>
+<path class="ln" d="M300 226 L300 328 L214 328" marker-start="url(#ah)" marker-end="url(#ah)"/>
+<text class="ts" x="292" y="262" text-anchor="end">1.3 QIDO, WADO-RS</text><text class="ts" x="292" y="280" text-anchor="end">1.5 STOW-RS</text>
+<path class="lv" d="M410 226 L410 316 L466 316" marker-start="url(#ah)" marker-end="url(#ah)"/>
+<text class="ts" x="418" y="256">2.1 xuất ảnh</text><text class="ts" x="418" y="274">2.4 SEG + SR về</text>
+<path class="lv" d="M640 328 L662 328 L662 68 L644 68" marker-end="url(#ah)"/>
+<text class="ts" x="654" y="230" text-anchor="end">2.5 cờ ưu tiên</text>
+<path class="gap" d="M125 356 L125 396 L555 396 L555 360"/>
+<text class="gt" x="340" y="418" text-anchor="middle">Khoảng trống: OHIF không biết ca nào được ưu tiên</text>
+</svg>
+<p class="figcap">Nét xám: luồng lâm sàng. Nét tím: luồng AI. Nét đỏ đứt: phần OHIF không có sẵn, PoC lấp bằng dịch vụ kết quả AI.</p>
+</div>
+<div class="tbl"><table>
+<tr><th>Lúc</th><th>Việc xảy ra</th><th>Giao thức</th><th>Trình xem liên quan gì</th></tr>
+<tr><td class="k">T0 · 1.4</td><td>HIS/RIS gửi chỉ định; dcm4chee tạo mục worklist (và có thể nạp trước ca cũ)</td><td>HL7 v2 ORM^O01 qua MLLP, cổng 2575</td><td>Không. Chỉ chuẩn bị định danh đúng</td></tr>
+<tr><td class="k">T1 · 1.4</td><td>Máy CT tra worklist để lấy tên, mã BN, AccessionNumber, Study UID</td><td>C-FIND MWL, cổng 11112</td><td>Không</td></tr>
+<tr><td class="k">T2 · 1.1–1.2</td><td>Máy CT gửi ảnh; PACS lưu xong mới báo thành công</td><td>C-STORE</td><td>Không</td></tr>
+<tr><td class="k">T3 · 1.3</td><td>Bác sĩ mở ca</td><td>QIDO-RS rồi WADO-RS</td><td><b>Có</b>: đọc ảnh</td></tr>
+<tr><td class="k">T3 · 2.1–2.3</td><td>Song song: PACS đẩy chuỗi trục sang cổng, AI chạy</td><td>C-STORE sang Orthanc</td><td>Không. Bác sĩ không chờ AI</td></tr>
+<tr><td class="k">T4 · 2.5</td><td>Cờ ưu tiên đi tới HIS/RIS (và dịch vụ kết quả AI)</td><td>HL7 ORU / FHIR; trong PoC: HTTP + SSE</td><td>Không qua PACS. <b>Đây là khoảng trống</b></td></tr>
+<tr><td class="k">T4 · 2.4</td><td>Mask SEG + báo cáo SR về PACS</td><td>C-STORE tới AE chỉ cho phép lưu</td><td>Thấy được nếu truy vấn lại</td></tr>
+<tr><td class="k">T5 · 1.5</td><td>Bác sĩ bật lớp phủ, xác nhận hoặc sửa; mask đã sửa lưu lại</td><td>STOW-RS</td><td><b>Có</b></td></tr>
+</table></div>
+<p>Trong PoC, bản tin HL7 thật được gửi và dcm4chee trả ACK <code>MSA|AA</code>. Điểm cần biết: dcm4chee <b>chỉ tạo mục worklist khi bản tin có segment ZDS</b> (Study Instance UID, theo IHE Scheduled Workflow) hoặc IPC. Không có ZDS, PACS vẫn ACK nhưng ghi log "No Scheduled Procedure Steps … Abort MWL creation".</p>
+<pre class="code"><span class="c"># HIS/RIS → PACS (MLLP, cổng 2575): bản tin PoC gửi thật</span>
+MSH|^~\&amp;|HIS|HOSPITAL|DCM4CHEE|DCM4CHEE|20261105101500||ORM^O01|MSG0001|P|2.5.1
+PID|||BN201^^^HOSPITAL||NGUYEN^VAN AN||19650312|M
+PV1||E
+ORC|NW|ACC3001|||SC||^^^20261105102000^^S
+OBR|1|ACC3001||CTHEAD^CT so nao khong tiem thuoc^LOCAL|...|ACC3001|ACC3001|ACC3001|...|CT|...
+ZDS|1.2.826.0.1.3680043.8.498.414...^DCM4CHEE^Application^DICOM
+<span class="c"># PACS → HIS/RIS</span>
+MSA|AA|MSG0001
+<span class="c"># Kiểm tra worklist bằng REST (dcm4chee phục vụ MWL ở AE riêng tên WORKLIST)</span>
+GET /dcm4chee-arc/aets/WORKLIST/rs/mwlitems?AccessionNumber=ACC3001   → 200, DICOM JSON, trạng thái SCHEDULED</pre>
+
+<h2 class="sec" id="dicomweb"><span class="n">4</span>Trình xem nói chuyện với PACS</h2>
+<p>Mọi request đi qua reverse proxy (trong kiến trúc, proxy kiểm tra token Keycloak; PoC bỏ qua bước đăng nhập). Gốc DICOMweb của dcm4chee là <code>/dcm4chee-arc/aets/DCM4CHEE/rs</code>. Đặt OHIF và PACS cùng origin sau proxy thì không phải cấu hình CORS.</p>
+<div class="tbl"><table>
+<tr><th>Khi nào</th><th>Request OHIF gửi</th><th>Loại</th><th>Response</th></tr>
+<tr><td>Danh sách ca</td><td><code>GET /rs/studies?PatientName=…&amp;includefield=…</code></td><td>QIDO-RS</td><td>JSON: mảng các ca, key là mã tag</td></tr>
+<tr><td>Mở một ca</td><td><code>GET /rs/studies/{study}/series</code></td><td>QIDO-RS</td><td>JSON: các chuỗi (CT, SEG, SR…)</td></tr>
+<tr><td>Siêu dữ liệu</td><td><code>GET /rs/studies/{study}/series/{series}/metadata</code></td><td>WADO-RS</td><td>JSON: mọi tag của từng lát; dữ liệu lớn thay bằng <code>BulkDataURI</code></td></tr>
+<tr><td>Điểm ảnh</td><td><code>GET …/instances/{sop}/frames/1</code></td><td>WADO-RS</td><td><code>multipart/related</code>, điểm ảnh thô</td></tr>
+<tr><td>Lớp phủ AI</td><td>Như trên, cho chuỗi <code>Modality = SEG</code></td><td>WADO-RS</td><td>Đối tượng SEG (OHIF tải cả instance)</td></tr>
+<tr><td>Lưu mask đã sửa</td><td><code>POST /rs/studies</code></td><td>STOW-RS</td><td>200/202 + JSON: <code>00081199</code> đã lưu, <code>00081198</code> lỗi</td></tr>
+</table></div>
+<pre class="code"><span class="c"># QIDO-RS: một phần tử trong response (DICOM JSON, PS3.18 Annex F)</span>
+{
+  "0020000D": { "vr": "UI", "Value": ["1.2.826.0.1.3680043.8.498.265..."] },   <span class="c">// StudyInstanceUID</span>
+  "00100010": { "vr": "PN", "Value": [{ "Alphabetic": "NGUYEN^VAN AN" }] },     <span class="c">// PatientName</span>
+  "00080050": { "vr": "SH", "Value": ["ACC3001"] },                              <span class="c">// AccessionNumber</span>
+  "00080061": { "vr": "CS", "Value": ["CT", "SEG", "SR"] },                      <span class="c">// ModalitiesInStudy</span>
+  "00201208": { "vr": "IS", "Value": [50] }                                      <span class="c">// số instance</span>
+}</pre>
+<p>Cấu hình data source trong OHIF (file <code>poc/viewer/ohif/app-config.js</code>):</p>
+<pre class="code">dataSources: [{
+  namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+  sourceName: 'dcm4chee',
+  configuration: {
+    qidoRoot:  origin + '/dcm4chee-arc/aets/DCM4CHEE/rs',
+    wadoRoot:  origin + '/dcm4chee-arc/aets/DCM4CHEE/rs',
+    wadoUriRoot: origin + '/dcm4chee-arc/aets/DCM4CHEE/wado',
+    qidoSupportsIncludeField: true, supportsReject: true, dicomUploadEnabled: true,
+    imageRendering: 'wadors', thumbnailRendering: 'wadors', enableStudyLazyLoad: true,
+    supportsFuzzyMatching: true, supportsWildcard: true, omitQuotationForMultipartRequest: true,
+  },
+}]</pre>
+
+<h2 class="sec" id="ohif"><span class="n">5</span>OHIF đáp ứng tới đâu</h2>
+<p>OHIF là một <b>web app tĩnh</b> (React): không có server riêng, không có cơ sở dữ liệu. Nó gồm <b>data source</b> (trỏ tới PACS), <b>extension</b> (gói chức năng, ví dụ <code>cornerstone-dicom-seg</code> vẽ SEG), <b>mode</b> (bố cục một quy trình) và <b>services</b> dùng chung (ví dụ <code>UINotificationService</code> hiện toast). Vì mọi dữ liệu đến từ QIDO/WADO, OHIF hiển thị tốt những gì là DICOM chuẩn trong PACS, và không biết gì về những thứ nằm ngoài PACS như cờ ưu tiên.</p>
+<div class="tbl"><table>
+<tr><th>Yêu cầu</th><th>Nguồn</th><th>Kết quả</th><th>Ghi chú từ PoC</th></tr>
+<tr><td>Đọc qua QIDO-RS / WADO-RS</td><td>1.3</td><td class="st"><span class="ok">Đạt</span></td><td>Chỉ cấu hình data source</td></tr>
+<tr><td>Mở ca khi chuỗi sau vẫn đang tới</td><td>1.3</td><td class="st"><span class="part">Một phần</span></td><td>Mở được ngay, nhưng OHIF chỉ đọc danh sách chuỗi lúc mở ca</td></tr>
+<tr><td>Hiển thị mask AI (SEG)</td><td>1.5, 2.4</td><td class="st"><span class="ok">Đạt</span></td><td>SEG hiện thành chuỗi riêng; bấm đúp → hỏi xác nhận → vẽ lớp phủ màu đỏ</td></tr>
+<tr><td>Lớp phủ mặc định tắt</td><td>P4</td><td class="st"><span class="ok">Đạt</span></td><td>Hành vi mặc định của OHIF</td></tr>
+<tr><td>Hiển thị báo cáo SR (thể tích)</td><td>2.4</td><td class="st"><span class="no">Không</span></td><td>SR TID 1500 với ROI thể tích tham chiếu SEG: viewport SR báo "Something went wrong". Thể tích hiện qua panel AI</td></tr>
+<tr><td>4 trạng thái AI, không giống ca âm tính</td><td>Hợp đồng AI</td><td class="st"><span class="no">Không có sẵn</span></td><td>PoC: panel AI tiêm vào trang OHIF</td></tr>
+<tr><td>Xác nhận / bác bỏ kết quả AI</td><td>1.5</td><td class="st"><span class="no">Không có sẵn</span></td><td>PoC: nút trong panel AI, lưu ở dịch vụ kết quả AI</td></tr>
+<tr><td>Sửa mask, lưu lại</td><td>1.5</td><td class="st"><span class="part">Có công cụ</span></td><td>OHIF có brush và xuất SEG qua STOW-RS; PoC chưa quay bước này</td></tr>
+<tr><td>Ưu tiên ca, thông báo realtime</td><td>1.5, 2.5</td><td class="st"><span class="no">Không có sẵn</span></td><td>PoC: dịch vụ kết quả AI + danh sách ưu tiên + SSE</td></tr>
+<tr><td>Đăng nhập SSO (OIDC, Keycloak)</td><td>D9</td><td class="st"><span class="part">Chưa thử</span></td><td>OHIF hỗ trợ cấu hình <code>oidc</code>; ngoài phạm vi PoC</td></tr>
+<tr><td>Được phép dùng để chẩn đoán chính</td><td>Pháp lý</td><td class="st"><span class="no">Không</span></td><td>OHIF hiển thị "for investigational use only"; không có FDA/CE</td></tr>
+</table></div>
+
+<h2 class="sec" id="gap"><span class="n">6</span>Ưu tiên và thông báo: tự làm thế nào</h2>
+<p>Câu hỏi đầu tiên là <b>bác sĩ chọn ca để đọc ở đâu</b>. Nếu ở worklist của RIS và RIS nhận được cờ qua HL7 ORU hoặc FHIR, kiến trúc hiện tại đã đủ: OHIF chỉ cần hiển thị lớp phủ. Nếu RIS không làm được, hoặc đồ án không có RIS thật, nhóm tự làm theo một trong ba cách:</p>
+<div class="tbl"><table>
+<tr><th>Cách</th><th>Gồm gì</th><th>Ưu</th><th>Nhược</th></tr>
+<tr><td class="k">A. Extension OHIF</td><td>Panel kết quả AI, nút xác nhận/bác bỏ, toast qua <code>UINotificationService</code>, tự nạp chuỗi SEG mới khi có sự kiện</td><td>Bác sĩ ở trong một màn hình</td><td>Phải build OHIF từ mã nguồn</td></tr>
+<tr><td class="k">B. Danh sách ưu tiên riêng</td><td>Trang web liệt kê ca từ QIDO-RS + kết quả AI, ca có cờ lên đầu, thông báo; bấm thì mở OHIF qua <code>/viewer?StudyInstanceUIDs=…</code></td><td>Không đụng mã OHIF; đóng vai "worklist RIS" khi chưa có RIS thật</td><td>Thêm một màn hình</td></tr>
+<tr><td class="k">C. UPS-RS trong PACS</td><td>Mỗi ca cần đọc là một workitem có <code>ScheduledProcedureStepPriority</code>; dcm4chee có <code>/rs/workitems</code></td><td>Theo chuẩn DICOM</td><td>Tầng AI cần quyền ghi DICOMweb vào PACS, trái nguyên tắc P3; OHIF không đọc UPS sẵn</td></tr>
+</table></div>
+<p>Cả A và B đều dựa trên một <b>dịch vụ kết quả AI</b> (chính là "AI results DB" trong kiến trúc). PoC làm B, và làm A ở dạng rút gọn: thay vì build extension, proxy tiêm một script vào trang OHIF. Hành vi giống nhau, bản thật nên là extension.</p>
+<pre class="code"><span class="c"># Dịch vụ kết quả AI trong PoC (poc/viewer/py/triage_api.py)</span>
+GET  /triage/api/studies              <span class="c">danh sách ca từ QIDO-RS + trạng thái AI, ca có cờ trước</span>
+GET  /triage/api/studies/{uid}        <span class="c">một ca, cho panel trong OHIF</span>
+POST /triage/api/studies/{uid}/review <span class="c">{"decision": "CONFIRMED" | "REJECTED"}</span>
+GET  /triage/api/mwl                  <span class="c">worklist (luồng 1.4) đọc từ dcm4chee</span>
+GET  /triage/api/events               <span class="c">Server-Sent Events: result, review, ai_status</span>
+POST /triage/api/results/{uid}        <span class="c">AI ghi: RUNNING | POSITIVE | NEGATIVE | UNANALYZABLE | FAILED</span>
+POST /triage/api/heartbeat            <span class="c">AI báo còn sống; mất 12 s → "AI tạm ngừng"</span></pre>
+<p>Thứ tự sắp xếp tuân thủ P4: chỉ ca <b>dương tính chưa xác nhận</b> được kéo lên đầu; mọi ca khác giữ thứ tự thường (mới nhất trước). Cờ ưu tiên được ghi <b>trước</b> mask và báo cáo, để thông báo không phải chờ phần định lượng. Ca quá hạn 60 giây không có kết quả hiển thị "Không có kết quả AI", không bao giờ hiển thị như âm tính.</p>
+
+<h2 class="sec" id="poc"><span class="n">7</span>PoC: thành phần và ảnh chụp</h2>
+<p>PoC chạy bằng Docker Compose trên một máy. Mỗi thành phần ứng với một khối trong kiến trúc; chỗ nào đi tắt thì ghi rõ.</p>
+<div class="tbl"><table>
+<tr><th>Container</th><th>Vai trò</th><th>Khối trong kiến trúc</th><th>Đi tắt so với bản thật</th></tr>
+<tr><td class="k">arc, db, ldap</td><td>dcm4chee-arc-light 5.35.2 + PostgreSQL + OpenLDAP</td><td>PACS</td><td>Lưu đĩa cục bộ thay vì SeaweedFS; một nút</td></tr>
+<tr><td class="k">ohif</td><td>OHIF 3.13.14, image chính thức</td><td>Trình xem</td><td>Không đăng nhập Keycloak</td></tr>
+<tr><td class="k">tools: <code>his.py</code></td><td>Gửi HL7 ORM^O01 qua MLLP</td><td>HIS/RIS</td><td>—</td></tr>
+<tr><td class="k">tools: <code>scanner.py</code></td><td>C-FIND MWL, sinh CT sọ tổng hợp, C-STORE</td><td>Máy CT</td><td>Ảnh tổng hợp; ca dương tính có khối 72 HU</td></tr>
+<tr><td class="k">ai-worker</td><td>Phát hiện bằng ngưỡng HU, sinh SEG + SR (highdicom), C-STORE về PACS</td><td>Cổng Orthanc + dịch vụ suy luận</td><td>AI đọc PACS qua DICOMweb thay vì nhận ảnh đẩy sang Orthanc; ghi về AE <code>AI_RESULTS</code> nhưng cùng cổng 11112</td></tr>
+<tr><td class="k">triage</td><td>Dịch vụ kết quả AI + danh sách ưu tiên + panel cho OHIF</td><td>AI results DB, cờ ưu tiên</td><td>SQLite thay vì PostgreSQL; SSE thay vì HL7 ORU tới RIS</td></tr>
+<tr><td class="k">proxy</td><td>nginx: một origin cho OHIF, PACS và dịch vụ triage</td><td>Reverse proxy</td><td>Không kiểm tra token</td></tr>
+</table></div>
+<p>Ảnh chụp dưới đây lấy từ một lượt chạy PoC trên stack sạch. Dòng chữ trên cùng mỗi ảnh là chú thích của lượt chạy đó, không phải giao diện. Bấm vào ảnh để xem kích thước đầy đủ.</p>
+<div class="shots">
+<figure><a href="assets/poc/01-mwl.png"><img src="assets/poc/01-mwl.png" alt="Danh sách ưu tiên với bảng Modality Worklist có chỉ định ACC3001" loading="lazy"></a><figcaption><b>Luồng 1.4.</b> Chỉ định HL7 đã thành mục Modality Worklist trạng thái SCHEDULED trong dcm4chee.</figcaption></figure>
+<figure><a href="assets/poc/02-running.png"><img src="assets/poc/02-running.png" alt="Ca chụp đang được AI phân tích" loading="lazy"></a><figcaption><b>AI đang chạy.</b> Ca đọc được ngay; trạng thái AI hiện rõ, không giống ca âm tính.</figcaption></figure>
+<figure><a href="assets/poc/03-flagged.png"><img src="assets/poc/03-flagged.png" alt="Ca nghi xuất huyết được đưa lên đầu, có thông báo" loading="lazy"></a><figcaption><b>Cờ ưu tiên.</b> Ca nghi xuất huyết lên đầu danh sách, thông báo đẩy qua SSE.</figcaption></figure>
+<figure><a href="assets/poc/04-states.png"><img src="assets/poc/04-states.png" alt="Danh sách với các trạng thái AI khác nhau" loading="lazy"></a><figcaption><b>Các trạng thái.</b> Ca mới hơn vẫn nằm dưới ca có cờ; "không phân tích được" khác với "không thấy dấu hiệu".</figcaption></figure>
+<figure><a href="assets/poc/05-ohif-open.png"><img src="assets/poc/05-ohif-open.png" alt="OHIF mở ca với panel kết quả AI" loading="lazy"></a><figcaption><b>OHIF + panel AI.</b> Chuỗi SEG và SR của AI ở panel trái; lớp phủ đang tắt.</figcaption></figure>
+<figure><a href="assets/poc/06-overlay.png"><img src="assets/poc/06-overlay.png" alt="Lớp phủ SEG màu đỏ trên ảnh CT" loading="lazy"></a><figcaption><b>Lớp phủ SEG.</b> Mask AI vẽ đúng vị trí khối tăng tỷ trọng.</figcaption></figure>
+<figure><a href="assets/poc/07-confirmed.png"><img src="assets/poc/07-confirmed.png" alt="Panel AI sau khi bác sĩ xác nhận" loading="lazy"></a><figcaption><b>Xác nhận.</b> Quyết định của bác sĩ được lưu; ca rời khỏi nhóm ưu tiên.</figcaption></figure>
+<figure><a href="assets/poc/08-late-seg.png"><img src="assets/poc/08-late-seg.png" alt="Panel báo mask AI về sau khi ca đã mở" loading="lazy"></a><figcaption><b>Mask về muộn.</b> OHIF không tự thêm chuỗi mới; panel báo và cho tải lại.</figcaption></figure>
+<figure><a href="assets/poc/09-ai-down.png"><img src="assets/poc/09-ai-down.png" alt="Danh sách báo AI tạm ngừng" loading="lazy"></a><figcaption><b>AI ngừng.</b> Ca vẫn lưu và đọc bình thường, hiển thị "AI tạm ngừng".</figcaption></figure>
+<figure><a href="assets/poc/10-recovered.png"><img src="assets/poc/10-recovered.png" alt="AI chạy lại và xử lý bù" loading="lazy"></a><figcaption><b>AI chạy lại.</b> Ca đến trong lúc ngừng được xử lý bù và gắn cờ.</figcaption></figure>
+</div>
+
+<h2 class="sec" id="findings"><span class="n">8</span>Những gì PoC phát hiện</h2>
+<div class="tbl"><table>
+<tr><th>Kiểm chứng</th><th>Kết quả</th></tr>
+<tr><td>HL7 ORM^O01 tạo được mục worklist</td><td><span class="ok">Đạt</span>, khi bản tin có segment <code>ZDS</code> (Study Instance UID). Không có ZDS: PACS vẫn ACK nhưng không tạo worklist. dcm4chee phục vụ MWL ở AE riêng <code>WORKLIST</code> (C-FIND và REST <code>/aets/WORKLIST/rs/mwlitems</code>), không phải AE <code>DCM4CHEE</code></td></tr>
+<tr><td>Máy chụp lấy định danh từ worklist</td><td><span class="ok">Đạt</span>: ảnh mang đúng PatientID, AccessionNumber và Study UID do HIS cấp; gửi 48 ảnh mất 3–5 giây</td></tr>
+<tr><td>Vòng đời AI tới khi có cờ</td><td>Khoảng 15 giây trong PoC (6 giây chờ "đủ ảnh" + 8 giây suy luận giả lập); SEG + SR ghi về PACS ngay sau cờ</td></tr>
+<tr><td>OHIF hiển thị SEG từ AI</td><td><span class="ok">Đạt</span>. Cần đặt <code>RecommendedDisplayCIELabValue</code> trong SEG, nếu không OHIF cảnh báo và dùng màu mặc định</td></tr>
+<tr><td>OHIF hiển thị SR thể tích</td><td><span class="no">Không đạt</span>: viewport SR lỗi với ROI thể tích tham chiếu SEG. Số đo phải hiển thị ở panel riêng</td></tr>
+<tr><td>Mask về sau khi ca đã mở</td><td><span class="part">Phải nạp lại</span>: OHIF không theo dõi chuỗi mới. Extension cần nghe sự kiện và nạp chuỗi SEG qua QIDO</td></tr>
+<tr><td>Thuộc tính tổng hợp mức study trên QIDO</td><td><span class="part">Có độ trễ</span>: <code>ModalitiesInStudy</code> và số instance của dcm4chee có lúc chưa tính SR vừa lưu, dù truy vấn mức series đã thấy. Đừng dựa vào trường tổng hợp để biết AI đã xong; dùng dịch vụ kết quả AI</td></tr>
+<tr><td>AI ngừng hoạt động</td><td><span class="ok">Đạt</span>: ca vẫn lưu và đọc được, hiển thị "AI tạm ngừng" sau tối đa 12 giây; AI chạy lại thì tự xử lý bù</td></tr>
+</table></div>
+
+<h2 class="sec" id="run"><span class="n">9</span>Cách demo cho team</h2>
+<p>Cần Docker (khoảng 3 GB RAM cho cả stack). Mã nguồn ở <code>poc/viewer/</code>, bản tiếng Anh của hướng dẫn này nằm trong <code>poc/viewer/README.md</code>. Demo chạy tay, khoảng 10 phút; người trình bày gõ từng lệnh để có thời gian giải thích.</p>
+<p><b>Chuẩn bị:</b> mở một terminal ở <code>poc/viewer</code> và một trình duyệt. Dùng dữ liệu sạch, và cho AI chạy chậm lại (20 giây) để kịp nói trong lúc chờ:</p>
+<pre class="code">cd poc/viewer
+docker compose down -v                                   <span class="c"># xoá dữ liệu cũ</span>
+INFERENCE_SECONDS=20 docker compose up -d --build --wait <span class="c"># PACS, OHIF, AI giả lập, dịch vụ triage, proxy</span>
+<span class="c"># danh sách ưu tiên: http://localhost:8000/triage/    OHIF: http://localhost:8000/    dcm4chee: http://localhost:8000/dcm4chee-arc/ui2/</span></pre>
+<div class="tbl"><table>
+<tr><th>#</th><th>Làm</th><th>Cho xem và giải thích</th></tr>
+<tr><td class="k">1</td><td>Mở <code>http://localhost:8000/triage/</code></td><td>Danh sách trống, "AI hoạt động". Danh sách = danh sách ca từ PACS (QIDO-RS) ghép với kết quả AI.</td></tr>
+<tr><td class="k">2</td><td><code>bash demo/scenarios.sh order an</code></td><td><b>Luồng 1.4.</b> Terminal in bản tin HL7 ORM^O01 và ACK <code>MSA|AA</code> của PACS. Trong 4 giây, bảng Modality Worklist hiện chỉ định ở trạng thái SCHEDULED. Response gốc: <code>/dcm4chee-arc/aets/WORKLIST/rs/mwlitems</code>.</td></tr>
+<tr><td class="k">3</td><td><code>bash demo/scenarios.sh scan an</code></td><td><b>Luồng 1.1.</b> Máy chụp tra worklist (C-FIND) nên tên, mã BN, mã chỉ định, Study UID lấy từ chỉ định; rồi gửi 48 ảnh (C-STORE). Ca hiện "Chưa chạy AI", rồi "AI đang phân tích". Ca đã đọc được ngay: không ai phải chờ AI.</td></tr>
+<tr><td class="k">4</td><td>Chờ AI</td><td><b>Luồng 2.5.</b> Dòng chuyển đỏ, lên đầu, có thông báo. Cờ gửi trước mask. Kết quả luôn "chờ xác nhận".</td></tr>
+<tr><td class="k">5</td><td><code>bash demo/scenarios.sh case bich</code>, rồi <code>case cuong</code></td><td>Ca mới hơn vẫn nằm dưới ca có cờ: AI chỉ nâng ưu tiên. "AI không thấy dấu hiệu" khác "Không phân tích được" (thiếu chuỗi trục lát mỏng).</td></tr>
+<tr><td class="k">6</td><td>Bấm "Mở trong OHIF" ở NGUYEN VAN AN. Nhấn F12 → tab Network → lọc <code>rs/</code></td><td><b>Luồng 1.3.</b> OHIF gọi <code>studies/…/series</code> (QIDO-RS), rồi <code>…/metadata</code> và <code>…/frames/1</code> (WADO-RS). Panel AI góc phải: trạng thái, thể tích, phiên bản mô hình. Chuỗi SEG và SR của AI ở panel trái; lớp phủ đang tắt.</td></tr>
+<tr><td class="k">7</td><td>Nhấn đúp "SEG AI ICH mask", chọn Yes, cuộn vài lát</td><td><b>Luồng 1.5 / 2.4.</b> Vùng đỏ là DICOM SEG chuẩn trong PACS; OHIF hiển thị mà không sửa mã. Tuỳ chọn: nhấn đúp SR để cho thấy OHIF không vẽ được báo cáo thể tích.</td></tr>
+<tr><td class="k">8</td><td>Bấm "Xác nhận", rồi "Danh sách ↗"</td><td>Quyết định của bác sĩ được lưu; ca rời nhóm ưu tiên và hiện "Đã xác nhận XH".</td></tr>
+<tr><td class="k">9</td><td><code>bash demo/scenarios.sh case dung</code>, rồi mở ca mới trong OHIF ngay</td><td>Ảnh mở được ngay, panel báo "AI đang phân tích". Khi mask về, panel báo mask đến sau khi ca đã mở (OHIF chỉ đọc danh sách chuỗi một lần). Bấm "Tải lại ca" để thấy SEG.</td></tr>
+<tr><td class="k">10</td><td><code>bash demo/scenarios.sh ai-down</code>, rồi <code>case em</code></td><td>Trong 12 giây, banner "AI tạm ngừng" hiện. Ca mới vẫn lưu và đọc được, hiển thị "AI tạm ngừng", không bao giờ giống ca âm tính.</td></tr>
+<tr><td class="k">11</td><td><code>bash demo/scenarios.sh ai-up</code></td><td>AI chạy lại và xử lý bù ca đến trong lúc ngừng; ca được gắn cờ.</td></tr>
+</table></div>
+<p>Muốn chạy tự động không cần thao tác: <code>bash demo/scenarios.sh all</code> (các ca an, bich, cuong và tình huống AI ngừng).</p>
+
+<h2 class="sec" id="next"><span class="n">10</span>Việc tiếp theo</h2>
+<ol>
+<li>Hỏi bệnh viện: HIS/RIS hiện tại có nhận cờ ưu tiên qua HL7 ORU hoặc FHIR không. Câu trả lời quyết định có cần danh sách ưu tiên riêng.</li>
+<li>Chuyển panel tiêm script thành extension OHIF thật (panel module + <code>UINotificationService</code> + tự nạp chuỗi SEG mới).</li>
+<li>Thử OHIF với Keycloak (OIDC) sau reverse proxy, đúng như kiến trúc.</li>
+<li>Thử bước bác sĩ sửa mask và lưu bằng STOW-RS; quyết định mask đã sửa nằm cạnh mask AI hay thay thế nó.</li>
+<li>Nối PoC này với bản mẫu cũ: thay AI đọc PACS bằng quy tắc xuất của dcm4chee sang Orthanc.</li>
+</ol>
+
+<h2 class="sec" id="refs"><span class="n">11</span>Tài liệu tham khảo</h2>
+<ol class="src">
+<li><a href="https://www.dicomstandard.org/using/dicomweb">DICOMweb: tổng quan</a> · <a href="https://www.dicomstandard.org/using/dicomweb/query-qido-rs">QIDO-RS</a> · <a href="https://www.dicomstandard.org/using/dicomweb/retrieve-wado-rs-and-wado-uri">WADO-RS</a> · <a href="https://www.dicomstandard.org/using/dicomweb/store-stow-rs">STOW-RS</a></li>
+<li><a href="https://dicom.nema.org/medical/dicom/current/output/html/part18.html">DICOM PS3.18 Web Services</a> · <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part18/chapter_F.html">Annex F: DICOM JSON</a> · <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part18/chapter_11.html">Chương 11: Worklist Service (UPS-RS)</a></li>
+<li><a href="https://petstore.swagger.io/index.html?url=https://dcm4che.github.io/dcm4chee-arc-light/swagger/openapi.json">dcm4chee REST API (Swagger)</a> · <a href="https://github.com/dcm4che/dcm4chee-arc-light/wiki/HL7-Receivers-feeding-MWL-SCPs">HL7 → MWL</a> · <a href="https://github.com/dcm4che/dcm4chee-arc-light/wiki/Prefetch-Studies-on-receive-of-HL7-messages">Nạp trước ca cũ theo HL7</a> · <a href="https://github.com/dcm4che/dcm4chee-arc-light/wiki/Run-minimum-set-of-archive-services-on-a-single-host">Chạy trên Docker</a></li>
+<li><a href="https://docs.ohif.org/configuration/datasources/dicom-web">OHIF: data source DICOMweb</a> · <a href="https://docs.ohif.org/configuration/url">tham số URL</a> · <a href="https://docs.ohif.org/platform/extensions/">extensions</a> · <a href="https://docs.ohif.org/platform/services/ui/ui-notification-service">UINotificationService</a> · <a href="https://docs.ohif.org/deployment/user-account-control">đăng nhập OIDC</a> · <a href="https://docs.ohif.org/faq">FAQ (pháp lý)</a></li>
+<li><a href="https://hl7-definition.caristix.com/v2/HL7v2.5.1/TriggerEvents/ORM_O01">HL7 v2.5.1 ORM^O01</a> · <a href="https://hl7-definition.caristix.com/v2/HL7v2.5.1/TriggerEvents/ORU_R01">ORU^R01</a> · <a href="https://hl7.org/fhir/R4/servicerequest.html">FHIR ServiceRequest</a></li>
+<li><a href="https://highdicom.readthedocs.io/">highdicom</a> (tạo SEG, SR) · <a href="https://github.com/ImagingDataCommons/dicomweb-client">dicomweb-client</a> · <a href="https://www.cornerstonejs.org/docs/">Cornerstone3D</a></li>
+</ol>
+
+</main>
+</div>
+
+<footer>Intracerebral hemorrhage AI system · Trình xem và PoC · <a href="index.html">Scenario 1</a> · <a href="decisions.html">Decisions</a>. PoC dùng dữ liệu CT tổng hợp, chạy trên một máy, không bật TLS và không đăng nhập; số đo chỉ cho thấy bậc độ lớn.</footer>
+</div>
+<script src="assets/site.js"></script>
+</body></html>
