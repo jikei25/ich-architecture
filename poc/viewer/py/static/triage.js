@@ -1,6 +1,6 @@
 // Triage worklist: study list from the PACS merged with AI results, live over SSE.
 const LABEL = {
-  NOT_RUN: "Chưa chạy AI",
+  NOT_RUN: "Chờ AI phân tích",
   RUNNING: "AI đang phân tích",
   POSITIVE: "Nghi xuất huyết",
   NEGATIVE: "AI không thấy dấu hiệu",
@@ -8,10 +8,12 @@ const LABEL = {
   NO_RESULT: "Không có kết quả AI",
   AI_DOWN: "AI tạm ngừng",
 };
-const REVIEW = { CONFIRMED: "Đã xác nhận XH", REJECTED: "Bác bỏ kết quả AI" };
+const REVIEW = { CONFIRMED: "Bác sĩ đã xác nhận XH", REJECTED: "Bác sĩ bác bỏ kết quả AI" };
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const viewerUrl = (uid) => `/viewer?StudyInstanceUIDs=${encodeURIComponent(uid)}`;
+const hhmm = (t) => String(t || "").replace(/^(\d\d)(\d\d)(\d\d).*/, "$1:$2:$3");
 let lastStudies = [];
+let lastHtml = { studies: "", mwl: "" };
 let flashUid = null;
 
 function aiChip(s) {
@@ -21,38 +23,49 @@ function aiChip(s) {
   return `<span class="chip ${s.ai_state}">${esc(t)}</span>`;
 }
 
+// Re-render only when the content changed, so rows don't flicker and links
+// stay clickable between the 4 s refreshes.
+function setRows(id, html) {
+  if (lastHtml[id] === html) return;
+  lastHtml[id] = html;
+  document.getElementById(id).innerHTML = html;
+}
+
 function render(data) {
   const pill = document.getElementById("ai-pill");
   pill.className = "pill " + (data.ai_online ? "on" : "off");
   pill.textContent = data.ai_online ? `AI hoạt động · ${data.model_version || ""}` : "AI tạm ngừng";
   document.getElementById("ai-banner").hidden = data.ai_online;
   lastStudies = data.studies;
-  const tb = document.getElementById("studies");
   if (!data.studies.length) {
-    tb.innerHTML = `<tr><td colspan="8" class="empty">Chưa có ca nào trong PACS</td></tr>`;
+    setRows("studies", `<tr><td colspan="5" class="empty">Chưa có ca nào trong PACS. Gửi chỉ định rồi chụp: <code>bash demo/scenarios.sh case an</code></td></tr>`);
     return;
   }
-  tb.innerHTML = data.studies.map((s) => {
+  setRows("studies", data.studies.map((s) => {
     const flagged = s.ai_state === "POSITIVE" && !s.review;
-    return `<tr class="${flagged ? "flag" : ""} ${s.study_uid === flashUid ? "flash" : ""}" data-uid="${esc(s.study_uid)}">
-      <td>${flagged ? '<span class="prio" title="AI nâng ưu tiên">▲ ƯU TIÊN</span>' : ""}</td>
-      <td><b>${esc(s.patient_name)}</b><br><span class="rev">${esc(s.patient_id)}</span></td>
-      <td>${esc(s.accession)}</td>
-      <td>${esc(s.time.replace(/(\d\d)(\d\d)(\d\d)/, "$1:$2:$3"))}</td>
-      <td>${esc((s.modalities || []).join(", "))} · ${esc(s.instances)} ảnh</td>
-      <td>${aiChip(s)}</td>
-      <td><span class="rev ${esc(s.review)}">${esc(REVIEW[s.review] || "")}</span></td>
-      <td><a class="btn" href="${viewerUrl(s.study_uid)}">Mở trong OHIF</a></td>
+    const cls = [flagged ? "flag" : "", s.study_uid === flashUid ? "flash" : ""].join(" ").trim();
+    return `<tr class="${cls}">
+      <td class="who">${flagged ? '<span class="prio" title="AI nâng ưu tiên">▲ ƯU TIÊN</span>' : ""}<b>${esc(s.patient_name)}</b>
+        <span class="sub2">${esc(s.patient_id)} · ${esc(s.accession)}</span></td>
+      <td>${esc(hhmm(s.time))}</td>
+      <td>${esc((s.modalities || []).join(", "))}<span class="sub2">${esc(s.instances)} ảnh</span></td>
+      <td>${aiChip(s)}${s.review ? `<span class="rev ${esc(s.review)}">${esc(REVIEW[s.review] || "")}</span>` : ""}</td>
+      <td class="act"><a class="btn" href="${viewerUrl(s.study_uid)}">Mở trong OHIF</a></td>
     </tr>`;
-  }).join("");
+  }).join(""));
+}
+
+function when(start) {  // "20261108 1842" -> "08/11 18:42"
+  const m = /^(\d{4})(\d\d)(\d\d) (\d\d)(\d\d)/.exec(start || "");
+  return m ? `${m[3]}/${m[2]} ${m[4]}:${m[5]}` : start;
 }
 
 function renderMwl(data) {
-  const tb = document.getElementById("mwl");
-  tb.innerHTML = data.items.length
-    ? data.items.map((m) => `<tr><td>${esc(m.patient_name)}</td><td>${esc(m.patient_id)}</td><td>${esc(m.accession)}</td>
-        <td>${esc(m.procedure)}</td><td>${esc(m.modality)}</td><td>${esc(m.start)}</td><td>${esc(m.status)}</td></tr>`).join("")
-    : `<tr><td colspan="7" class="empty">Chưa có chỉ định nào</td></tr>`;
+  setRows("mwl", data.items.length
+    ? data.items.map((m) => `<tr><td><b>${esc(m.patient_name)}</b><span class="sub2">${esc(m.patient_id)}</span></td>
+        <td>${esc(m.accession)}</td><td>${esc(m.procedure)} · ${esc(m.modality)}</td><td>${esc(when(m.start))}</td>
+        <td><span class="chip NOT_RUN">${esc(m.status)}</span></td></tr>`).join("")
+    : `<tr><td colspan="5" class="empty">Chưa có chỉ định nào. Gửi chỉ định: <code>bash demo/scenarios.sh order an</code></td></tr>`);
 }
 
 async function refresh() {
@@ -81,6 +94,7 @@ es.onmessage = async (m) => {
   const ev = JSON.parse(m.data);
   if (ev.type === "result" && ev.state === "POSITIVE" && !ev.seg_series_uid) {
     flashUid = ev.study_uid;
+    setTimeout(() => { flashUid = null; }, 3000);
     await refresh();
     const s = lastStudies.find((x) => x.study_uid === ev.study_uid);
     if (s) toast(s);

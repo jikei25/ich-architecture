@@ -8,11 +8,19 @@
 //     because OHIF reads the series list only once, when the study opens.
 (() => {
   const API = "/triage/api";
+  // Skip OHIF's first-visit tour: its popups cover the image during a demo.
+  // This script runs before OHIF's deferred bundle, so the tour never starts.
+  try {
+    const shown = JSON.parse(localStorage.getItem("shownTours") || "[]");
+    if (!shown.includes("basicViewerTour")) {
+      localStorage.setItem("shownTours", JSON.stringify([...shown, "basicViewerTour"]));
+    }
+  } catch (e) { /* storage blocked: the tour just shows */ }
   const LABEL = {
     NOT_RUN: ["Chưa chạy AI", "#9aa0c0"],
     RUNNING: ["AI đang phân tích…", "#93c5fd"],
     POSITIVE: ["Nghi xuất huyết não", "#f87171"],
-    NEGATIVE: ["AI không thấy dấu hiệu xuất huyết", "#6ee7b7"],
+    NEGATIVE: ["AI không thấy dấu hiệu xuất huyết", "#e8eaf6"],   // neutral, not "cleared"
     UNANALYZABLE: ["Không phân tích được: thiếu chuỗi CT trục lát mỏng", "#fbbf24"],
     NO_RESULT: ["Không có kết quả AI (lỗi hoặc quá hạn)", "#fbbf24"],
     AI_DOWN: ["AI tạm ngừng", "#fbbf24"],
@@ -21,7 +29,13 @@
   const css = `
 #ich-ai{position:fixed;right:16px;bottom:16px;z-index:99999;width:340px;font:13px/1.45 system-ui,sans-serif;color:#e8eaf6;
   background:#171b2e;border:1px solid #2a3050;border-radius:12px;box-shadow:0 10px 30px #000a}
-#ich-ai .hd{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #2a3050;font-weight:600}
+#ich-ai .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #2a3050;font-weight:600}
+#ich-ai .hd .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ich-ai .hd .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:1px}
+#ich-ai .hd .tg{flex:none;width:26px;height:24px;border:0;border-radius:6px;background:#2b3563;color:#e8eaf6;font:700 14px/1 system-ui;cursor:pointer;padding:0}
+#ich-ai.min{width:260px}
+#ich-ai.min .hd{border-bottom:0}
+#ich-ai.min .bd{display:none}
 #ich-ai .bd{padding:10px 12px}
 #ich-ai .st{font-weight:700;font-size:14px}
 #ich-ai .meta{color:#9aa0c0;font-size:12px;margin-top:4px}
@@ -39,6 +53,8 @@
   document.head.appendChild(style);
 
   let box, uid, segAtOpen = null, current = null;
+  let minimized = false, lastHtml = "";
+  try { minimized = !!sessionStorage.getItem("ich-ai-min"); } catch (e) { /* ignore */ }
 
   const studyUid = () => new URLSearchParams(location.search).get("StudyInstanceUIDs");
 
@@ -54,24 +70,37 @@
     const [label, color] = LABEL[s.ai_state] || [s.ai_state, "#9aa0c0"];
     const reviewable = (s.ai_state === "POSITIVE" || s.ai_state === "NEGATIVE") && !s.review;
     const vol = s.ai_state === "POSITIVE" && s.volume_ml != null ? ` · ${s.volume_ml} mL` : "";
-    const review = s.review === "CONFIRMED" ? "Bác sĩ đã xác nhận" : s.review === "REJECTED" ? "Bác sĩ đã bác bỏ kết quả AI" : "";
-    ensureBox().innerHTML = `
-      <div class="hd"><span>Kết quả AI · ${esc(s.patient_name)}</span><a href="/triage/" title="Danh sách ưu tiên">Danh sách ↗</a></div>
+    const reviewText = s.review === "CONFIRMED" ? "Bác sĩ đã xác nhận" : s.review === "REJECTED" ? "Bác sĩ đã bác bỏ kết quả AI" : "";
+    const html = `
+      <div class="hd"><span class="t" title="${esc(label)}"><span class="dot" style="background:${color}"></span>AI · ${esc(s.patient_name)}</span>
+        <a href="/triage/" title="Danh sách ưu tiên">Danh sách ↗</a>
+        <button class="tg" title="${minimized ? "Mở rộng" : "Thu gọn"}" aria-label="${minimized ? "Mở rộng panel AI" : "Thu gọn panel AI"}">${minimized ? "+" : "–"}</button></div>
       <div class="bd">
         <div class="st" style="color:${color}">${esc(label)}${esc(vol)}</div>
         ${reviewable ? '<span class="tag">CHƯA XÁC NHẬN · chỉ hỗ trợ, không phải kết luận</span>' : ""}
-        ${review ? `<div class="meta"><b>${esc(review)}</b></div>` : ""}
+        ${reviewText ? `<div class="meta"><b>${esc(reviewText)}</b></div>` : ""}
         ${s.model_version ? `<div class="meta">Mô hình ${esc(s.model_version)} · tiền xử lý ${esc(s.preprocessing_hash || "")}</div>` : ""}
         ${s.ai_state === "POSITIVE" && s.seg_series_uid && segAtOpen ? '<div class="hint">Lớp phủ mặc định tắt. Bật: nhấn đúp thumbnail <b>SEG</b> “AI ICH mask” ở panel trái.</div>' : ""}
         ${extra}
         ${reviewable ? `<div class="acts"><button class="ok" data-d="CONFIRMED">Xác nhận</button><button class="no" data-d="REJECTED">Bác bỏ</button></div>` : ""}
       </div>`;
+    ensureBox().classList.toggle("min", minimized);
+    // The panel polls every few seconds; rebuild it only when something
+    // changed, so a click never lands on a button that was just replaced.
+    if (html === lastHtml) return;
+    lastHtml = html;
+    box.innerHTML = html;
     box.querySelectorAll("button[data-d]").forEach((b) => b.onclick = () => review(b.dataset.d));
+    box.querySelector(".tg").onclick = () => {
+      minimized = !minimized;
+      try { sessionStorage.setItem("ich-ai-min", minimized ? "1" : ""); } catch (e) { /* ignore */ }
+      render(s, extra);
+    };
   }
 
   async function load() {
     const u = studyUid();
-    if (!u) { if (box) box.remove(); box = null; uid = null; return; }
+    if (!u) { if (box) box.remove(); box = null; uid = null; lastHtml = ""; return; }
     try {
       const r = await fetch(`${API}/studies/${encodeURIComponent(u)}`);
       if (!r.ok) return;

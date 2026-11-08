@@ -18,6 +18,9 @@ window.config = {
   strictZSpacingForVolumeViewport: true,
   maxNumRequests: { interaction: 100, thumbnail: 5, prefetch: 25 },
   showErrorDetails: 'always',
+  // The "for investigational use only" banner covers the bottom of the
+  // viewport during a demo; the slides and docs state it instead.
+  investigationalUseDialog: { option: 'never' },
   defaultDataSourceName: 'dcm4chee',
   dataSources: [
     {
