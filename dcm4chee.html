@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICH dcm4chee deep dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7fc;--card:#ffffff;--text:#1c1f3a;--muted:#5b6080;--border:#d9deef;--pill:#ffffff;
+--blue:#1d4ed8;--blue-s:#e6efff;--blue-h:#d3e2ff;
+--violet:#6d28d9;--violet-s:#f1ecff;--violet-h:#e2d8ff;
+--pink:#be185d;--pink-s:#fdedf5;--pink-h:#fbd5e8;
+--emerald:#047857;--emerald-s:#e5f8ef;--emerald-h:#c8f0dd;
+--amber:#b45309;--amber-s:#fff5e1;--amber-h:#fde5b3;
+--cyan:#0e7490;--cyan-s:#e3f8fc;--cyan-h:#c2eef7;
+--slate:#475569;--slate-s:#f1f3f8;--slate-h:#e0e5ef;
+--rose:#e11d48;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0e1124;--card:#171b34;--text:#eceefb;--muted:#a3a8c8;--border:#2c3257;--pill:#171b34;
+--blue:#93c5fd;--blue-s:#14213f;--blue-h:#1b3160;--violet:#c4b5fd;--violet-s:#1d1838;--violet-h:#33255f;
+--pink:#f9a8d4;--pink-s:#2a1324;--pink-h:#4a1a3a;--emerald:#6ee7b7;--emerald-s:#0f2a24;--emerald-h:#0f3b2e;
+--amber:#fcd34d;--amber-s:#2c210b;--amber-h:#42300a;--cyan:#67e8f9;--cyan-s:#0f2a33;--cyan-h:#123b46;
+--slate:#cbd5e1;--slate-s:#1a1f36;--slate-h:#2a3150;--rose:#fb7185;}}
+:root[data-theme="dark"]{--bg:#0e1124;--card:#171b34;--text:#eceefb;--muted:#a3a8c8;--border:#2c3257;--pill:#171b34;
+--blue:#93c5fd;--blue-s:#14213f;--blue-h:#1b3160;--violet:#c4b5fd;--violet-s:#1d1838;--violet-h:#33255f;
+--pink:#f9a8d4;--pink-s:#2a1324;--pink-h:#4a1a3a;--emerald:#6ee7b7;--emerald-s:#0f2a24;--emerald-h:#0f3b2e;
+--amber:#fcd34d;--amber-s:#2c210b;--amber-h:#42300a;--cyan:#67e8f9;--cyan-s:#0f2a33;--cyan-h:#123b46;
+--slate:#cbd5e1;--slate-s:#1a1f36;--slate-h:#2a3150;--rose:#fb7185;}
+
+.bg{fill:var(--card)}
+.h1{fill:var(--text);font-size:22px;font-weight:700}
+.h2{fill:var(--muted);font-size:14px}
+.lane{stroke:none}
+.f-slate{fill:var(--slate-s)}.f-blue{fill:var(--blue-s)}.f-violet{fill:var(--violet-s)}.f-pink{fill:var(--pink-s)}.f-emerald{fill:var(--emerald-s)}.f-amber{fill:var(--amber-s)}.f-cyan{fill:var(--cyan-s)}
+.h-slate{fill:var(--slate-h)}.h-blue{fill:var(--blue-h)}.h-violet{fill:var(--violet-h)}.h-pink{fill:var(--pink-h)}.h-emerald{fill:var(--emerald-h)}.h-amber{fill:var(--amber-h)}.h-cyan{fill:var(--cyan-h)}
+.t-slate{fill:var(--slate)}.t-blue{fill:var(--blue)}.t-violet{fill:var(--violet)}.t-pink{fill:var(--pink)}.t-emerald{fill:var(--emerald)}.t-amber{fill:var(--amber)}.t-cyan{fill:var(--cyan)}
+.lt{font-size:16px;font-weight:700}.ls{font-size:12.5px;font-weight:600;opacity:.85}
+.frame{fill:none;stroke:var(--border);stroke-width:1}
+.bx,.cy,.cyt{fill:var(--card);stroke-width:1.6}
+.cyt{fill:var(--card)}
+.s-slate{stroke:var(--slate)}.s-blue{stroke:var(--blue)}.s-violet{stroke:var(--violet)}.s-pink{stroke:var(--pink)}.s-emerald{stroke:var(--emerald)}.s-amber{stroke:var(--amber)}.s-cyan{stroke:var(--cyan)}
+.bt{fill:var(--text);font-size:13.5px;font-weight:700}
+.bs{fill:var(--muted);font-size:11.5px}
+.abs{stroke-width:2;stroke-dasharray:8 5}
+.af-violet{fill:var(--violet-s)}.af-pink{fill:var(--pink-s)}
+.big{font-size:16px}
+.tagbg{stroke:none}.tagt{font-size:10.5px;font-weight:700;letter-spacing:.04em}
+.grp{fill:none;stroke:var(--emerald);stroke-width:1.3;stroke-dasharray:6 4}
+.grpt{fill:var(--emerald);font-size:12px;font-weight:700}
+.a.loop{stroke:var(--violet);stroke-width:1.8;stroke-dasharray:3 4}
+.lbv{fill:var(--violet);font-size:11px;font-weight:600}
+.note{fill:var(--muted);font-size:12.5px;font-style:italic}
+.a{fill:none;stroke-linejoin:round;stroke-linecap:round}
+.a.crit{stroke:var(--rose);stroke-width:2.4}
+.a.ai{stroke:var(--violet);stroke-width:2.2}
+.a.flow{stroke:var(--muted);stroke-width:1.6}
+.a.bak{stroke:var(--amber);stroke-width:2.8}
+.a.rest{stroke:var(--cyan);stroke-width:2;stroke-dasharray:7 5}
+.a.life{stroke:var(--cyan);stroke-width:2;stroke-dasharray:2 4}
+.pill{fill:var(--pill);stroke:var(--border);stroke-width:.8;opacity:.96}
+.lb{fill:var(--text);font-size:11px;font-weight:500}
+.lbc{fill:var(--cyan);font-size:11px;font-weight:600}
+.boundary{stroke:var(--cyan);stroke-width:2.5;stroke-dasharray:12 6}
+.btag{fill:var(--cyan);font-size:12px;font-weight:700}
+.legend{fill:var(--bg);stroke:var(--border)}
+.lgh{fill:var(--text);font-size:15px;font-weight:700}
+.lgt{fill:var(--text);font-size:13px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.page{max-width:1180px;margin:0 auto;padding:32px 16px 80px}
+.hero{background:linear-gradient(135deg,#4338ca,#0e7490);color:#fff;border-radius:22px;padding:38px 36px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-90px;top:-90px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hero .eyebrow{font-size:13px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;opacity:.85;position:relative}
+.hero h1{font-size:32px;line-height:1.25;margin:10px 0 12px;position:relative}
+.hero p{font-size:17px;max-width:860px;opacity:.93;margin:0;position:relative}
+.hero a{color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;position:relative}
+.chips span{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600}
+nav.toc{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 22px;margin:24px 0}
+nav.toc b{color:var(--violet)}
+nav.toc ol{margin:8px 0 0;padding-left:22px;columns:2;column-gap:36px}
+nav.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border)}
+nav.toc a:hover{color:var(--violet)}
+h2.sec{font-size:24px;margin:54px 0 14px;display:flex;align-items:center;gap:12px;line-height:1.3}
+h2.sec .n{flex:none;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#0e7490);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
+p{margin:8px 0}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.86em;background:var(--slate-s);border:1px solid var(--border);padding:1px 6px;border-radius:6px}
+.figure{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;margin:16px 0}
+.figscroll{overflow-x:auto;border-radius:12px}
+#arch{display:block;width:100%;min-width:1100px;height:auto}
+#arch .a[data-g]{transition:opacity .25s}
+#arch[data-focus] .a[data-g]{opacity:.1}
+#arch[data-focus="clinical"] .a[data-g="clinical"],#arch[data-focus="triage"] .a[data-g="triage"],#arch[data-focus="ai"] .a[data-g="ai"],#arch[data-focus="backup"] .a[data-g="backup"],#arch[data-focus="restore"] .a[data-g="restore"]{opacity:1}
+.focusbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 4px 12px}
+.focusbar span{font-size:14px;color:var(--muted);margin-right:4px}
+.focusbar button{font:inherit;font-size:14px;font-weight:600;padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer}
+.focusbar button[aria-pressed="true"]{background:var(--text);color:var(--card);border-color:var(--text)}
+.figcap{font-size:14px;color:var(--muted);margin:10px 4px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;border-top-width:5px}
+.card h4{margin:0 0 4px;font-size:17px}
+.card .v{font-size:13px;font-weight:700;margin-bottom:6px}
+.card p{font-size:15px;color:var(--text)}
+.c-slate{border-top-color:var(--slate)}.c-blue{border-top-color:var(--blue)}.c-violet{border-top-color:var(--violet)}.c-pink{border-top-color:var(--pink)}.c-emerald{border-top-color:var(--emerald)}.c-amber{border-top-color:var(--amber)}.c-cyan{border-top-color:var(--cyan)}
+.tc-slate{color:var(--slate)}.tc-blue{color:var(--blue)}.tc-violet{color:var(--violet)}.tc-pink{color:var(--pink)}.tc-emerald{color:var(--emerald)}.tc-amber{color:var(--amber)}.tc-cyan{color:var(--cyan)}.tc-rose{color:var(--rose)}
+.tbl{overflow-x:auto;margin:14px 0;border:1px solid var(--border);border-radius:16px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:11px 15px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--slate-s);font-weight:700;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.k{font-weight:700;white-space:nowrap}
+.pilltag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--slate-s);border:1px solid var(--border);white-space:nowrap}
+ol.flow{list-style:none;counter-reset:f;padding:0;margin:14px 0;position:relative}
+ol.flow>li{counter-increment:f;position:relative;padding:14px 18px 14px 66px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin:10px 0}
+ol.flow>li::before{content:var(--fp,"") counter(f);position:absolute;left:16px;top:14px;width:32px;height:32px;border-radius:10px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--fc)}
+ol.flow>li b.t{display:block}
+ol.flow>li .pr{display:inline-block;margin-top:4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--muted);background:var(--slate-s);border:1px solid var(--border);border-radius:8px;padding:1px 8px}
+.f-clin{--fc:var(--rose)}.f-tri{--fc:var(--violet)}.f-ai{--fc:var(--pink)}.f-bak{--fc:var(--amber)}.f-rest{--fc:var(--cyan)}
+.callout{border-left:5px solid var(--violet);background:var(--violet-s);padding:14px 18px;border-radius:0 12px 12px 0;margin:18px 0}
+.callout.amber{border-left-color:var(--amber);background:var(--amber-s)}
+.callout.cyan{border-left-color:var(--cyan);background:var(--cyan-s)}
+.callout.rose{border-left-color:var(--rose);background:var(--blue-s)}
+.callout ul{margin:6px 0 0;padding-left:20px}
+.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:14px 0}
+.timeline div{border-radius:12px;padding:12px 14px;border-top:5px solid}
+.timeline b{display:block;font-size:15px}.timeline span{font-size:13px;color:var(--muted)}
+.t1{background:var(--emerald-s);border-color:var(--emerald)!important}.t2{background:var(--amber-s);border-color:var(--amber)!important}.t3{background:var(--cyan-s);border-color:var(--cyan)!important}.t4{background:var(--slate-s);border-color:var(--slate)!important}
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
+@media (max-width:700px){.hero{padding:26px 20px}.hero h1{font-size:25px}nav.toc ol{columns:1}.timeline{grid-template-columns:1fr 1fr}ol.flow>li{padding-left:58px}}
+.stepb circle{stroke:var(--card);stroke-width:2}
+.stepb text{fill:#fff;font-size:10.5px;font-weight:700}
+.sb-clin circle{fill:var(--rose)}.sb-tri circle{fill:var(--violet)}.sb-ai circle{fill:var(--pink)}.sb-bak circle{fill:var(--amber)}.sb-rest circle{fill:var(--cyan)}
+#arch .stepb[data-g]{transition:opacity .25s}
+#arch[data-focus] .stepb[data-g]{opacity:.12}
+#arch[data-focus="clinical"] .stepb[data-g="clinical"],#arch[data-focus="triage"] .stepb[data-g="triage"],#arch[data-focus="ai"] .stepb[data-g="ai"],#arch[data-focus="backup"] .stepb[data-g="backup"],#arch[data-focus="restore"] .stepb[data-g="restore"]{opacity:1}
+.f-clin{--fp:"1."}.f-tri{--fp:"2."}.f-ai{--fp:"3."}.f-bak{--fp:"4."}
+.y{color:var(--emerald);font-weight:700}.n{color:var(--rose);font-weight:700}.p{color:var(--amber);font-weight:700}.o{color:var(--cyan);font-weight:700}
+td.win{background:var(--emerald-s)}
+th.win{background:var(--emerald-h)}
+.adr{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:16px 0}
+dl.qa{margin:14px 0}
+dl.qa dt{font-weight:700;margin-top:16px}
+dl.qa dd{margin:4px 0 0;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px}
+ol.src{font-size:14.5px;padding-left:22px}
+main a{color:var(--violet)}
+.tbl.wide table{min-width:760px;table-layout:fixed}
+.tbl.wide th:first-child{width:28%}
+.tbl td.k{white-space:normal;width:30%;min-width:140px}
+h3.dec{font-size:20px;line-height:1.35;margin:40px 0 8px;scroll-margin-top:72px;display:flex;align-items:center;gap:10px}
+.dn{flex:none;font-size:12.5px;font-weight:700;padding:3px 9px;border-radius:8px;background:var(--violet-s);color:var(--violet);border:1px solid var(--violet-h)}
+.dn.open{background:var(--cyan-s);color:var(--cyan);border-color:var(--cyan-h)}
+.idx table{min-width:860px}
+.idx td:first-child{white-space:nowrap}
+.idx a{font-weight:700;text-decoration:none}
+ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
+.hero code{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.3)}
+ol.flow>li.fa{--fc:var(--rose);--fp:"A."}ol.flow>li.fs{--fc:var(--amber);--fp:"S."}ol.flow>li.fb{--fc:var(--cyan);--fp:"B."}ol.flow>li.fc{--fc:var(--violet);--fp:"C."}
+ol.flow>li::before{width:auto;min-width:32px;padding:0 6px}
+ol.flow>li{padding-left:78px}
+</style>
+<link rel="stylesheet" href="assets/site.css">
+<script>try{var t=localStorage.getItem("ich-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+</head><body>
+<header class="topbar"><div class="topbar-in">
+  <a class="brand" href="index.html"><span class="logo">ICH</span><span class="brand-t">ICH AI system · architecture</span></a>
+  <nav class="scen" aria-label="Deployment scenario">
+    <a href="index.html"><b>Scenario 1</b><span>All on-premise</span></a>
+    <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
+    <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
+    <a href="dcm4chee.html" aria-current="page"><b>dcm4chee</b><span>PACS deep dive</span></a>
+  </nav>
+  <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
+</div><div class="progress"><span></span></div></header>
+<div class="page">
+<header class="hero">
+  <div class="eyebrow">Intracerebral hemorrhage AI system · PACS deep dive · component D1 in <a href="decisions.html#d1">design decisions</a></div>
+  <h1>dcm4chee from end to end: how images arrive, where they live, how they leave</h1>
+  <p>This page explains the PACS of the architecture, dcm4chee-arc-light 5.35.2, one flow at a time: a CT scanner storing a study, a viewer reading it, a RIS order becoming a worklist item, and the study lifecycle until its files are deleted. Every behaviour and number below was observed in the Docker Compose lab in <code>labs/dcm4chee</code>, which can be replayed with one script.</p>
+  <div class="chips"><span>DICOM C-STORE, MWL, MPPS</span><span>DICOMweb QIDO / WADO / STOW</span><span>HL7 v2 ADT, ORM</span><span>OpenLDAP · PostgreSQL · SeaweedFS</span><span>OHIF viewer</span></div>
+</header>
+
+<div class="layout">
+<nav class="toc"><b>Contents</b><ol>
+<li><a href="#parts">The four parts of dcm4chee</a></li>
+<li><a href="#store">Flow A · CT to dcm4chee</a></li>
+<li><a href="#storage">Storage: what must be set up</a></li>
+<li><a href="#read">Flow B · Viewer reads a study</a></li>
+<li><a href="#order">Flow C · HL7 order to worklist</a></li>
+<li><a href="#life">Flow D · Lifecycle and deletion</a></li>
+<li><a href="#api">API catalog</a></li>
+<li><a href="#lab">The lab and the demo</a></li>
+<li><a href="#lessons">Findings and pitfalls</a></li>
+<li><a href="#open">Not covered yet</a></li>
+</ol></nav>
+<main>
+
+<h2 class="sec" id="parts"><span class="n">1</span>The four parts of dcm4chee</h2>
+<p>dcm4chee is not one process. The archive application runs in WildFly and keeps no state of its own: what it should do comes from LDAP, what it holds is indexed in PostgreSQL, and the image files sit on a storage system. Knowing which part holds what explains most of its behaviour and most of its failure modes.</p>
+<div class="grid">
+<div class="card c-violet"><h4>Archive application</h4><div class="v tc-violet">dcm4chee-arc 5.35.2 on WildFly</div><p>Speaks every protocol: DICOM on port 11112, HL7 v2 over MLLP on 2575, HTTP on 8080 (DICOMweb, REST, web UI). Runs the background schedulers: task queue, retention, deletion, purge, worklist status.</p></div>
+<div class="card c-blue"><h4>Configuration</h4><div class="v tc-blue">OpenLDAP, DICOM configuration schema</div><p>Devices, Application Entities (AEs), accepted callers, storage descriptors, retention policies, HL7 routing, scheduler intervals. Read at start and on <code>POST /ctrl/reload</code>. Nothing about patients is stored here.</p></div>
+<div class="card c-emerald"><h4>Index and tasks</h4><div class="v tc-emerald">PostgreSQL, 41 tables</div><p>One row per patient, study, series and instance, the <code>location</code> of every file, worklist items, MPPS, and the task queue used for exports and verification. Queries (QIDO-RS, C-FIND) are answered from here only.</p></div>
+<div class="card c-amber"><h4>Image files</h4><div class="v tc-amber">SeaweedFS bucket <code>pacs</code>, S3 API</div><p>The DICOM files themselves, one object per instance, written through Apache jclouds. Read only when pixels or full objects are requested (WADO-RS, WADO-URI, C-MOVE, export).</p></div>
+</div>
+<div class="tbl"><table>
+<tr><th>Question</th><th>Answered by</th><th>Seen in the lab</th></tr>
+<tr><td>May scanner X store to the archive?</td><td>LDAP: <code>dcmAcceptedCallingAETitle</code> on AE <code>DCM4CHEE</code></td><td>AE title <code>ROGUE</code> refused at association time</td></tr>
+<tr><td>Where is the file for instance Y?</td><td>PostgreSQL: <code>location.storage_id</code> and <code>storage_path</code></td><td><code>s3</code>, path <code>2026/11/03/…</code>, MD5 digest, size</td></tr>
+<tr><td>Which storage receives new files?</td><td>LDAP: <code>dcmObjectStorageID</code> on the AE, pointing to a <code>dcmStorage</code> entry</td><td><code>s3</code> = <code>jclouds:s3:http://seaweedfs:8333</code>, container <code>pacs</code></td></tr>
+<tr><td>When may study Z be deleted?</td><td>PostgreSQL: <code>study.expiration_date</code>, set from an LDAP retention policy</td><td><code>20361103</code> for a study received on 3 November 2026 (10 years)</td></tr>
+<tr><td>What does the CT scanner have to do today?</td><td>PostgreSQL: <code>mwl_item</code>, filled from HL7 orders</td><td>One item per order, status SCHEDULED until MPPS completes it</td></tr>
+</table></div>
+
+<h2 class="sec" id="store"><span class="n">2</span>Flow A · CT to dcm4chee</h2>
+<ol class="flow">
+<li class="fa"><b class="t">Association</b>The scanner opens a DICOM association from its AE title (<code>CT_SCANNER1</code>) to <code>DCM4CHEE</code> on port 11112 and proposes CT Image Storage. The archive checks the calling AE title against <code>dcmAcceptedCallingAETitle</code>; an unknown title gets <code>A-ASSOCIATE-RJ</code>, reason 3 "calling AE title not recognized", before any data is sent.<span class="pr">DICOM PS3.8 · A-ASSOCIATE</span></li>
+<li class="fa"><b class="t">C-STORE per instance</b>Each slice is one C-STORE request. The archive writes the object to the storage named by the AE's <code>dcmObjectStorageID</code>, records its MD5 digest, and adds the index rows (patient, study, series, instance, location).<span class="pr">DICOM PS3.4 · Storage Service Class</span></li>
+<li class="fa"><b class="t">Retention date</b>A <code>dcmStudyRetentionPolicy</code> whose condition matches (here <code>SendingApplicationEntityTitle=.*_SCANNER1</code>) sets <code>study.expiration_date</code> to the receive date plus <code>dcmRetentionPeriod</code> (<code>P10Y</code>).</li>
+<li class="fa"><b class="t">Queryable immediately</b>Every stored instance is visible to QIDO-RS and C-FIND as soon as its transaction commits; the archive does not wait for the series to finish. In the lab, a poller saw the instance count rise from 6 to 42 while a scanner sent one slice every 0.15 s.</li>
+<li class="fa"><b class="t">Export rules (architecture, not in this lab)</b>Once a series stops receiving instances for a configured time, export rules can push it to other AEs, such as the AI gateway. This is the step that starts Flow 2 on the <a href="index.html#flow-triage">architecture page</a>.</li>
+</ol>
+<div class="tbl"><table>
+<tr><th>Measured in the lab (laptop, all containers local)</th><th>Result</th></tr>
+<tr><td>CT study, 42 instances, 5.3 MB, one association</td><td>sent in 0.66 to 0.75 s; 2.2 s for the first store after start</td></tr>
+<tr><td>MR study, 135 instances, 30.3 MB</td><td>sent in 3.0 to 4.7 s</td></tr>
+<tr><td>Unknown AE title</td><td>refused, nothing stored</td></tr>
+<tr><td>Files landed in</td><td>SeaweedFS bucket <code>pacs</code>, one object per instance, MD5 recorded in <code>location.digest</code></td></tr>
+</table></div>
+
+<h2 class="sec" id="storage"><span class="n">3</span>Storage: what must be set up</h2>
+<p>The archive image ships with one file system storage, <code>fs1</code> (<code>file:///storage/fs1/</code>). Moving image files to object storage takes three pieces, all applied by <code>labs/dcm4chee/config/ldap/s3-storage.ldif.in</code>:</p>
+<ol class="flow">
+<li class="fs"><b class="t">A bucket and a key pair</b>SeaweedFS gets bucket <code>pacs</code> and an S3 identity allowed to write it. The key pair is generated at install time and never written into the repository.</li>
+<li class="fs"><b class="t">A storage descriptor in LDAP</b>An entry <code>dcmStorageID=s3</code> under the archive device with <code>dcmURI: jclouds:s3:http://seaweedfs:8333</code>, <code>dcmDigestAlgorithm: MD5</code>, <code>dcmInstanceAvailability: ONLINE</code>, and storage properties: <code>container=pacs</code>, <code>jclouds.s3.virtual-host-buckets=false</code> (path-style addressing, needed for SeaweedFS), a region, and the identity and credential.</li>
+<li class="fs"><b class="t">Point the AE at it</b><code>dcmObjectStorageID: s3</code> on AE <code>DCM4CHEE</code>. Other AEs can point at other storages; the lab later shows the descriptors through <code>GET /storage</code>.</li>
+</ol>
+<div class="callout amber"><b>How a file is removed.</b> Deleting an instance never deletes its file directly. The index row goes, its <code>location</code> row is marked status 1 (to delete), and <code>PurgeStorageScheduler</code> removes the object from the bucket on its next run (<code>dcmPurgeStoragePollingInterval</code>, 5 minutes by default). The index is updated first, so an interrupted purge leaves an unreferenced file in the bucket rather than an index row without a file.</div>
+<div class="tbl"><table>
+<tr><th>Table</th><th>Holds</th><th>Useful columns</th></tr>
+<tr><td class="k">patient, patient_id</td><td>One row per patient and identifier issuer</td><td>created from HL7 ADT or from the first received image</td></tr>
+<tr><td class="k">study, series, instance</td><td>The DICOM hierarchy</td><td><code>study.expiration_date</code>, <code>study.storage_ids</code>, <code>accession_no</code></td></tr>
+<tr><td class="k">location</td><td>One row per stored object</td><td><code>storage_id</code>, <code>storage_path</code>, <code>object_size</code>, <code>digest</code>, <code>status</code> (0 stored, 1 to delete)</td></tr>
+<tr><td class="k">mwl_item, mpps</td><td>Worklist and performed procedure steps</td><td><code>sps_status</code> (0 scheduled, 7 completed), <code>accession_no</code>, <code>study_iuid</code></td></tr>
+<tr><td class="k">task</td><td>Queue for exports, storage verification, retrieves</td><td>visible through <code>/monitor/*</code></td></tr>
+</table></div>
+
+<h2 class="sec" id="read"><span class="n">4</span>Flow B · Viewer reads a study</h2>
+<p>A DICOMweb viewer such as OHIF never touches storage or the database. It talks HTTP to <code>/dcm4chee-arc/aets/DCM4CHEE/rs</code>; the archive answers searches from PostgreSQL and fetches pixels from SeaweedFS.</p>
+<ol class="flow">
+<li class="fb"><b class="t">Search (QIDO-RS)</b><code>GET …/rs/studies?PatientID=…</code>, then <code>…/series</code>. Index only.</li>
+<li class="fb"><b class="t">Metadata (WADO-RS)</b><code>GET …/series/{uid}/metadata</code> returns every attribute of every instance as DICOM JSON, without pixels (106 KB for 40 slices). The viewer sorts slices and builds the volume from this.</li>
+<li class="fb"><b class="t">Pixels (WADO-RS)</b><code>GET …/instances/{uid}/frames/1</code> returns raw pixel data as multipart; the viewer decodes and windows it in the browser. <code>…/rendered</code> returns a PNG windowed on the server, used for thumbnails.</li>
+<li class="fb"><b class="t">Whole object (WADO-URI)</b><code>GET …/wado?requestType=WADO&amp;…&amp;contentType=application/dicom</code>, the older single-object retrieve, still used by some viewers and by scripts.</li>
+</ol>
+<div class="tbl"><table>
+<tr><th>Call</th><th>Measured</th></tr>
+<tr><td>QIDO-RS studies (first call after start)</td><td>about 180 ms</td></tr>
+<tr><td>QIDO-RS series</td><td>about 17 ms</td></tr>
+<tr><td>WADO-RS series metadata, 40 instances, 106 KB</td><td>160 to 200 ms</td></tr>
+<tr><td>WADO-RS rendered PNG, one slice</td><td>about 58 ms</td></tr>
+<tr><td>WADO-RS raw frame, one slice</td><td>about 70 ms</td></tr>
+<tr><td>WADO-URI whole object</td><td>about 64 ms</td></tr>
+</table></div>
+<div class="callout cyan"><b>OHIF in the lab.</b> OHIF is served on <code>127.0.0.1:23000</code>. Its nginx also proxies <code>/dcm4chee-arc/</code> to the archive, so the browser sees one origin and the archive needs no cross-origin (CORS) configuration. The study list, the 2D viewer and the MPR layout (axial, sagittal, coronal from the 40 thin slices) all load from dcm4chee over DICOMweb. In production the same role is played by the reverse proxy in front of the archive, together with Keycloak tokens, which this lab leaves out.</div>
+
+<h2 class="sec" id="order"><span class="n">5</span>Flow C · HL7 order to worklist</h2>
+<p>The modality worklist (MWL) lets the scanner pick the patient and procedure from a list instead of typing them, so the images carry the RIS accession number and Study Instance UID. dcm4chee builds the list from HL7 v2 messages sent by the RIS to its HL7 receiver on port 2575.</p>
+<ol class="flow">
+<li class="fc"><b class="t">ADT^A04: register patient</b>Creates the patient (PID-3 identifier, PID-5 name). The archive replies with an ACK containing <code>MSA|AA</code>.<span class="pr">HL7 v2.5.1 · ADT</span></li>
+<li class="fc"><b class="t">ORM^O01: new order</b>Transformed by the built-in stylesheet <code>hl7-order2dcm.xsl</code> into a worklist item. The order control and status (ORC-1 <code>NW</code>, ORC-5 <code>SC</code>) map to SPS status SCHEDULED.<span class="pr">IHE RAD Scheduled Workflow</span></li>
+<li class="fc"><b class="t">Route to a scanner</b>An <code>hl7OrderScheduledStation</code> entry whose condition matches (<code>OBR-24=CT</code>) names the device <code>ct-scanner1</code>; its AE title <code>CT_SCANNER1</code> becomes the Scheduled Station AE Title.</li>
+<li class="fc"><b class="t">Scanner queries its list</b>MWL C-FIND from <code>CT_SCANNER1</code> to AE <code>WORKLIST</code> (not <code>DCM4CHEE</code>), filtered on its own station AE title. The same list is readable over HTTP at <code>/aets/WORKLIST/rs/mwlitems</code>.</li>
+<li class="fc"><b class="t">MPPS closes the step</b>The scanner sends MPPS N-CREATE (in progress) and N-SET (completed), referencing the order. The worklist item moves to COMPLETED and disappears from the scanner's default query.<span class="pr">DICOM PS3.4 · MPPS</span></li>
+<li class="fc"><b class="t">Images carry the order</b>Each image has the accession number, the Study Instance UID from the order, and a Request Attributes Sequence with the requested procedure ID and scheduled step ID, so the study links to the order.</li>
+</ol>
+<div class="tbl"><table>
+<tr><th>HL7 field</th><th>Meaning</th><th>Worklist attribute</th></tr>
+<tr><td class="k">PID-3, PID-5</td><td>Patient identifier, name</td><td>Patient ID, Patient's Name</td></tr>
+<tr><td class="k">OBR-18</td><td>Placer field 1</td><td>Accession Number</td></tr>
+<tr><td class="k">OBR-19</td><td>Placer field 2</td><td>Requested Procedure ID</td></tr>
+<tr><td class="k">OBR-20</td><td>Filler field 1</td><td>Scheduled Procedure Step ID</td></tr>
+<tr><td class="k">OBR-24</td><td>Diagnostic service section</td><td>Modality; also the routing condition to a scanner</td></tr>
+<tr><td class="k">ZDS-1</td><td>Study Instance UID chosen by the RIS</td><td>Study Instance UID. Without ZDS, no worklist item is created</td></tr>
+</table></div>
+
+<h2 class="sec" id="life"><span class="n">6</span>Flow D · Lifecycle and deletion</h2>
+<p>A study leaves dcm4chee in the same way whether a policy or a person decides it: it is first <em>rejected</em> with a Key Object Selection document carrying a rejection code (IOCM, Imaging Object Change Management), then deleted after a delay, then its files are purged. Rejected instances disappear from queries at once, so viewers stop showing them before anything is deleted.</p>
+<div class="timeline">
+<div class="t1"><b>Expiration date reached</b><span><code>RejectExpiredStudiesScheduler</code> finds the study (<code>dcmRejectExpiredStudiesPollingInterval</code>)</span></div>
+<div class="t2"><b>Rejected</b><span>Rejection note 113039 "Data Retention Policy Expired", or 113001 "Rejected for Quality Reasons" from a user</span></div>
+<div class="t3"><b>Instances deleted</b><span><code>DeleteRejectedInstancesScheduler</code> after <code>dcmDeleteRejectedInstanceDelay</code></span></div>
+<div class="t4"><b>Files purged</b><span><code>PurgeStorageScheduler</code> removes the objects from the bucket</span></div>
+</div>
+<div class="tbl"><table>
+<tr><th>Setting (LDAP attribute)</th><th>Default</th><th>Lab value</th></tr>
+<tr><td class="k">dcmStudyRetentionPolicy · dcmRetentionPeriod</td><td>none (studies never expire)</td><td><code>P10Y</code> for studies from <code>*_SCANNER1</code></td></tr>
+<tr><td class="k">dcmRejectExpiredStudiesPollingInterval</td><td>not set: expired studies are not rejected</td><td><code>PT15S</code>, with AE <code>DCM4CHEE</code> and fetch size 10</td></tr>
+<tr><td class="k">dcmDeleteRejectedInstanceDelay (per rejection note)</td><td><code>P1D</code></td><td><code>PT30S</code> for 113039 and 113001</td></tr>
+<tr><td class="k">dcmDeleteRejectedPollingInterval</td><td><code>PT5M</code></td><td><code>PT15S</code></td></tr>
+<tr><td class="k">dcmPurgeStoragePollingInterval</td><td><code>PT5M</code></td><td><code>PT15S</code></td></tr>
+</table></div>
+<div class="tbl"><table>
+<tr><th>Observed in the lab</th><th>Time</th></tr>
+<tr><td><code>PUT …/studies/{uid}/expire/20200101</code> on a 42-instance study</td><td>HTTP 204</td></tr>
+<tr><td>Study rejected with 113039 by the scheduler</td><td>within one polling interval (about 2 s in the first run)</td></tr>
+<tr><td>42 instances deleted, location rows set to "to delete"</td><td>about 35 s after rejection</td></tr>
+<tr><td>Objects purged from SeaweedFS</td><td>next purge run; 84 objects, 11.1 MB removed for two studies</td></tr>
+<tr><td>Each rejected study keeps one instance: the rejection note itself</td><td>records who rejected what and why</td></tr>
+</table></div>
+<p><b>Storage verification</b> (<code>POST …/studies/{uid}/stgver</code>) re-reads every object of a study from storage and compares it with the recorded MD5; the lab study returned 42 verified, 0 failed. Running it on a schedule detects silent corruption in the bucket before a radiologist does.</p>
+
+<h2 class="sec" id="api"><span class="n">7</span>API catalog</h2>
+<p>The archive publishes its REST interface as OpenAPI: 288 paths, 319 operations, in 34 groups (published description, version 5.34.0). Paths starting <code>/aets/{aet}/</code> act as that AE; the rest act on the whole archive. Groups exercised in the lab are marked.</p>
+<div class="tbl"><table>
+<tr><th>Group</th><th>Operations</th><th>Purpose</th><th>Example</th></tr>
+<tr><td class="k">QIDO-RS <span class="y">lab</span></td><td>7</td><td>Search patients, studies, series, instances (DICOM PS3.18)</td><td><code>GET /aets/{aet}/rs/studies</code></td></tr>
+<tr><td class="k">WADO-RS <span class="y">lab</span></td><td>22</td><td>Retrieve objects, metadata, frames, rendered images</td><td><code>GET …/instances/{instance}/frames/{frames}</code></td></tr>
+<tr><td class="k">WADO-URI <span class="y">lab</span></td><td>1</td><td>Legacy single-object retrieve</td><td><code>GET /aets/{aet}/wado</code></td></tr>
+<tr><td class="k">STOW-RS</td><td>2</td><td>Store objects over HTTP</td><td><code>POST /aets/{aet}/rs/studies</code></td></tr>
+<tr><td class="k">UPS-RS, UPS-ARC-RS, UPS-DIMSE-RS</td><td>17, 5, 7</td><td>Unified Procedure Step workitems (task lists, for example AI jobs)</td><td><code>POST /aets/{aet}/rs/workitems</code></td></tr>
+<tr><td class="k">MWL-RS <span class="y">lab</span></td><td>9</td><td>Read and edit worklist items</td><td><code>GET /aets/{aet}/rs/mwlitems</code></td></tr>
+<tr><td class="k">MPPS-RS</td><td>2</td><td>Read performed procedure steps</td><td><code>GET /aets/{aet}/rs/mpps</code></td></tr>
+<tr><td class="k">PAM-RS</td><td>15</td><td>Create, update, merge, delete patients</td><td><code>POST /aets/{aet}/rs/patients</code></td></tr>
+<tr><td class="k">PDQ-RS</td><td>3</td><td>Query an external patient demographics service</td><td><code>GET /pdq/{pdqServiceID}/patients/{patientID}</code></td></tr>
+<tr><td class="k">IOCM-RS <span class="y">lab</span></td><td>36</td><td>Reject and restore instances, move or update studies</td><td><code>POST …/studies/{study}/reject/{code}</code></td></tr>
+<tr><td class="k">EXPORT-RS</td><td>11</td><td>Run an exporter on demand (push to AI gateway, cloud)</td><td><code>POST …/studies/{study}/export/{exporterID}</code></td></tr>
+<tr><td class="k">STGVER-RS <span class="y">lab</span></td><td>11</td><td>Verify stored objects against their digests</td><td><code>POST …/studies/{study}/stgver</code></td></tr>
+<tr><td class="k">STGCMT-RS</td><td>12</td><td>Ask another archive for storage commitment</td><td><code>POST …/studies/{study}/stgcmt/dicom:{scp}</code></td></tr>
+<tr><td class="k">STORAGE-RS <span class="y">lab</span></td><td>2</td><td>List storage systems, change their status</td><td><code>GET /storage</code></td></tr>
+<tr><td class="k">IMPORT-RS, RESTORE-RS</td><td>2, 2</td><td>Index files already on storage; restore purged instance records</td><td><code>POST …/studies/{study}/restore</code></td></tr>
+<tr><td class="k">MONITOR-RS <span class="y">lab</span></td><td>56</td><td>Tasks, queues, associations, metrics</td><td><code>GET /monitor/export</code></td></tr>
+<tr><td class="k">STAT-RS</td><td>10</td><td>Counts and sizes of archive content</td><td><code>GET /aets/{aet}/rs/studies/size</code></td></tr>
+<tr><td class="k">CONFIG-RS <span class="y">lab</span></td><td>30</td><td>Read and write the LDAP configuration</td><td><code>GET /devices</code></td></tr>
+<tr><td class="k">CTRL-RS <span class="y">lab</span></td><td>4</td><td>Start, stop, reload, status</td><td><code>POST /ctrl/reload</code></td></tr>
+<tr><td class="k">ECHO-RS, FIND-RS, MOVE-RS, DIFF-RS</td><td>1, 14, 10, 3</td><td>Act as a DICOM client towards other archives: verify, query, retrieve, compare</td><td><code>GET /aets/{aet}/dimse/{findscp}/studies</code></td></tr>
+<tr><td class="k">IAN-RS</td><td>9</td><td>Notify another system that instances are available</td><td><code>POST …/studies/{study}/ian/dicom:{ianscp}</code></td></tr>
+<tr><td class="k">ACCESS-RS, AUTH-RS</td><td>4, 2</td><td>Study access control tags; Keycloak settings for the UI</td><td><code>PUT …/studies/{study}/access/{id}</code></td></tr>
+<tr><td class="k">FHIR-CLIENT-RS, FHIR-SERVER-RS</td><td>1, 3</td><td>Publish an imaging study to a FHIR server; minimal FHIR Patient endpoint</td><td><code>GET /aets/{aet}/rs/Patient</code></td></tr>
+<tr><td class="k">KEY-VALUE-STORE</td><td>3</td><td>Small key value store for UI settings</td><td><code>GET /values/{key}</code></td></tr>
+<tr><td class="k">IMPAX-REPORT-RS, X-ROAD-RS</td><td>2, 1</td><td>Site-specific integrations (Agfa IMPAX reports, Estonian patient registry)</td><td>not relevant here</td></tr>
+</table></div>
+<p>Besides HTTP, the same archive answers DICOM on port 11112 (C-ECHO, C-STORE, C-FIND, C-MOVE, C-GET, MWL C-FIND, MPPS, storage commitment) and HL7 v2 on port 2575 (ADT, ORM, OMI, ORU, SIU in the default configuration).</p>
+
+<h2 class="sec" id="lab"><span class="n">8</span>The lab and the demo</h2>
+<p><code>labs/dcm4chee</code> is a separate Docker Compose project: OpenLDAP, PostgreSQL, SeaweedFS, the archive, OHIF, and two on-demand client containers that play the scanners and the RIS (dcm4che tools, and Python with pydicom and pynetdicom). All CT images are generated: a head phantom with skull, brain and a hyperdense blob, 2 localizers and 40 axial slices of 1.25 mm. A real MR study can be mounted read-only from outside the repository.</p>
+<div class="callout"><b>Run it</b><ul>
+<li><code>./demo.sh</code> walks through 13 steps and pauses before each one, which suits a live demo or a recording (<code>asciinema rec -c ./demo.sh</code>). <code>AUTO=1</code> runs without pauses in a few minutes.</li>
+<li>It starts from empty volumes every time, and exits with the stack still running so OHIF (<code>http://127.0.0.1:23000</code>) and the archive UI (<code>http://127.0.0.1:28080/dcm4chee-arc/ui2</code>) can be explored. <code>docker compose down -v</code> removes everything.</li>
+<li>Secrets are generated into <code>.env</code> and never printed; every port listens on 127.0.0.1 only.</li>
+</ul></div>
+<div class="tbl"><table>
+<tr><th>Step</th><th>Shows</th><th>Flow</th></tr>
+<tr><td>0 to 1</td><td>Start, apply lab configuration, REST and LDAP views of it</td><td><a href="#parts">1</a></td></tr>
+<tr><td>2 to 4</td><td>Refused AE, CT and MR stored, study queryable while arriving</td><td><a href="#store">A</a></td></tr>
+<tr><td>5 to 7</td><td>DICOMweb calls a viewer makes, index rows, bucket contents</td><td><a href="#read">B</a>, <a href="#storage">storage</a></td></tr>
+<tr><td>8 to 10</td><td>ADT and ORM, worklist query from the scanner, MPPS, worklist completed</td><td><a href="#order">C</a></td></tr>
+<tr><td>11 to 12</td><td>Storage verification, expiration, rejection, deletion, purge</td><td><a href="#life">D</a></td></tr>
+</table></div>
+
+<h2 class="sec" id="lessons"><span class="n">9</span>Findings and pitfalls</h2>
+<dl class="qa">
+<dt>Configuration is data, not files</dt><dd>Every setting is an LDAP entry with a schema. A wrong attribute name fails loudly (<code>ldap_add: Undefined attribute type</code>), but a setting that is valid and simply absent (for example the expired-study polling interval) silently disables the feature. Keep the site configuration as LDIF in version control and apply it with <code>ldapmodify</code> plus <code>POST /ctrl/reload</code>.</dd>
+<dt>Scheduler changes apply on the next run</dt><dd>After a reload, a shortened polling interval takes effect only when the currently scheduled run has fired, so the first change can take up to the old interval (5 minutes) to show.</dd>
+<dt>No ZDS segment, no worklist item</dt><dd>An ORM^O01 without a Study Instance UID in ZDS-1 is acknowledged with <code>AA</code>, yet no item is created; the reason appears only in the server log ("No Scheduled Procedure Steps"). The RIS integration must send ZDS, or the archive must be configured to generate the UID.</dd>
+<dt>The worklist belongs to AE WORKLIST</dt><dd>Both MWL C-FIND and <code>/rs/mwlitems</code> answer on AE <code>WORKLIST</code>; asking AE <code>DCM4CHEE</code> returns 404. Completed items are hidden unless the status is asked for explicitly.</dd>
+<dt>Empty values are stored as "*"</dt><dd>The MR sample has no accession number; the index stores <code>*</code> in its place. Queries and reports that read the database directly must account for it.</dd>
+<dt>Deletion is deliberately slow</dt><dd>Reject, wait, delete, purge: four steps with their own timers. With defaults, a rejected study occupies storage for at least a day, which must be included in capacity planning, and gives a window to undo a mistaken rejection.</dd>
+<dt>Viewer and archive should share an origin</dt><dd>Serving OHIF and DICOMweb behind one proxy avoids CORS configuration in WildFly and is the natural place for TLS and token checks.</dd>
+</dl>
+
+<h2 class="sec" id="open"><span class="n">10</span>Not covered yet</h2>
+<ul>
+<li><b>Storage tiering inside dcm4chee.</b> The architecture moves older data to cloud storage classes with rclone and bucket rules (<a href="index.html#flow-backup">Flow 4</a>). dcm4chee also has its own mechanisms (several storage descriptors, a cache storage with a deleter threshold, export of studies to another storage); these were not exercised in the lab.</li>
+<li><b>Export rules to the AI gateway and the AI result AE.</b> Shown in the earlier proof of concept (<code>poc/</code>), not repeated here.</li>
+<li><b>Security.</b> Keycloak tokens on REST and the UI, TLS on DICOM and HL7, and audit logging are off in the lab.</li>
+<li><b>High availability.</b> Two archive nodes sharing LDAP, PostgreSQL and storage, as drawn on the <a href="index.html#ha">architecture page</a>, need a separate test.</li>
+</ul>
+
+</main>
+</div>
+
+<footer>Intracerebral hemorrhage AI system · dcm4chee deep dive · <a href="index.html">Scenario 1</a> · <a href="scenario2.html">Scenario 2</a> · <a href="decisions.html">Decisions</a>. Measurements come from the lab in <code>labs/dcm4chee</code> on one laptop and show behaviour, not production capacity.</footer>
+</div>
+<script src="assets/site.js"></script>
+</body></html>
