@@ -1,0 +1,98 @@
+# ICH viewer PoC: dcm4chee PACS + OHIF + simulated AI + triage worklist.
+# Open http://localhost:8000/triage/ after `docker compose up -d --build`.
+name: ich-viewer-poc
+
+x-py: &py
+  build: ./py
+  image: ich-poc-py
+  environment:
+    TZ: Asia/Ho_Chi_Minh
+    DICOMWEB_URL: http://arc:8080/dcm4chee-arc/aets/DCM4CHEE/rs
+    TRIAGE_URL: http://triage:8000/api
+    PACS_HOST: arc
+    PACS_DICOM_PORT: "11112"
+    PACS_HL7_PORT: "2575"
+    PACS_AET: DCM4CHEE
+    # Simulated GPU time; raise it (e.g. INFERENCE_SECONDS=25) to have time to
+    # open a study before its AI result arrives.
+    INFERENCE_SECONDS: ${INFERENCE_SECONDS:-8}
+
+services:
+  ldap:
+    image: dcm4che/slapd-dcm4chee:2.6.15-35.2
+    volumes:
+      - ldap:/var/lib/openldap/openldap-data
+      - slapd:/etc/openldap/slapd.d
+
+  db:
+    image: dcm4che/postgres-dcm4chee:17.11-35
+    environment:
+      POSTGRES_DB: pacsdb
+      POSTGRES_USER: pacs
+      POSTGRES_PASSWORD: pacs
+    volumes:
+      - db:/var/lib/postgresql/data
+
+  arc:
+    image: dcm4che/dcm4chee-arc-psql:5.35.2
+    depends_on: [ldap, db]
+    environment:
+      POSTGRES_DB: pacsdb
+      POSTGRES_USER: pacs
+      POSTGRES_PASSWORD: pacs
+      WILDFLY_WAIT_FOR: ldap:389 db:5432
+      WILDFLY_CHOWN: /storage
+    # DICOM 11112 (scanner C-STORE, MWL C-FIND) and HL7 2575 (orders) stay on
+    # the compose network; the simulators in `tools` reach them there.
+    volumes:
+      - wildfly:/opt/wildfly/standalone
+      - storage:/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/dcm4chee-arc/aets/DCM4CHEE/rs/studies?limit=1 -o /dev/null -w '%{http_code}' | grep -qE '200|204'"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  ohif:
+    image: ohif/app:v3.13.14
+    # Copy our config in before the image's entrypoint compresses it.
+    entrypoint: ["/bin/sh", "-c", "cp /config/app-config.js /usr/share/nginx/html/app-config.js && exec /usr/src/entrypoint.sh nginx -g 'daemon off;'"]
+    volumes:
+      - ./ohif/app-config.js:/config/app-config.js:ro
+
+  triage:
+    <<: *py
+    command: uvicorn triage_api:app --host 0.0.0.0 --port 8000
+    volumes:
+      - triage:/data
+
+  ai-worker:
+    <<: *py
+    command: python ai_worker.py
+    depends_on:
+      arc: { condition: service_healthy }
+      triage: { condition: service_started }
+
+  proxy:
+    image: nginx:1.27-alpine
+    depends_on: [ohif, triage, arc]
+    ports:
+      - "8000:80"
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # Command-line tools (HIS and scanner simulators):
+  #   docker compose run --rm tools python his.py ...
+  tools:
+    <<: *py
+    profiles: ["tools"]
+    command: ["python", "-c", "print('see README.md')"]
+
+volumes:
+  ldap:
+  slapd:
+  db:
+  wildfly:
+  storage:
+  triage:

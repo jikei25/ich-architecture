@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Danh sách đọc ưu tiên</title>
+<link rel="stylesheet" href="triage.css">
+</head>
+<body>
+<header>
+  <div>
+    <h1>Danh sách ca chờ đọc</h1>
+    <p class="sub">PoC: danh sách ca từ PACS (QIDO-RS) + kết quả AI, ca nghi xuất huyết lên đầu</p>
+  </div>
+  <div id="ai-pill" class="pill">AI: …</div>
+</header>
+<div id="ai-banner" class="banner" hidden>AI tạm ngừng: ca chụp vẫn đọc bình thường theo thứ tự cũ. Không có cờ không có nghĩa là âm tính.</div>
+
+<main>
+  <section>
+    <h2>Ca chụp <span class="hint">sắp xếp: ca AI nghi dương tính chưa xác nhận trước, còn lại mới nhất trước</span></h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Bệnh nhân · mã chỉ định</th><th>Giờ chụp</th><th>Trong PACS</th><th>Trạng thái AI · bác sĩ</th><th></th></tr></thead>
+      <tbody id="studies"><tr><td colspan="5" class="empty">Đang tải…</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Modality Worklist <span class="hint">luồng 1.4: chỉ định từ HIS/RIS (HL7 ORM) mà PACS đã dựng cho máy chụp, đọc qua REST <code>/rs/mwlitems</code></span></h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Bệnh nhân · mã BN</th><th>Mã chỉ định</th><th>Thủ thuật · máy</th><th>Lịch chụp</th><th>Trạng thái</th></tr></thead>
+      <tbody id="mwl"><tr><td colspan="5" class="empty">Đang tải…</td></tr></tbody>
+    </table></div>
+  </section>
+</main>
+<div id="toasts"></div>
+<script src="triage.js"></script>
+</body>
+</html>

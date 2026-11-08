@@ -160,6 +160,7 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
     <a href="index.html"><b>Scenario 1</b><span>All on-premise</span></a>
     <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
     <a href="decisions.html" aria-current="page"><b>Decisions</b><span>Why these products</span></a>
+    <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
   </nav>
   <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
 </div><div class="progress"><span></span></div></header>
@@ -388,6 +389,7 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 <tr><td class="k">The hospital's existing certified viewer</td><td>Already approved and familiar to radiologists</td><td>Must read from the PACS and display SEG; confirm-or-correct may need a separate tool</td></tr>
 </table></div>
 <div class="callout"><b>The architecture does not depend on this choice.</b> AI results are stored in the PACS as standard SEG and SR, so any viewer that reads DICOMweb and displays SEG shows them. Choosing the viewer changes no other component.</div>
+<div class="callout"><b>OHIF has been tried.</b> A proof of concept (dcm4chee 5.35.2 + OHIF 3.13.14) shows OHIF reading the PACS over DICOMweb and displaying the AI mask (SEG) with no code changes. It does not display the volumetric SR, does not pick up a mask that arrives after the study is opened, and has no notion of priority or alerts; those come from a small AI results service and an OHIF panel. See <a href="viewer.html">Viewer PoC</a>.</div>
 
 <h2 class="sec" id="qa"><span class="n">6</span>Questions reviewers ask</h2>
 <dl class="qa">
