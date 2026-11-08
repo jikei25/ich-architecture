@@ -143,6 +143,32 @@
     if (ev.type === "ai_status") load();
   };
 
+  // When the radiologist opens the AI SEG, OHIF shows the first slice that
+  // contains the mask, which is the edge of the bleed: a dot of red that looks
+  // like nothing loaded. Move to the centre of the segment instead, once per
+  // segmentation and viewport. OHIF already computes that centre from the SEG.
+  const jumped = new Set();
+  function centreOnSegments() {
+    const ss = window.services?.segmentationService;
+    if (!ss) return;
+    for (const seg of ss.getSegmentations?.() || []) {
+      for (const vp of ss.getViewportIdsWithSegmentation?.(seg.segmentationId) || []) {
+        const key = `${seg.segmentationId}|${vp}`;
+        if (jumped.has(key)) continue;
+        jumped.add(key);
+        try { ss.jumpToSegmentCenter(seg.segmentationId, 1, vp); } catch (e) { console.warn("ICH AI panel: jump", e); }
+      }
+    }
+  }
+  const hookSegmentation = setInterval(() => {
+    const ss = window.services?.segmentationService;
+    if (!ss?.subscribe) return;
+    clearInterval(hookSegmentation);
+    const later = () => setTimeout(centreOnSegments, 600);   // after OHIF's own jump
+    [ss.EVENTS.SEGMENTATION_REPRESENTATION_MODIFIED, ss.EVENTS.SEGMENTATION_LOADING_COMPLETE]
+      .filter(Boolean).forEach((ev) => ss.subscribe(ev, later));
+  }, 500);
+
   // OHIF is a single-page app: follow route changes.
   let last = "";
   setInterval(() => { if (location.href !== last) { last = location.href; load(); } }, 700);
