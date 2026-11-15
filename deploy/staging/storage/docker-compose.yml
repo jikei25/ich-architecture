@@ -1,0 +1,39 @@
+name: medical-ai-storage
+
+x-logging: &logging
+  driver: json-file
+  options: {max-size: "50m", max-file: "5"}
+
+services:
+  # Single-node SeaweedFS (master, volume, filer, S3 gateway). Only the S3 port is published.
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.47
+    restart: unless-stopped
+    entrypoint: ["sh", "/config/start.sh"]
+    environment:
+      PACS_S3_ACCESS_KEY: ${PACS_S3_ACCESS_KEY:?run generate-env.sh}
+      PACS_S3_SECRET_KEY: ${PACS_S3_SECRET_KEY:?run generate-env.sh}
+      GATEWAY_S3_ACCESS_KEY: ${GATEWAY_S3_ACCESS_KEY:?run generate-env.sh}
+      GATEWAY_S3_SECRET_KEY: ${GATEWAY_S3_SECRET_KEY:?run generate-env.sh}
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${S3_PORT:-8333}:8333"
+    volumes:
+      - ${DATA_ROOT:?run generate-env.sh}/medical-ai-seaweedfs/data:/data
+      - ./seaweedfs:/config:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9333/cluster/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    logging: *logging
+
+  # Runs on every "up": creates the buckets that do not exist yet.
+  seaweedfs-setup:
+    image: chrislusf/seaweedfs:4.47
+    restart: "no"
+    depends_on:
+      seaweedfs: {condition: service_healthy}
+    entrypoint: ["sh", "/config/create-buckets.sh"]
+    volumes:
+      - ./seaweedfs:/config:ro
+    logging: *logging

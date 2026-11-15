@@ -1,0 +1,45 @@
+name: medical-ai-database
+
+x-logging: &logging
+  driver: json-file
+  options: {max-size: "50m", max-file: "5"}
+
+services:
+  # dcm4chee image: official PostgreSQL 17 plus the archive schema, created in pacsdb on first start.
+  postgresql:
+    image: dcm4che/postgres-dcm4chee:17.9-35
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pacsdb
+      POSTGRES_USER: pacs
+      POSTGRES_PASSWORD: ${PACS_DB_PASSWORD:?run generate-env.sh}
+    command: ["postgres", "-c", "shared_buffers=2GB", "-c", "effective_cache_size=8GB", "-c", "max_connections=200"]
+    shm_size: 512m
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${DB_PORT:-5432}:5432"
+    volumes:
+      - ${DATA_ROOT:?run generate-env.sh}/medical-ai-postgresql/data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "pacs", "-d", "pacsdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    logging: *logging
+
+  # Runs on every "up": creates or updates the Orthanc role and database, and keeps each
+  # database reachable only by its own role.
+  postgresql-setup:
+    image: dcm4che/postgres-dcm4chee:17.9-35
+    restart: "no"
+    depends_on:
+      postgresql: {condition: service_healthy}
+    environment:
+      PGHOST: postgresql
+      PGUSER: pacs
+      PGDATABASE: pacsdb
+      PGPASSWORD: ${PACS_DB_PASSWORD}
+      ORTHANC_DB_PASSWORD: ${ORTHANC_DB_PASSWORD:?run generate-env.sh}
+    entrypoint: ["sh", "-c", "psql -v ON_ERROR_STOP=1 -v orthanc_pw=\"$$ORTHANC_DB_PASSWORD\" -f /setup/roles.sql"]
+    volumes:
+      - ./setup:/setup:ro
+    logging: *logging

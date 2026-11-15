@@ -1,0 +1,166 @@
+# Staging configuration applied on top of the default dcm4chee-arc configuration by apply.sh.
+# @NAME@ placeholders are filled from the environment of the ldap-setup container.
+
+# 1. Image files are stored in the SeaweedFS bucket "pacs" on the storage server (S3 API through jclouds).
+dn: dcmStorageID=s3,dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dcmStorage
+dcmStorageID: s3
+dcmURI: jclouds:s3:http://@STORAGE_HOST@:@S3_PORT@
+dcmDigestAlgorithm: MD5
+dcmInstanceAvailability: ONLINE
+dcmProperty: container=pacs
+
+dn: dcmStorageID=s3,dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: modify
+replace: dcmURI
+dcmURI: jclouds:s3:http://@STORAGE_HOST@:@S3_PORT@
+-
+replace: dcmProperty
+dcmProperty: container=pacs
+dcmProperty: jclouds.s3.virtual-host-buckets=false
+dcmProperty: jclouds.regions=us-east-1
+dcmProperty: identity=@PACS_S3_ACCESS_KEY@
+dcmProperty: credential=@PACS_S3_SECRET_KEY@
+-
+
+# 2. Main AE: stores to S3 and accepts associations only from the listed calling AE titles.
+dn: dicomAETitle=DCM4CHEE,dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: modify
+replace: dcmObjectStorageID
+dcmObjectStorageID: s3
+-
+replace: dcmAcceptedCallingAETitle
+@ACCEPTED_CALLING_AETS@
+-
+
+# 3. The Orthanc gateway as a known remote AE.
+dn: dicomAETitle=ORTHANC,cn=Unique AE Titles Registry,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dicomUniqueAETitle
+dicomAETitle: ORTHANC
+
+dn: dicomDeviceName=orthanc-gateway,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dicomDevice
+dicomDeviceName: orthanc-gateway
+dicomDescription: ICH AI gateway (Orthanc)
+dicomInstalled: TRUE
+
+dn: cn=dicom,dicomDeviceName=orthanc-gateway,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dicomNetworkConnection
+cn: dicom
+dicomHostname: @GATEWAY_HOST@
+dicomPort: @ORTHANC_DICOM_PORT@
+
+dn: cn=dicom,dicomDeviceName=orthanc-gateway,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: modify
+replace: dicomHostname
+dicomHostname: @GATEWAY_HOST@
+-
+replace: dicomPort
+dicomPort: @ORTHANC_DICOM_PORT@
+-
+
+dn: dicomAETitle=ORTHANC,dicomDeviceName=orthanc-gateway,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dicomNetworkAE
+dicomAETitle: ORTHANC
+dicomAssociationInitiator: TRUE
+dicomAssociationAcceptor: TRUE
+dicomNetworkConnectionReference: cn=dicom,dicomDeviceName=orthanc-gateway,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+
+# 4. Export of CT series to the gateway, 10 seconds after the last instance of the series is received.
+dn: dcmExporterID=ORTHANC,dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dcmExporter
+dcmExporterID: ORTHANC
+dicomDescription: Push CT series to the ICH AI gateway
+dcmURI: dicom:ORTHANC
+dicomAETitle: DCM4CHEE
+dcmQueueName: Export
+
+dn: cn=CT series to gateway,dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dcmExportRule
+cn: CT series to gateway
+dcmEntity: Series
+dcmExporterID: ORTHANC
+dcmDuration: PT10S
+dcmProperty: Modality=CT
+
+# Export tasks are polled every 5 seconds instead of the 1 minute default, to meet the 90 second target.
+dn: dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: modify
+replace: dcmTaskPollingInterval
+dcmTaskPollingInterval: PT5S
+-
+replace: dcmExportTaskPollingInterval
+dcmExportTaskPollingInterval: PT5S
+-
+
+# 5. Store-only AE for AI results on its own port 11113, accepting only the gateway and only SC, SEG, SR.
+dn: cn=dicom-ai-results,dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dicomNetworkConnection
+objectClass: dcmNetworkConnection
+cn: dicom-ai-results
+dicomHostname: arc
+dicomPort: 11113
+dcmBindAddress: 0.0.0.0
+
+dn: dicomAETitle=AI_RESULTS,cn=Unique AE Titles Registry,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dicomUniqueAETitle
+dicomAETitle: AI_RESULTS
+
+dn: dicomAETitle=AI_RESULTS,dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dicomNetworkAE
+objectClass: dcmNetworkAE
+objectClass: dcmArchiveNetworkAE
+dicomAETitle: AI_RESULTS
+dicomDescription: Store-only AE for AI results pushed by the ICH gateway
+dicomAssociationAcceptor: TRUE
+dicomAssociationInitiator: FALSE
+dicomNetworkConnectionReference: cn=dicom-ai-results,dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+dcmAcceptedCallingAETitle: ORTHANC
+dcmObjectStorageID: s3
+dcmQueryRetrieveViewID: hideRejected
+
+dn: cn=Secondary Capture Image Storage SCP,dicomAETitle=AI_RESULTS,dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dicomTransferCapability
+cn: Secondary Capture Image Storage SCP
+dicomSOPClass: 1.2.840.10008.5.1.4.1.1.7
+dicomTransferRole: SCP
+dicomTransferSyntax: 1.2.840.10008.1.2
+dicomTransferSyntax: 1.2.840.10008.1.2.1
+
+dn: cn=Segmentation Storage SCP,dicomAETitle=AI_RESULTS,dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dicomTransferCapability
+cn: Segmentation Storage SCP
+dicomSOPClass: 1.2.840.10008.5.1.4.1.1.66.4
+dicomTransferRole: SCP
+dicomTransferSyntax: 1.2.840.10008.1.2
+dicomTransferSyntax: 1.2.840.10008.1.2.1
+
+dn: cn=Comprehensive SR Storage SCP,dicomAETitle=AI_RESULTS,dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dicomTransferCapability
+cn: Comprehensive SR Storage SCP
+dicomSOPClass: 1.2.840.10008.5.1.4.1.1.88.33
+dicomTransferRole: SCP
+dicomTransferSyntax: 1.2.840.10008.1.2
+dicomTransferSyntax: 1.2.840.10008.1.2.1
+
+dn: cn=Verification SCP,dicomAETitle=AI_RESULTS,dicomDeviceName=dcm4chee-arc,cn=Devices,cn=DICOM Configuration,dc=dcm4che,dc=org
+changetype: add
+objectClass: dicomTransferCapability
+cn: Verification SCP
+dicomSOPClass: 1.2.840.10008.1.1
+dicomTransferRole: SCP
+dicomTransferSyntax: 1.2.840.10008.1.2
+dicomTransferSyntax: 1.2.840.10008.1.2.1

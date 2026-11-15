@@ -1,0 +1,24 @@
+# Image default plus one proxy location: the viewer and DICOMweb share an origin, so the
+# archive needs no CORS configuration.
+server {
+  gzip_static  always;
+  gzip_proxied expired no-cache no-store private auth;
+  gunzip       on;
+  listen ${PORT} default_server;
+  listen [::]:${PORT} default_server;
+  location / {
+    root   /usr/share/nginx/html;
+    index  index.html index.htm;
+    try_files $uri $uri/ ${PUBLIC_URL}index.html;
+    add_header Cross-Origin-Resource-Policy same-origin;
+  }
+  location /dcm4chee-arc/ {
+    proxy_pass http://arc:8080;
+    proxy_set_header Host $host;
+    proxy_read_timeout 120s;
+  }
+  error_page   500 502 503 504  /50x.html;
+  location = /50x.html {
+    root   /usr/share/nginx/html;
+  }
+}

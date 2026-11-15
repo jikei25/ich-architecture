@@ -1,0 +1,3 @@
+servers.env
+secrets.env
+*/.env
