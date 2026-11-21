@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICH 3D Slicer Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7fc;--card:#ffffff;--text:#1c1f3a;--muted:#5b6080;--border:#d9deef;--pill:#ffffff;
+--blue:#1d4ed8;--blue-s:#e6efff;--blue-h:#d3e2ff;
+--violet:#6d28d9;--violet-s:#f1ecff;--violet-h:#e2d8ff;
+--pink:#be185d;--pink-s:#fdedf5;--pink-h:#fbd5e8;
+--emerald:#047857;--emerald-s:#e5f8ef;--emerald-h:#c8f0dd;
+--amber:#b45309;--amber-s:#fff5e1;--amber-h:#fde5b3;
+--cyan:#0e7490;--cyan-s:#e3f8fc;--cyan-h:#c2eef7;
+--slate:#475569;--slate-s:#f1f3f8;--slate-h:#e0e5ef;
+--rose:#e11d48;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0e1124;--card:#171b34;--text:#eceefb;--muted:#a3a8c8;--border:#2c3257;--pill:#171b34;
+--blue:#93c5fd;--blue-s:#14213f;--blue-h:#1b3160;--violet:#c4b5fd;--violet-s:#1d1838;--violet-h:#33255f;
+--pink:#f9a8d4;--pink-s:#2a1324;--pink-h:#4a1a3a;--emerald:#6ee7b7;--emerald-s:#0f2a24;--emerald-h:#0f3b2e;
+--amber:#fcd34d;--amber-s:#2c210b;--amber-h:#42300a;--cyan:#67e8f9;--cyan-s:#0f2a33;--cyan-h:#123b46;
+--slate:#cbd5e1;--slate-s:#1a1f36;--slate-h:#2a3150;--rose:#fb7185;}}
+:root[data-theme="dark"]{--bg:#0e1124;--card:#171b34;--text:#eceefb;--muted:#a3a8c8;--border:#2c3257;--pill:#171b34;
+--blue:#93c5fd;--blue-s:#14213f;--blue-h:#1b3160;--violet:#c4b5fd;--violet-s:#1d1838;--violet-h:#33255f;
+--pink:#f9a8d4;--pink-s:#2a1324;--pink-h:#4a1a3a;--emerald:#6ee7b7;--emerald-s:#0f2a24;--emerald-h:#0f3b2e;
+--amber:#fcd34d;--amber-s:#2c210b;--amber-h:#42300a;--cyan:#67e8f9;--cyan-s:#0f2a33;--cyan-h:#123b46;
+--slate:#cbd5e1;--slate-s:#1a1f36;--slate-h:#2a3150;--rose:#fb7185;}
+
+.bg{fill:var(--card)}
+.h1{fill:var(--text);font-size:22px;font-weight:700}
+.h2{fill:var(--muted);font-size:14px}
+.lane{stroke:none}
+.f-slate{fill:var(--slate-s)}.f-blue{fill:var(--blue-s)}.f-violet{fill:var(--violet-s)}.f-pink{fill:var(--pink-s)}.f-emerald{fill:var(--emerald-s)}.f-amber{fill:var(--amber-s)}.f-cyan{fill:var(--cyan-s)}
+.h-slate{fill:var(--slate-h)}.h-blue{fill:var(--blue-h)}.h-violet{fill:var(--violet-h)}.h-pink{fill:var(--pink-h)}.h-emerald{fill:var(--emerald-h)}.h-amber{fill:var(--amber-h)}.h-cyan{fill:var(--cyan-h)}
+.t-slate{fill:var(--slate)}.t-blue{fill:var(--blue)}.t-violet{fill:var(--violet)}.t-pink{fill:var(--pink)}.t-emerald{fill:var(--emerald)}.t-amber{fill:var(--amber)}.t-cyan{fill:var(--cyan)}
+.lt{font-size:16px;font-weight:700}.ls{font-size:12.5px;font-weight:600;opacity:.85}
+.frame{fill:none;stroke:var(--border);stroke-width:1}
+.bx,.cy,.cyt{fill:var(--card);stroke-width:1.6}
+.cyt{fill:var(--card)}
+.s-slate{stroke:var(--slate)}.s-blue{stroke:var(--blue)}.s-violet{stroke:var(--violet)}.s-pink{stroke:var(--pink)}.s-emerald{stroke:var(--emerald)}.s-amber{stroke:var(--amber)}.s-cyan{stroke:var(--cyan)}
+.bt{fill:var(--text);font-size:13.5px;font-weight:700}
+.bs{fill:var(--muted);font-size:11.5px}
+.abs{stroke-width:2;stroke-dasharray:8 5}
+.af-violet{fill:var(--violet-s)}.af-pink{fill:var(--pink-s)}
+.big{font-size:16px}
+.tagbg{stroke:none}.tagt{font-size:10.5px;font-weight:700;letter-spacing:.04em}
+.grp{fill:none;stroke:var(--emerald);stroke-width:1.3;stroke-dasharray:6 4}
+.grpt{fill:var(--emerald);font-size:12px;font-weight:700}
+.a.loop{stroke:var(--violet);stroke-width:1.8;stroke-dasharray:3 4}
+.lbv{fill:var(--violet);font-size:11px;font-weight:600}
+.note{fill:var(--muted);font-size:12.5px;font-style:italic}
+.a{fill:none;stroke-linejoin:round;stroke-linecap:round}
+.a.crit{stroke:var(--rose);stroke-width:2.4}
+.a.ai{stroke:var(--violet);stroke-width:2.2}
+.a.flow{stroke:var(--muted);stroke-width:1.6}
+.a.bak{stroke:var(--amber);stroke-width:2.8}
+.a.rest{stroke:var(--cyan);stroke-width:2;stroke-dasharray:7 5}
+.a.life{stroke:var(--cyan);stroke-width:2;stroke-dasharray:2 4}
+.pill{fill:var(--pill);stroke:var(--border);stroke-width:.8;opacity:.96}
+.lb{fill:var(--text);font-size:11px;font-weight:500}
+.lbc{fill:var(--cyan);font-size:11px;font-weight:600}
+.boundary{stroke:var(--cyan);stroke-width:2.5;stroke-dasharray:12 6}
+.btag{fill:var(--cyan);font-size:12px;font-weight:700}
+.legend{fill:var(--bg);stroke:var(--border)}
+.lgh{fill:var(--text);font-size:15px;font-weight:700}
+.lgt{fill:var(--text);font-size:13px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.page{max-width:1180px;margin:0 auto;padding:32px 16px 80px}
+.hero{background:linear-gradient(135deg,#4338ca,#0e7490);color:#fff;border-radius:22px;padding:38px 36px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-90px;top:-90px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hero .eyebrow{font-size:13px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;opacity:.85;position:relative}
+.hero h1{font-size:32px;line-height:1.25;margin:10px 0 12px;position:relative}
+.hero p{font-size:17px;max-width:860px;opacity:.93;margin:0;position:relative}
+.hero a{color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;position:relative}
+.chips span{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600}
+nav.toc{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 22px;margin:24px 0}
+nav.toc b{color:var(--violet)}
+nav.toc ol{margin:8px 0 0;padding-left:22px;columns:2;column-gap:36px}
+nav.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border)}
+nav.toc a:hover{color:var(--violet)}
+h2.sec{font-size:24px;margin:54px 0 14px;display:flex;align-items:center;gap:12px;line-height:1.3}
+h2.sec .n{flex:none;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#0e7490);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
+p{margin:8px 0}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.86em;background:var(--slate-s);border:1px solid var(--border);padding:1px 6px;border-radius:6px}
+.figure{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;margin:16px 0}
+.figscroll{overflow-x:auto;border-radius:12px}
+#arch{display:block;width:100%;min-width:1100px;height:auto}
+#arch .a[data-g]{transition:opacity .25s}
+#arch[data-focus] .a[data-g]{opacity:.1}
+#arch[data-focus="clinical"] .a[data-g="clinical"],#arch[data-focus="triage"] .a[data-g="triage"],#arch[data-focus="ai"] .a[data-g="ai"],#arch[data-focus="backup"] .a[data-g="backup"],#arch[data-focus="restore"] .a[data-g="restore"]{opacity:1}
+.focusbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 4px 12px}
+.focusbar span{font-size:14px;color:var(--muted);margin-right:4px}
+.focusbar button{font:inherit;font-size:14px;font-weight:600;padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer}
+.focusbar button[aria-pressed="true"]{background:var(--text);color:var(--card);border-color:var(--text)}
+.figcap{font-size:14px;color:var(--muted);margin:10px 4px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;border-top-width:5px}
+.card h4{margin:0 0 4px;font-size:17px}
+.card .v{font-size:13px;font-weight:700;margin-bottom:6px}
+.card p{font-size:15px;color:var(--text)}
+.c-slate{border-top-color:var(--slate)}.c-blue{border-top-color:var(--blue)}.c-violet{border-top-color:var(--violet)}.c-pink{border-top-color:var(--pink)}.c-emerald{border-top-color:var(--emerald)}.c-amber{border-top-color:var(--amber)}.c-cyan{border-top-color:var(--cyan)}
+.tc-slate{color:var(--slate)}.tc-blue{color:var(--blue)}.tc-violet{color:var(--violet)}.tc-pink{color:var(--pink)}.tc-emerald{color:var(--emerald)}.tc-amber{color:var(--amber)}.tc-cyan{color:var(--cyan)}.tc-rose{color:var(--rose)}
+.tbl{overflow-x:auto;margin:14px 0;border:1px solid var(--border);border-radius:16px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:11px 15px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--slate-s);font-weight:700;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.k{font-weight:700;white-space:nowrap}
+.pilltag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--slate-s);border:1px solid var(--border);white-space:nowrap}
+ol.flow{list-style:none;counter-reset:f;padding:0;margin:14px 0;position:relative}
+ol.flow>li{counter-increment:f;position:relative;padding:14px 18px 14px 66px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin:10px 0}
+ol.flow>li::before{content:var(--fp,"") counter(f);position:absolute;left:16px;top:14px;width:32px;height:32px;border-radius:10px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--fc)}
+ol.flow>li b.t{display:block}
+ol.flow>li .pr{display:inline-block;margin-top:4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--muted);background:var(--slate-s);border:1px solid var(--border);border-radius:8px;padding:1px 8px}
+.f-clin{--fc:var(--rose)}.f-tri{--fc:var(--violet)}.f-ai{--fc:var(--pink)}.f-bak{--fc:var(--amber)}.f-rest{--fc:var(--cyan)}
+.callout{border-left:5px solid var(--violet);background:var(--violet-s);padding:14px 18px;border-radius:0 12px 12px 0;margin:18px 0}
+.callout.amber{border-left-color:var(--amber);background:var(--amber-s)}
+.callout.cyan{border-left-color:var(--cyan);background:var(--cyan-s)}
+.callout.rose{border-left-color:var(--rose);background:var(--blue-s)}
+.callout ul{margin:6px 0 0;padding-left:20px}
+.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:14px 0}
+.timeline div{border-radius:12px;padding:12px 14px;border-top:5px solid}
+.timeline b{display:block;font-size:15px}.timeline span{font-size:13px;color:var(--muted)}
+.t1{background:var(--emerald-s);border-color:var(--emerald)!important}.t2{background:var(--amber-s);border-color:var(--amber)!important}.t3{background:var(--cyan-s);border-color:var(--cyan)!important}.t4{background:var(--slate-s);border-color:var(--slate)!important}
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
+@media (max-width:700px){.hero{padding:26px 20px}.hero h1{font-size:25px}nav.toc ol{columns:1}.timeline{grid-template-columns:1fr 1fr}ol.flow>li{padding-left:58px}}
+.stepb circle{stroke:var(--card);stroke-width:2}
+.stepb text{fill:#fff;font-size:10.5px;font-weight:700}
+.sb-clin circle{fill:var(--rose)}.sb-tri circle{fill:var(--violet)}.sb-ai circle{fill:var(--pink)}.sb-bak circle{fill:var(--amber)}.sb-rest circle{fill:var(--cyan)}
+#arch .stepb[data-g]{transition:opacity .25s}
+#arch[data-focus] .stepb[data-g]{opacity:.12}
+#arch[data-focus="clinical"] .stepb[data-g="clinical"],#arch[data-focus="triage"] .stepb[data-g="triage"],#arch[data-focus="ai"] .stepb[data-g="ai"],#arch[data-focus="backup"] .stepb[data-g="backup"],#arch[data-focus="restore"] .stepb[data-g="restore"]{opacity:1}
+.f-clin{--fp:"1."}.f-tri{--fp:"2."}.f-ai{--fp:"3."}.f-bak{--fp:"4."}
+.y{color:var(--emerald);font-weight:700}.n{color:var(--rose);font-weight:700}.p{color:var(--amber);font-weight:700}.o{color:var(--cyan);font-weight:700}
+td.win{background:var(--emerald-s)}
+th.win{background:var(--emerald-h)}
+.adr{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:16px 0}
+dl.qa{margin:14px 0}
+dl.qa dt{font-weight:700;margin-top:16px}
+dl.qa dd{margin:4px 0 0;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px}
+ol.src{font-size:14.5px;padding-left:22px}
+main a{color:var(--violet)}
+.tbl.wide table{min-width:760px;table-layout:fixed}
+.tbl.wide th:first-child{width:28%}
+.tbl td.k{white-space:normal;width:30%;min-width:140px}
+h3.dec{font-size:20px;line-height:1.35;margin:40px 0 8px;scroll-margin-top:72px;display:flex;align-items:center;gap:10px}
+.dn{flex:none;font-size:12.5px;font-weight:700;padding:3px 9px;border-radius:8px;background:var(--violet-s);color:var(--violet);border:1px solid var(--violet-h)}
+.dn.open{background:var(--cyan-s);color:var(--cyan);border-color:var(--cyan-h)}
+.idx table{min-width:860px}
+.idx td:first-child{white-space:nowrap}
+.idx a{font-weight:700;text-decoration:none}
+ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:16px 0}
+.verdict .card p{margin:6px 0 0}
+pre.code{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,Menlo,Consolas,monospace;margin:12px 0}
+pre.code .c{color:var(--muted)}
+.flowsvg{display:block;width:100%;max-width:760px;height:auto;margin:0 auto}
+.flowsvg .bxc{fill:var(--blue-s);stroke:var(--blue);stroke-width:1.2}
+.flowsvg .bxa{fill:var(--violet-s);stroke:var(--violet);stroke-width:1.2}
+.flowsvg .tt{fill:var(--text);font:700 14px Inter,system-ui,sans-serif}
+.flowsvg .ts{fill:var(--muted);font:12px Inter,system-ui,sans-serif}
+.flowsvg .ln{fill:none;stroke:var(--muted);stroke-width:1.5}
+.flowsvg .lv{fill:none;stroke:var(--violet);stroke-width:1.6}
+.flowsvg .gap{fill:none;stroke:var(--rose);stroke-width:1.6;stroke-dasharray:6 4}
+.flowsvg .gt{fill:var(--rose);font:600 12.5px Inter,system-ui,sans-serif}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin:16px 0}
+.shots figure{margin:0;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.shots img{display:block;width:100%;height:auto;cursor:zoom-in}
+.shots figcaption{font-size:14px;padding:10px 14px;color:var(--text)}
+.shots figcaption b{color:var(--violet)}
+.ok{color:var(--emerald);font-weight:700}.part{color:var(--amber);font-weight:700}.no{color:var(--rose);font-weight:700}
+td.st{white-space:nowrap}
+.flowsvg .wk{fill:none;stroke:var(--blue);stroke-width:1.4;stroke-dasharray:7 5}
+.flowsvg .wkt{fill:var(--blue);font:700 12.5px Inter,system-ui,sans-serif}
+.flowsvg .bxk{fill:var(--slate-s);stroke:var(--slate);stroke-width:1.2}
+main p code,main li code,main .callout code{overflow-wrap:anywhere}
+</style>
+<link rel="stylesheet" href="assets/site.css">
+<script>try{var t=localStorage.getItem("ich-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+</head><body>
+<header class="topbar"><div class="topbar-in">
+  <a class="brand" href="index.html"><span class="logo">ICH</span><span class="brand-t">ICH AI system · architecture</span></a>
+  <nav class="scen" aria-label="Deployment scenario">
+    <a href="index.html"><b>Scenario 1</b><span>All on-premise</span></a>
+    <a href="simplified.html"><b>Simplified</b><span>Scenario 1 core</span></a>
+    <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
+    <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
+    <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
+    <a href="slicer.html" aria-current="page"><b>3D Slicer</b><span>Proposed viewer</span></a>
+    <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
+  </nav>
+  <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
+</div><div class="progress"><span></span></div></header>
+<div class="page">
+<header class="hero">
+  <div class="eyebrow">Intracerebral hemorrhage AI system · Trình xem (D10) · đánh giá 3D Slicer</div>
+  <h1>Dùng 3D Slicer làm trình xem cho bác sĩ: có khả thi không?</h1>
+  <p>Giảng viên hướng dẫn đề xuất dùng <a href="https://github.com/Slicer/Slicer">3D Slicer</a> thay vì tự phát triển phần trình xem. Trang này đối chiếu Slicer 5.12 với các yêu cầu của D10 và với <a href="viewer.html">PoC OHIF</a>: phần nào có sẵn, phần nào phải viết thêm, phần nào giữ nguyên từ PoC, và kế hoạch PoC để chốt. Các kết luận về Slicer lấy từ tài liệu chính thức; <b>chưa chạy thử trên stack của đồ án</b>.</p>
+  <div class="chips"><span>Khả thi · cần một module Python</span><span>Đọc PACS, SEG, SR, sửa mask: có sẵn</span><span>Ưu tiên, thông báo, đăng nhập: tự làm</span><span>Cài trên từng máy trạm</span><span>Chưa kiểm chứng bằng PoC</span></div>
+</header>
+
+<div class="layout">
+<nav class="toc"><b>Mục lục</b><ol>
+<li><a href="#verdict">Kết luận nhanh</a></li>
+<li><a href="#what">3D Slicer là gì, khác OHIF ở đâu</a></li>
+<li><a href="#req">Đối chiếu yêu cầu D10</a></li>
+<li><a href="#placement">Slicer nằm ở đâu trong kiến trúc</a></li>
+<li><a href="#module">Phần tự làm: module ICH Triage</a></li>
+<li><a href="#reuse">Dùng lại gì từ PoC OHIF</a></li>
+<li><a href="#risks">Rủi ro và cách giảm</a></li>
+<li><a href="#plan">Kế hoạch PoC để chốt D10</a></li>
+<li><a href="#refs">Tài liệu tham khảo</a></li>
+</ol></nav>
+<main>
+
+<h2 class="sec" id="verdict"><span class="n">1</span>Kết luận nhanh</h2>
+<div class="verdict">
+  <div class="card c-emerald"><h4>Đọc ảnh từ PACS</h4><div class="v tc-emerald">Có sẵn · theo tài liệu</div><p>Slicer kèm sẵn <code>dicomweb-client</code> (QIDO-RS, WADO-RS, STOW-RS) và hỗ trợ DIMSE C-FIND, C-MOVE, C-GET, C-STORE. Đọc dcm4chee không cần sửa PACS.</p></div>
+  <div class="card c-emerald"><h4>Mask SEG + báo cáo SR</h4><div class="v tc-emerald">Có sẵn · hơn OHIF</div><p>Từ 5.12, SEG, Parametric Map và SR TID 1500 nằm trong lõi Slicer. SR thể tích là chỗ OHIF không hiển thị được; cần thử với SR do highdicom sinh ra.</p></div>
+  <div class="card c-emerald"><h4>Sửa mask, lưu lại</h4><div class="v tc-emerald">Có sẵn · điểm mạnh nhất</div><p>Segment Editor (tô, xoá, ngưỡng HU, tách vùng, làm mịn) và Segment Statistics (thể tích). Xuất SEG mới, gửi về PACS bằng STOW-RS hoặc C-STORE.</p></div>
+  <div class="card c-pink"><h4>Ưu tiên, thông báo, SSO</h4><div class="v" style="color:var(--rose)">Không có sẵn · tự làm</div><p>Giống OHIF. Khác biệt: phần tự làm là một <b>scripted module Python</b> chạy trong Slicer, không phải build lại ứng dụng như extension OHIF.</p></div>
+</div>
+<div class="callout"><b>Khuyến nghị: khả thi, nên làm PoC rồi chốt.</b> Dùng 3D Slicer làm máy trạm đọc của bác sĩ, kèm một module Python "ICH Triage" gọi lại đúng <b>dịch vụ kết quả AI</b> đã có trong PoC (<code>poc/viewer/py/triage_api.py</code>). Nhóm không phải tự viết viewer, và phần tự làm viết bằng Python, cùng ngôn ngữ với đội AI và với MONAI Label. Đổi lại phải chấp nhận hai điều: <b>cài Slicer trên từng máy trạm</b> (mất ưu điểm "zero-footprint" của OHIF), và Slicer cũng <b>không được phép dùng cho chẩn đoán lâm sàng</b>, giống OHIF. Kiến trúc không đổi: kết quả AI vẫn là SEG và SR chuẩn trong PACS.</div>
+
+<h2 class="sec" id="what"><span class="n">2</span>3D Slicer là gì, khác OHIF ở đâu</h2>
+<p>3D Slicer là nền tảng mã nguồn mở để hiển thị và phân tích ảnh y khoa, viết bằng C++ (VTK, ITK, CTK, Qt) và có Python nhúng. Nó chạy như một ứng dụng desktop trên Windows, macOS và Linux. Bản ổn định hiện tại là <b>5.12</b> (Kitware công bố ngày 15/07/2026), với giấy phép kiểu BSD và không hạn chế dùng thương mại. Có thể mở rộng Slicer bằng extension hoặc <b>scripted module</b> Python. Một scripted module truy cập được toàn bộ scene, giao diện Qt và các thư viện Python như <code>requests</code>, <code>pydicom</code>, <code>dicomweb_client</code>. Slicer cũng là client chính của MONAI Label, nên trong kiến trúc nó đã có mặt ở khối <a href="decisions.html#d2">gán nhãn</a>.</p>
+<div class="tbl"><table>
+<tr><th>Khía cạnh</th><th>OHIF (đã làm PoC)</th><th>3D Slicer (đề xuất)</th></tr>
+<tr><td class="k">Loại ứng dụng</td><td>Web app tĩnh (React), mở bằng trình duyệt</td><td>Ứng dụng desktop (Qt), cài trên máy trạm</td></tr>
+<tr><td class="k">Cách lấy ảnh</td><td>Lấy từng frame qua WADO-RS, hiện dần từng lát</td><td>Tải cả series vào CSDL DICOM cục bộ rồi nạp thành volume</td></tr>
+<tr><td class="k">Mở rộng</td><td>Extension + mode JavaScript, phải build lại OHIF</td><td>Scripted module Python: chép thư mục, thêm đường dẫn module, không build</td></tr>
+<tr><td class="k">SEG / SR</td><td>SEG: có. SR thể tích: lỗi viewport</td><td>SEG, Parametric Map, SR TID 1500 trong lõi (5.12)</td></tr>
+<tr><td class="k">Sửa mask</td><td>Brush cơ bản</td><td>Segment Editor đầy đủ, tính thể tích</td></tr>
+<tr><td class="k">Hiển thị</td><td>Lát 2D, MPR, dựng khối cơ bản</td><td>Lát 2D, MPR, dựng khối, đo đạc, đăng ký ảnh</td></tr>
+<tr><td class="k">Đăng nhập</td><td>Có cấu hình OIDC</td><td>Không có OIDC; chỉ user/password hoặc token truyền vào</td></tr>
+<tr><td class="k">Pháp lý</td><td>"for investigational use only"</td><td>Tài liệu ghi "NOT approved for clinical use"</td></tr>
+<tr><td class="k">Giấy phép</td><td>MIT</td><td>BSD-style (giấy phép Slicer)</td></tr>
+</table></div>
+
+<h2 class="sec" id="req"><span class="n">3</span>Đối chiếu yêu cầu D10</h2>
+<p>Các yêu cầu lấy từ <a href="decisions.html#d10">D10</a> và bảng của <a href="viewer.html#ohif">trang Viewer PoC</a>. Cột Slicer đánh giá theo tài liệu, chưa chạy thử. Cột OHIF là kết quả đã kiểm chứng bằng PoC.</p>
+<div class="tbl"><table>
+<tr><th>Yêu cầu</th><th>Nguồn</th><th>3D Slicer</th><th>Cách đáp ứng</th><th>OHIF (PoC)</th></tr>
+<tr><td>Đọc qua QIDO-RS / WADO-RS</td><td>1.3</td><td class="st"><span class="ok">Có sẵn</span></td><td><code>DICOMUtils.importFromDICOMWeb</code> hoặc extension DICOMwebBrowser; cũng đọc được bằng DIMSE C-GET</td><td class="st"><span class="ok">Đạt</span></td></tr>
+<tr><td>Mở ca khi chuỗi sau vẫn đang tới</td><td>1.3</td><td class="st"><span class="part">Một phần</span></td><td>Tải được các series đã có trong PACS; series đến sau do module truy vấn lại. Không hiện dần từng lát: bác sĩ chờ tải xong một series (cần đo thời gian trên LAN)</td><td class="st"><span class="part">Một phần</span></td></tr>
+<tr><td>Hiển thị mask AI (SEG)</td><td>1.5, 2.4</td><td class="st"><span class="ok">Có sẵn</span></td><td>SEG nạp thành segmentation node, bật/tắt từng segment</td><td class="st"><span class="ok">Đạt</span></td></tr>
+<tr><td>Lớp phủ mặc định tắt</td><td>P4</td><td class="st"><span class="part">Tự làm, dễ</span></td><td>Slicer hiện segmentation khi nạp; module ẩn đi ngay sau khi nạp</td><td class="st"><span class="ok">Đạt</span></td></tr>
+<tr><td>Hiển thị báo cáo SR (thể tích)</td><td>2.4</td><td class="st"><span class="part">Có thể đạt</span></td><td>TID 1500 có trong lõi 5.12; phải thử với SR do <code>ai_worker.py</code> sinh ra. Nếu không đọc được, panel module hiện thể tích như PoC OHIF</td><td class="st"><span class="no">Không</span></td></tr>
+<tr><td>4 trạng thái AI, không giống ca âm tính</td><td>Hợp đồng AI</td><td class="st"><span class="no">Tự làm</span></td><td>Panel trong module đọc <code>/triage/api/studies/{uid}</code></td><td class="st"><span class="no">Tự làm</span></td></tr>
+<tr><td>Xác nhận / bác bỏ kết quả AI</td><td>1.5</td><td class="st"><span class="no">Tự làm</span></td><td>Nút trong module, gọi <code>POST /review</code></td><td class="st"><span class="no">Tự làm</span></td></tr>
+<tr><td>Sửa mask, lưu lại</td><td>1.5</td><td class="st"><span class="ok">Có sẵn, mạnh hơn</span></td><td>Segment Editor; xuất DICOM SEG; gửi bằng STOW-RS hoặc C-STORE từ DICOM module</td><td class="st"><span class="part">Có công cụ</span></td></tr>
+<tr><td>Mask về sau khi ca đã mở</td><td>2.4</td><td class="st"><span class="part">Tự làm, dễ hơn</span></td><td>Module nghe sự kiện, tải series SEG mới và thêm vào scene mà không phải mở lại ca</td><td class="st"><span class="part">Phải nạp lại</span></td></tr>
+<tr><td>Ưu tiên ca, thông báo realtime</td><td>1.5, 2.5</td><td class="st"><span class="no">Tự làm</span></td><td>Module đọc SSE <code>/triage/api/events</code>, hiện danh sách ưu tiên và thông báo trong cửa sổ Slicer</td><td class="st"><span class="no">Tự làm</span></td></tr>
+<tr><td>Đăng nhập SSO (OIDC, Keycloak)</td><td>D9</td><td class="st"><span class="no">Tự làm</span></td><td>Slicer không tự xử lý OIDC. Module chạy luồng Authorization Code + PKCE qua trình duyệt hệ thống và gắn token vào mọi request</td><td class="st"><span class="part">Chưa thử</span></td></tr>
+<tr><td>Được phép dùng để chẩn đoán chính</td><td>Pháp lý</td><td class="st"><span class="no">Không</span></td><td>Không có FDA/CE; chỉ dùng cho nghiên cứu</td><td class="st"><span class="no">Không</span></td></tr>
+</table></div>
+<p>Tóm lại, Slicer <b>tốt hơn OHIF ở phần ảnh và mask</b> (SR, sửa mask, mask về muộn) và <b>ngang OHIF ở phần ưu tiên và thông báo</b>: cả hai đều cần dịch vụ kết quả AI cộng một lớp giao diện tự làm. Slicer <b>kém OHIF ở triển khai và đăng nhập</b>: phải cài trên máy trạm, không hiện dần ảnh, không có OIDC sẵn.</p>
+
+<h2 class="sec" id="placement"><span class="n">4</span>Slicer nằm ở đâu trong kiến trúc</h2>
+<p>Slicer thay khối trình xem của bác sĩ ở lớp Clinical (trên sơ đồ kiến trúc nay ghi thẳng "3D Slicer") và nói chuyện với đúng những thứ OHIF nói chuyện: PACS qua DICOMweb, dịch vụ kết quả AI qua HTTP, và nhà cung cấp định danh. Không thành phần nào khác thay đổi.</p>
+<div class="callout cyan"><b>Slicer chỉ thay trình xem, không thay PACS.</b> Slicer có một CSDL DICOM và một DICOM listener (C-STORE SCP), nhưng đó là bộ nhớ đệm riêng của một máy trạm, không phải kho lưu trữ. Nó không nhận chỉ định HL7 để dựng Modality Worklist (luồng 1.4), không có quy tắc xuất kèm ca cũ sang cổng AI (luồng 2.1), không chạy thành cụm N+1, không có vòng đời lưu trữ, lưu giữ 10 năm, audit IHE, và không phục vụ DICOMweb cho nhiều người dùng. Những việc đó vẫn là của dcm4chee (<a href="decisions.html#d1">D1</a>). Máy chụp vẫn gửi thẳng vào PACS, và Slicer chỉ lấy về từng ca khi bác sĩ mở.</div>
+<div class="figure">
+<svg class="flowsvg" viewBox="0 0 680 400" role="img" aria-labelledby="sl-t sl-d"><title id="sl-t">3D Slicer và module ICH Triage trên máy trạm bác sĩ</title><desc id="sl-d">Máy trạm bác sĩ chạy 3D Slicer và module ICH Triage. Slicer đọc PACS qua QIDO-RS và WADO-RS, gửi mask đã sửa bằng STOW-RS. Module gọi REST và nghe SSE từ dịch vụ kết quả AI, đăng nhập bằng OIDC với PKCE. Dịch vụ kết quả AI đọc danh sách ca từ PACS.</desc>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="wk" x="20" y="30" width="282" height="350" rx="12"/><text class="wkt" x="36" y="54">Máy trạm bác sĩ (cài đặt)</text>
+<rect class="bxc" x="45" y="75" width="230" height="70" rx="8"/><text class="tt" x="160" y="104" text-anchor="middle">3D Slicer 5.12</text><text class="ts" x="160" y="124" text-anchor="middle">DICOM, SEG/SR, Segment Editor</text>
+<rect class="bxa" x="45" y="235" width="230" height="70" rx="8"/><text class="tt" x="160" y="264" text-anchor="middle">Module ICH Triage</text><text class="ts" x="160" y="284" text-anchor="middle">Python · danh sách, panel AI</text>
+<path class="lv" d="M160 235 L160 149" marker-end="url(#ah)"/>
+<text class="ts" x="170" y="184">mở ca theo UID</text><text class="ts" x="170" y="202">nạp SEG, ẩn lớp phủ</text>
+<rect class="bxc" x="460" y="60" width="200" height="60" rx="8"/><text class="tt" x="560" y="86" text-anchor="middle">PACS (dcm4chee)</text><text class="ts" x="560" y="106" text-anchor="middle">DICOMweb</text>
+<rect class="bxa" x="460" y="210" width="200" height="80" rx="8"/><text class="tt" x="560" y="244" text-anchor="middle">Dịch vụ kết quả AI</text><text class="ts" x="560" y="264" text-anchor="middle">triage API + SSE</text>
+<rect class="bxk" x="460" y="330" width="200" height="50" rx="8"/><text class="tt" x="560" y="360" text-anchor="middle">Keycloak (OIDC)</text>
+<path class="ln" d="M275 100 L456 100" marker-start="url(#ah)" marker-end="url(#ah)"/>
+<text class="ts" x="368" y="90" text-anchor="middle">QIDO-RS, WADO-RS</text><text class="ts" x="368" y="118" text-anchor="middle">STOW-RS: SEG đã sửa</text>
+<path class="lv" d="M275 250 L456 250" marker-end="url(#ah)"/>
+<text class="ts" x="368" y="242" text-anchor="middle">REST: ca, review</text>
+<path class="lv" d="M456 280 L279 280" marker-end="url(#ah)"/>
+<text class="ts" x="368" y="298" text-anchor="middle">SSE: result, ai_status</text>
+<path class="ln" d="M200 305 L200 355 L456 355" marker-end="url(#ah)"/>
+<text class="ts" x="380" y="347" text-anchor="middle">OIDC + PKCE</text>
+<path class="ln" d="M560 210 L560 124" marker-end="url(#ah)"/>
+<text class="ts" x="570" y="172">QIDO-RS</text>
+</svg>
+<p class="figcap">Nét xám: luồng lâm sàng và đăng nhập. Nét tím: luồng kết quả AI. Khối tím là phần nhóm tự làm hoặc đã có từ PoC.</p>
+</div>
+<p>Còn một cách vào thứ hai, nếu bác sĩ chọn ca ở một danh sách web (danh sách ưu tiên của PoC hoặc worklist RIS). Slicer đăng ký URL scheme <code>slicer://viewer/?studyUID=…&amp;dicomweb_endpoint=…&amp;access_token=…</code> (tự đăng ký trên Windows khi cài), nên nút "Mở trong Slicer" trên trang web mở thẳng ca đó trong Slicer. Cách này giữ trang danh sách của PoC và chỉ cần panel AI trong Slicer.</p>
+
+<h2 class="sec" id="module"><span class="n">5</span>Phần tự làm: module ICH Triage</h2>
+<p>Module này làm đúng việc của <code>ohif-ai.js</code> và trang danh sách ưu tiên trong PoC OHIF, nhưng chạy bên trong Slicer. Dịch vụ phía server giữ nguyên.</p>
+<ol class="flow">
+<li class="f-dec"><b class="t">Danh sách ca ưu tiên</b>Gọi <code>GET /triage/api/studies</code> và hiện bảng Qt. Thứ tự sắp xếp (chỉ ca dương tính chưa xác nhận lên đầu, P4) vẫn do server quyết định, module chỉ hiển thị.</li>
+<li class="f-dec"><b class="t">Thông báo realtime</b>Một thread nền đọc SSE <code>/triage/api/events</code> và đưa sự kiện vào hàng đợi. Một <code>qt.QTimer</code> trên luồng giao diện lấy sự kiện ra, tô đỏ dòng và hiện thông báo. Giao diện Qt chỉ được cập nhật từ luồng chính.</li>
+<li class="f-dec"><b class="t">Mở ca</b><code>DICOMUtils.importFromDICOMWeb(dicomWebEndpoint, studyInstanceUID)</code> rồi nạp các series. Segmentation của AI bị ẩn ngay sau khi nạp, đúng nguyên tắc "mặc định tắt".</li>
+<li class="f-dec"><b class="t">Panel AI</b>Hiện 4 trạng thái (chưa chạy, đang chạy, xong chờ xác nhận, không có kết quả), thể tích và phiên bản mô hình. Hai nút Xác nhận / Bác bỏ gọi <code>POST /triage/api/studies/{uid}/review</code>.</li>
+<li class="f-dec"><b class="t">Mask về muộn</b>Khi SSE báo <code>result</code> cho ca đang mở, module truy vấn series SEG mới và thêm vào scene. Bác sĩ không phải mở lại ca, khác với OHIF.</li>
+<li class="f-dec"><b class="t">Sửa và lưu mask</b>Mở Segment Editor trên mask AI. Lưu thành một <b>series SEG mới</b> (không ghi đè mask AI) và gửi bằng STOW-RS qua DICOM module.</li>
+<li class="f-dec"><b class="t">Đăng nhập</b>Chạy luồng OIDC Authorization Code + PKCE qua trình duyệt hệ thống, nhận token qua cổng loopback rồi gắn vào header <code>Authorization</code> của <code>dicomweb_client</code> và triage API. PoC có thể bỏ bước này, như PoC OHIF đã bỏ.</li>
+</ol>
+<pre class="code"><span class="c"># Phác thảo, chưa chạy. Phần lõi của module ICH Triage</span>
+import json, queue, threading, requests, qt, slicer
+from DICOMLib import DICOMUtils
+
+PACS   = "http://localhost:8000/dcm4chee-arc/aets/DCM4CHEE/rs"
+TRIAGE = "http://localhost:8000/triage/api"
+events = queue.Queue()
+
+def listen():                                  <span class="c"># thread nền: chỉ đọc mạng</span>
+    with requests.get(TRIAGE + "/events", stream=True) as r:
+        for line in r.iter_lines(decode_unicode=True):
+            if line and line.startswith("data:"):
+                events.put(json.loads(line[5:]))
+
+def open_study(uid):
+    DICOMUtils.importFromDICOMWeb(dicomWebEndpoint=PACS, studyInstanceUID=uid)
+    DICOMUtils.loadSeriesByUID(slicer.dicomDatabase.seriesForStudy(uid))
+    for seg in slicer.util.getNodesByClass("vtkMRMLSegmentationNode"):
+        seg.GetDisplayNode().SetVisibility(False)  <span class="c"># lớp phủ mặc định tắt</span>
+
+def review(uid, decision):                     <span class="c"># "CONFIRMED" | "REJECTED"</span>
+    requests.post(f"{TRIAGE}/studies/{uid}/review", json={"decision": decision})
+
+threading.Thread(target=listen, daemon=True).start()
+timer = qt.QTimer(); timer.setInterval(500)
+timer.connect("timeout()", lambda: on_events(events))  <span class="c"># on_events: tô dòng, cập nhật panel</span>
+timer.start()</pre>
+
+<h2 class="sec" id="reuse"><span class="n">6</span>Dùng lại gì từ PoC OHIF</h2>
+<p>Gần như toàn bộ phía server dùng lại được. Chỉ phần giao diện chạy trong OHIF bị thay.</p>
+<div class="tbl"><table>
+<tr><th>Thành phần PoC</th><th>Với Slicer</th><th>Ghi chú</th></tr>
+<tr><td class="k">dcm4chee, PostgreSQL, OpenLDAP</td><td><span class="ok">Giữ nguyên</span></td><td>Slicer dùng cùng gốc DICOMweb <code>/dcm4chee-arc/aets/DCM4CHEE/rs</code></td></tr>
+<tr><td class="k"><code>his.py</code>, <code>scanner.py</code>, <code>ai_worker.py</code></td><td><span class="ok">Giữ nguyên</span></td><td>Luồng 1.4, 1.1 và AI giả lập không biết viewer là gì</td></tr>
+<tr><td class="k"><code>triage_api.py</code> (dịch vụ kết quả AI)</td><td><span class="ok">Giữ nguyên</span></td><td>Module gọi đúng các endpoint REST và SSE mà panel OHIF đang gọi</td></tr>
+<tr><td class="k">proxy nginx</td><td><span class="part">Bỏ bớt</span></td><td>Không còn tiêm script vào OHIF. Slicer không phải trình duyệt nên không cần cùng origin; proxy chỉ còn giữ TLS và kiểm token</td></tr>
+<tr><td class="k">Trang danh sách ưu tiên (<code>static/</code>)</td><td><span class="part">Tuỳ chọn</span></td><td>Giữ làm worklist web, đổi nút "Mở trong OHIF" thành link <code>slicer://</code>; hoặc bỏ nếu danh sách nằm trong module</td></tr>
+<tr><td class="k"><code>ohif-ai.js</code>, container <code>ohif</code></td><td><span class="no">Thay</span></td><td>Thay bằng module ICH Triage. Có thể giữ OHIF để xem nhanh trên web, ngoài luồng đọc chính</td></tr>
+</table></div>
+
+<h2 class="sec" id="risks"><span class="n">7</span>Rủi ro và cách giảm</h2>
+<div class="tbl"><table>
+<tr><th>Rủi ro</th><th>Vì sao quan trọng</th><th>Cách giảm</th></tr>
+<tr><td class="k">Cài đặt trên từng máy trạm</td><td>Bộ cài Slicer cỡ vài trăm MB đến hơn 1 GB sau khi cài, kèm extension và module. IT phải cập nhật từng máy</td><td>Đóng gói một bản Slicer cố định có sẵn module (hoặc làm Slicer custom application). Trong đồ án chỉ cần một hai máy demo</td></tr>
+<tr><td class="k">Không hiện dần từng lát</td><td>Luồng 1.3 muốn bác sĩ đọc ngay khi ảnh tới; Slicer chờ tải xong một series</td><td>Đo thời gian tải một CT sọ qua LAN; tải series trục lát mỏng trước, các series khác tải sau ở nền</td></tr>
+<tr><td class="k">Ảnh có định danh nằm trên đĩa máy trạm</td><td>CSDL DICOM cục bộ của Slicer giữ bản sao ảnh, trái với tinh thần tối thiểu hoá dữ liệu (Nghị định 356/2025)</td><td>Mã hoá đĩa máy trạm, dùng CSDL tạm theo phiên và xoá cache khi đóng ca hoặc theo lịch</td></tr>
+<tr><td class="k">Không có OIDC sẵn</td><td>D9 yêu cầu SSO + MFA cho mọi công cụ lâm sàng</td><td>PKCE trong module (mục 5). Trong PoC bỏ đăng nhập, giống PoC OHIF</td></tr>
+<tr><td class="k">Giao diện nhiều chức năng</td><td>Slicer là công cụ nghiên cứu; bác sĩ X quang quen giao diện PACS gọn hơn</td><td>Module có thể ẩn toolbar, danh sách module và chỉ để lại bố cục đọc ảnh bằng Python</td></tr>
+<tr><td class="k">Không được phép chẩn đoán</td><td>Tài liệu Slicer ghi rõ không được duyệt cho dùng lâm sàng</td><td>Giống OHIF: đồ án là nghiên cứu. Khi triển khai thật dùng viewer được chứng nhận của bệnh viện; kết quả AI vẫn là SEG/SR chuẩn nên không phải sửa gì</td></tr>
+</table></div>
+
+<h2 class="sec" id="plan"><span class="n">8</span>Kế hoạch PoC để chốt D10</h2>
+<p>Dùng lại stack <code>poc/viewer</code> (PACS, AI giả lập, dịch vụ triage), chỉ thay phía viewer. Mỗi bước có tiêu chí đạt rõ ràng để so trực tiếp với PoC OHIF.</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Việc</th><th>Đạt khi</th></tr>
+<tr><td class="k">1</td><td>Cài Slicer 5.12, trỏ tới <code>http://localhost:8000/dcm4chee-arc/aets/DCM4CHEE/rs</code>, mở một ca qua DICOMweb</td><td>CT sọ tổng hợp hiển thị đúng; ghi thời gian từ bấm mở tới thấy ảnh</td></tr>
+<tr><td class="k">2</td><td>Nạp SEG + SR do <code>ai_worker.py</code> (highdicom) sinh</td><td>Mask đúng vị trí khối 72 HU; biết SR TID 1500 có đọc được không</td></tr>
+<tr><td class="k">3</td><td>Module ICH Triage tối thiểu: danh sách, SSE, panel AI, xác nhận/bác bỏ</td><td>Bước 1 tới 8 của <a href="viewer.html#run">kịch bản demo</a> chạy được trong Slicer</td></tr>
+<tr><td class="k">4</td><td>Mask về muộn (<code>scenarios.sh case dung</code>)</td><td>SEG tự hiện trong ca đang mở, không phải mở lại</td></tr>
+<tr><td class="k">5</td><td>Sửa mask bằng Segment Editor, lưu bằng STOW-RS</td><td>dcm4chee có thêm một series SEG; mask AI gốc vẫn còn</td></tr>
+<tr><td class="k">6</td><td>AI ngừng / chạy lại (<code>ai-down</code>, <code>ai-up</code>)</td><td>Module hiện "AI tạm ngừng", không bao giờ giống ca âm tính</td></tr>
+</table></div>
+<div class="callout amber"><b>Quyết định sau PoC.</b> Nếu bước 1 tới 5 đạt, chốt D10 là 3D Slicer cho máy trạm đọc và giữ OHIF như phương án web. Nếu thời gian mở ca (bước 1) quá chậm so với OHIF, hoặc bệnh viện không cho cài phần mềm lên máy trạm, quay lại OHIF + extension như trang <a href="viewer.html">Viewer PoC</a>.</div>
+
+<h2 class="sec" id="refs"><span class="n">9</span>Tài liệu tham khảo</h2>
+<ol class="src">
+<li><a href="https://github.com/Slicer/Slicer">3D Slicer: mã nguồn</a> · <a href="https://slicer.readthedocs.io/en/latest/user_guide/about.html">giấy phép và tuyên bố pháp lý</a></li>
+<li><a href="https://www.kitware.com/announcing-3d-slicer-5-12/">Kitware: Announcing 3D Slicer 5.12</a> (SEG, Parametric Map, SR TID 1500 vào lõi) · <a href="https://discourse.slicer.org/t/slicer-5-12-summary-highlights-and-changelog/47540">changelog 5.12</a></li>
+<li><a href="https://slicer.readthedocs.io/en/latest/user_guide/modules/dicom.html">Slicer: DICOM module</a> (DIMSE, DICOMweb, gửi bằng STOW-RS)</li>
+<li><a href="https://kitware.com/3d-slicer-and-dicomweb-networking">Kitware: 3D Slicer and DICOMweb networking</a> (<code>importFromDICOMWeb</code>, xác thực)</li>
+<li><a href="https://discourse.slicer.org/t/new-dicomweb-features-launch-slicer-from-web-browser-and-download-upload-data-sets-to-the-cloud-using-dicomweb/17811">Slicer Discourse: mở Slicer từ trình duyệt bằng <code>slicer://</code></a></li>
+<li><a href="https://slicer.readthedocs.io/en/latest/user_guide/modules/segmenteditor.html">Slicer: Segment Editor</a> · <a href="https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html">Script repository</a> (ví dụ Python cho DICOM, segmentation, giao diện)</li>
+<li><a href="https://github.com/Project-MONAI/MONAILabel">MONAI Label</a> (Slicer là client chính, dùng cho khối gán nhãn)</li>
+<li><a href="viewer.html">Viewer PoC: OHIF + AI triage</a> · <a href="decisions.html#d10">D10: Radiologist viewer</a></li>
+</ol>
+
+</main>
+</div>
+
+<footer>Intracerebral hemorrhage AI system · Đánh giá 3D Slicer · <a href="viewer.html">Viewer PoC</a> · <a href="decisions.html#d10">Decisions D10</a>. Các kết luận về Slicer dựa trên tài liệu của Slicer 5.12, chưa chạy thử trên stack của đồ án.</footer>
+</div>
+<script src="assets/site.js"></script>
+</body></html>

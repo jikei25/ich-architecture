@@ -16,7 +16,7 @@ window.SEQ.s2 = [
     },
     participants: [
       { id: "rad", name: "Radiologist", sub: "reads + diagnoses", kind: "actor", color: "blue", group: "clin" },
-      { id: "viewer", name: "OHIF viewer", sub: "web UI", kind: "ui", color: "blue", group: "clin" },
+      { id: "viewer", name: "3D Slicer", sub: "workstation", kind: "ui", color: "blue", group: "clin" },
       { id: "his", name: "HIS / RIS", sub: "orders · worklist UI", kind: "ui", color: "blue", group: "clin" },
       { id: "ct", name: "CT scanner", sub: "modality", color: "blue", group: "clin" },
       { id: "pacs", name: "PACS", sub: "dcm4chee · N+1", color: "blue", group: "clin" },

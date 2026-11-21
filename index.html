@@ -143,6 +143,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
     <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
     <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
     <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
+    <a href="slicer.html"><b>3D Slicer</b><span>Proposed viewer</span></a>
     <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
   <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
@@ -226,8 +227,8 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="bt" x="530" y="160" text-anchor="middle" dominant-baseline="central">PACS · dcm4chee</text>
 <text class="bs" x="530" y="180" text-anchor="middle" dominant-baseline="central">archive + DICOMweb</text></g>
 <g><rect class="bx s-blue" x="935" y="133" width="150" height="64" rx="12"/>
-<text class="bt" x="1010" y="156" text-anchor="middle" dominant-baseline="central">Radiologist viewer</text>
-<text class="bs" x="1010" y="176" text-anchor="middle" dominant-baseline="central">OHIF · reads + confirms</text></g>
+<text class="bt" x="1010" y="156" text-anchor="middle" dominant-baseline="central">3D Slicer</text>
+<text class="bs" x="1010" y="176" text-anchor="middle" dominant-baseline="central">reads + confirms</text></g>
 <g><rect class="bx s-blue" x="1175" y="133" width="150" height="64" rx="12"/>
 <text class="bt" x="1250" y="156" text-anchor="middle" dominant-baseline="central">Identity</text>
 <text class="bs" x="1250" y="176" text-anchor="middle" dominant-baseline="central">Keycloak SSO + MFA</text></g>
@@ -499,7 +500,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tr><td class="k">CT / MRI</td><td><span class="pilltag tc-blue">Clinical</span></td><td>The scanners (also called modalities)</td><td>Send the head scan as a DICOM study straight to the PACS</td></tr>
 <tr><td class="k">DICOM</td><td>n/a</td><td>The standard file format and network protocol for medical images</td><td>Used by scanners, PACS, the gateway and the AI service to exchange images</td></tr>
 <tr><td class="k">PACS (dcm4chee)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Picture Archiving and Communication System: the hospital's central image archive. dcm4chee is a stateless, cluster-safe application</td><td>Receives studies from the scanners, serves them to the viewer over DICOMweb, holds the official clinical record, and pushes selected series once to the gateway</td></tr>
-<tr><td class="k">Radiologist viewer (OHIF)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Web viewer for DICOM studies</td><td>Opens a study while its series are still arriving; shows the AI mask once it is ready; the doctor confirms and diagnoses here</td></tr>
+<tr><td class="k">3D Slicer (radiologist viewer, proposed)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Desktop workstation for DICOM studies, with an ICH Triage Python module (<a href="slicer.html">assessment</a>)</td><td>Opens the series that have arrived while later ones are still coming; shows the AI mask once it is ready; the doctor confirms or corrects it and diagnoses here</td></tr>
 <tr><td class="k">Identity (Keycloak)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Single sign-on with multi-factor login</td><td>Logs users into the viewer and other clinical tools</td></tr>
 <tr><td class="k">HIS / RIS</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Hospital and Radiology Information Systems: orders, patient records, worklists</td><td>Sends orders to the PACS worklist and receives the AI priority flag</td></tr>
 <tr><td class="k">HL7 / FHIR</td><td>n/a</td><td>Standards for exchanging clinical messages and records</td><td>How orders reach the PACS and how the AI flag reaches HIS/RIS</td></tr>
