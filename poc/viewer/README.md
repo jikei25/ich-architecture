@@ -28,34 +28,51 @@ docker compose up -d --build --wait
 - OHIF: http://localhost:8000/
 - dcm4chee admin UI: http://localhost:8000/dcm4chee-arc/ui2/
 
-Reset everything (empty PACS, no AI results): `docker compose down -v`, then start again.
+Reset everything (empty PACS, no AI results): `bash demo/scenarios.sh reset`.
 
 ## Demo for the team (about 10 minutes)
 
-Before the demo: reset the stack, open the triage worklist in a browser and a
-terminal in `poc/viewer`. Start the AI with a longer inference time so there is
-time to talk while it runs:
+The demo tells one story in four acts: a head CT goes from the order to the
+radiologist's confirmation, then the AI goes down. The `tour` command runs it
+step by step in the terminal: for each step it prints the command it runs,
+where to look on screen and the point to make, then waits for Enter. The
+Vietnamese version of this guide, with a status cheat sheet, is section 9 of
+`viewer.html`.
+
+Needs Docker and a terminal with `bash` (on Windows: Git Bash).
 
 ```bash
-docker compose down -v
-INFERENCE_SECONDS=20 docker compose up -d --build --wait
+cd poc/viewer
+bash demo/scenarios.sh reset   # empty PACS, AI takes 20 s per study so there is time to talk
+bash demo/scenarios.sh tour    # start the demo; "tour 3" jumps to act 3
 ```
 
-| # | Do | Show and say |
-|---|---|---|
-| 1 | Open http://localhost:8000/triage/ | Empty list, "AI hoạt động". The list is the PACS study list (QIDO-RS) merged with AI results. |
-| 2 | `bash demo/scenarios.sh order an` | **Flow 1.4.** The terminal prints the HL7 ORM^O01 and the PACS ACK (`MSA\|AA`). Within 4 s the Modality Worklist table shows the order as SCHEDULED. Raw response: http://localhost:8000/dcm4chee-arc/aets/WORKLIST/rs/mwlitems |
-| 3 | `bash demo/scenarios.sh scan an` | **Flow 1.1.** The scanner queries the worklist (C-FIND), so name, ID, accession and Study UID come from the order, then sends 48 images (C-STORE). The study appears with "Chờ AI phân tích", then "AI đang phân tích". It can be read now: nobody waits for the AI. |
-| 4 | Wait for the AI | **Flow 2.5.** The row turns red, moves to the top, a toast pops up. The flag is sent before the mask. The result is always "chờ xác nhận". |
-| 5 | `bash demo/scenarios.sh case bich` then `bash demo/scenarios.sh case cuong` | Newer studies stay below the flagged one: the AI only raises priority. "AI không thấy dấu hiệu" is not the same as "Không phân tích được" (no thin axial series). |
-| 6 | Click "Mở trong OHIF" on NGUYEN VAN AN. Press F12, Network tab, filter `rs/` | **Flow 1.3.** OHIF calls `studies/.../series` (QIDO-RS), then `.../metadata` and `.../frames/1` (WADO-RS). The AI panel (bottom right, "–" collapses it) shows state, volume and model version. The AI SEG and SR series are in the left panel; the overlay is off by default. |
-| 7 | Double-click "SEG AI ICH mask", answer Yes | **Flow 1.5 / 2.4.** The view moves to the middle of the bleed. The red overlay is a standard DICOM SEG stored in the PACS; OHIF shows it with no code change. Optional: double-click the SR to show that OHIF cannot render the volumetric report. |
-| 8 | Click "Xác nhận", then "Danh sách ↗" | The radiologist's decision is stored; the study leaves the priority group and shows "Bác sĩ đã xác nhận XH". |
-| 9 | `bash demo/scenarios.sh case dung`, then open the new study in OHIF right away | The images open immediately; the panel says "AI đang phân tích". When the mask arrives the panel says it came after the study was opened: OHIF reads the series list only once. Click "Tải lại ca" to see the SEG. |
-| 10 | `bash demo/scenarios.sh ai-down`, then `bash demo/scenarios.sh case em` | Within 12 s the banner says "AI tạm ngừng". The new study is stored and readable, shown as "AI tạm ngừng", never as negative. |
-| 11 | `bash demo/scenarios.sh ai-up` | The AI comes back and processes the study that arrived while it was down; it gets flagged. |
+Show http://localhost:8000/triage/ on the projector and keep the terminal next to it.
 
-`bash demo/scenarios.sh all` runs cases an, bich, cuong and the AI outage unattended.
+| Act | Do | Look at | Point to make |
+|---|---|---|---|
+| 1. A study enters the system | `order an` | Modality Worklist table (bottom): NGUYEN VAN AN, SCHEDULED within 4 s. Terminal: `MSA\|AA` | **Flow 1.4.** HIS sends HL7 ORM^O01, the PACS builds the worklist for the scanner. Nobody types the patient's name. |
+| | `scan an` | Study table: AN, 48 images, "Chờ AI phân tích", then "AI đang phân tích" | **Flow 1.1.** The scanner takes the identifiers from the worklist (C-FIND), sends images (C-STORE). The study can be read now: nobody waits for the AI. |
+| 2. The AI flags it | wait about 25 s (the terminal counts) | AN turns red, "▲ ƯU TIÊN", moves to the top, toast bottom right | **Flow 2.5.** The AI only says "suspected"; the radiologist decides. The flag is sent before the mask and report. |
+| | `case bich`, `case cuong` | Newer studies stay below AN. BICH "AI không thấy dấu hiệu", CUONG "Không phân tích được" | The AI only raises priority. "Unanalyzable" (no thin axial series) is not "negative": the AI never looked. |
+| 3. The radiologist reads it in OHIF | "Mở trong OHIF" on AN | AI panel bottom right; AI SEG and SR series in the left panel; overlay off | **Flow 1.3.** OHIF reads the PACS over DICOMweb. Optional: F12, Network, filter `rs/` for QIDO-RS and WADO-RS. |
+| | double-click "SEG AI ICH mask", Yes | The view moves to the middle of the bleed, red overlay | **Flow 1.5 / 2.4.** A standard DICOM SEG from the PACS; OHIF shows it with no code change. |
+| | "Xác nhận", then "Danh sách ↗" | AN is no longer red, "Bác sĩ đã xác nhận XH" | The decision is stored; the study leaves the priority group. |
+| | `case dung`, open DUNG right away | Panel says "AI đang phân tích", then that the mask came late, with "Tải lại ca" | OHIF reads the series list once. The real extension must load new SEGs itself. |
+| 4. The AI goes down | `ai-down` | Within 12 s, yellow banner "AI tạm ngừng" | The triage service watches the AI heartbeat. |
+| | `case em` | EM is stored and readable, shown as "AI tạm ngừng" | An unflagged study never looks negative. |
+| | `ai-up` | EM is processed and flagged | No study is lost while the AI is down. |
+
+If something goes wrong:
+
+- "Stack chưa chạy": run `bash demo/scenarios.sh reset` and wait for it to finish.
+- Studies from a previous run are in the PACS: `reset`, or jump ahead with `tour 3`.
+- The AI finishes before DUNG is opened: `INFERENCE_SECONDS=30 bash demo/scenarios.sh reset`.
+- OHIF does not show the SEG series: click "Tải lại ca" in the AI panel, or F5.
+
+The single commands still work (`order`, `scan`, `case`, `wait`, `ai-down`,
+`ai-up`). `bash demo/scenarios.sh all` runs cases an, bich, cuong and the AI
+outage unattended.
 
 ## Useful raw requests
 

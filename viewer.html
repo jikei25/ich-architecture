@@ -170,6 +170,7 @@ pre.code .c{color:var(--muted)}
 .shots figcaption b{color:var(--violet)}
 .ok{color:var(--emerald);font-weight:700}.part{color:var(--amber);font-weight:700}.no{color:var(--rose);font-weight:700}
 td.st{white-space:nowrap}
+#run~h3{font-size:19px;margin:30px 0 6px}
 </style>
 <link rel="stylesheet" href="assets/site.css">
 <script>try{var t=localStorage.getItem("ich-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
@@ -388,27 +389,89 @@ POST /triage/api/heartbeat            <span class="c">AI báo còn sống; mất
 </table></div>
 
 <h2 class="sec" id="run"><span class="n">9</span>Cách demo cho team</h2>
-<p>Cần Docker (khoảng 3 GB RAM cho cả stack). Mã nguồn ở <code>poc/viewer/</code>, bản tiếng Anh của hướng dẫn này nằm trong <code>poc/viewer/README.md</code>. Demo chạy tay, khoảng 10 phút; người trình bày gõ từng lệnh để có thời gian giải thích.</p>
-<p><b>Chuẩn bị:</b> mở một terminal ở <code>poc/viewer</code> và một trình duyệt. Dùng dữ liệu sạch, và cho AI chạy chậm lại (20 giây) để kịp nói trong lúc chờ:</p>
+<p>Demo kể một câu chuyện: một ca CT sọ đi từ chỉ định tới lúc bác sĩ xác nhận, rồi xem chuyện gì xảy ra khi AI hỏng. Khoảng 10 phút, chia 4 màn. Lệnh <code>tour</code> dẫn từng bước ngay trong terminal: in lệnh đang chạy, chỗ cần nhìn trên màn hình và ý chính để nói, rồi chờ Enter. Bản tiếng Anh nằm trong <code>poc/viewer/README.md</code>.</p>
+<div class="grid">
+<div class="card c-blue"><div class="v tc-blue">Màn 1 · 2 phút</div><h4>Ca chụp vào hệ thống</h4><p>HIS gửi chỉ định, máy CT tự lấy thông tin bệnh nhân, ảnh vào PACS và đọc được ngay.</p></div>
+<div class="card c-violet"><div class="v tc-violet">Màn 2 · 2 phút</div><h4>AI gắn cờ ưu tiên</h4><p>Ca nghi xuất huyết nhảy lên đầu, có thông báo. AI chỉ nâng ưu tiên, không bao giờ hạ.</p></div>
+<div class="card c-pink"><div class="v tc-pink">Màn 3 · 4 phút</div><h4>Bác sĩ đọc trong OHIF</h4><p>Bật vùng AI khoanh, xác nhận. Mở một ca trước khi AI xong để thấy giới hạn của OHIF.</p></div>
+<div class="card c-amber"><div class="v tc-amber">Màn 4 · 2 phút</div><h4>Khi AI hỏng</h4><p>Ca vẫn chụp và đọc được, không bị nhầm là âm tính; AI lên lại thì xử lý bù.</p></div>
+</div>
+
+<h3>Chuẩn bị (trước giờ demo 5 phút)</h3>
+<p>Cần Docker (khoảng 3 GB RAM) và một terminal chạy được <code>bash</code>: trên Windows dùng Git Bash. Lệnh <code>reset</code> xoá dữ liệu cũ, dựng lại stack và cho AI chạy chậm (20 giây) để kịp nói trong lúc chờ:</p>
 <pre class="code">cd poc/viewer
-docker compose down -v                                   <span class="c"># xoá dữ liệu cũ</span>
-INFERENCE_SECONDS=20 docker compose up -d --build --wait <span class="c"># PACS, OHIF, AI giả lập, dịch vụ triage, proxy</span>
-<span class="c"># danh sách ưu tiên: http://localhost:8000/triage/    OHIF: http://localhost:8000/    dcm4chee: http://localhost:8000/dcm4chee-arc/ui2/</span></pre>
+bash demo/scenarios.sh reset   <span class="c"># PACS trống, AI chạy 20 s một ca; lần đầu mất vài phút để tải image</span>
+bash demo/scenarios.sh tour    <span class="c"># bắt đầu demo; "tour 3" để vào thẳng màn 3</span></pre>
+<p>Mở <code>http://localhost:8000/triage/</code> trên màn hình chiếu, terminal để bên cạnh. Trình duyệt hỏi quyền thông báo thì chọn cho phép.</p>
+
+<h3>Màn 1. Ca chụp vào hệ thống</h3>
 <div class="tbl"><table>
-<tr><th>#</th><th>Làm</th><th>Cho xem và giải thích</th></tr>
-<tr><td class="k">1</td><td>Mở <code>http://localhost:8000/triage/</code></td><td>Danh sách trống, "AI hoạt động". Danh sách = danh sách ca từ PACS (QIDO-RS) ghép với kết quả AI.</td></tr>
-<tr><td class="k">2</td><td><code>bash demo/scenarios.sh order an</code></td><td><b>Luồng 1.4.</b> Terminal in bản tin HL7 ORM^O01 và ACK <code>MSA|AA</code> của PACS. Trong 4 giây, bảng Modality Worklist hiện chỉ định ở trạng thái SCHEDULED. Response gốc: <code>/dcm4chee-arc/aets/WORKLIST/rs/mwlitems</code>.</td></tr>
-<tr><td class="k">3</td><td><code>bash demo/scenarios.sh scan an</code></td><td><b>Luồng 1.1.</b> Máy chụp tra worklist (C-FIND) nên tên, mã BN, mã chỉ định, Study UID lấy từ chỉ định; rồi gửi 48 ảnh (C-STORE). Ca hiện "Chờ AI phân tích", rồi "AI đang phân tích". Ca đã đọc được ngay: không ai phải chờ AI.</td></tr>
-<tr><td class="k">4</td><td>Chờ AI</td><td><b>Luồng 2.5.</b> Dòng chuyển đỏ, lên đầu, có thông báo. Cờ gửi trước mask. Kết quả luôn "chờ xác nhận".</td></tr>
-<tr><td class="k">5</td><td><code>bash demo/scenarios.sh case bich</code>, rồi <code>case cuong</code></td><td>Ca mới hơn vẫn nằm dưới ca có cờ: AI chỉ nâng ưu tiên. "AI không thấy dấu hiệu" khác "Không phân tích được" (thiếu chuỗi trục lát mỏng).</td></tr>
-<tr><td class="k">6</td><td>Bấm "Mở trong OHIF" ở NGUYEN VAN AN. Nhấn F12 → tab Network → lọc <code>rs/</code></td><td><b>Luồng 1.3.</b> OHIF gọi <code>studies/…/series</code> (QIDO-RS), rồi <code>…/metadata</code> và <code>…/frames/1</code> (WADO-RS). Panel AI góc phải (nút – để thu gọn): trạng thái, thể tích, phiên bản mô hình. Chuỗi SEG và SR của AI ở panel trái; lớp phủ đang tắt.</td></tr>
-<tr><td class="k">7</td><td>Nhấn đúp "SEG AI ICH mask", chọn Yes</td><td><b>Luồng 1.5 / 2.4.</b> Màn hình nhảy tới lát giữa khối máu. Vùng đỏ là DICOM SEG chuẩn trong PACS; OHIF hiển thị mà không sửa mã. Tuỳ chọn: nhấn đúp SR để cho thấy OHIF không vẽ được báo cáo thể tích.</td></tr>
-<tr><td class="k">8</td><td>Bấm "Xác nhận", rồi "Danh sách ↗"</td><td>Quyết định của bác sĩ được lưu; ca rời nhóm ưu tiên và hiện "Bác sĩ đã xác nhận XH".</td></tr>
-<tr><td class="k">9</td><td><code>bash demo/scenarios.sh case dung</code>, rồi mở ca mới trong OHIF ngay</td><td>Ảnh mở được ngay, panel báo "AI đang phân tích". Khi mask về, panel báo mask đến sau khi ca đã mở (OHIF chỉ đọc danh sách chuỗi một lần). Bấm "Tải lại ca" để thấy SEG.</td></tr>
-<tr><td class="k">10</td><td><code>bash demo/scenarios.sh ai-down</code>, rồi <code>case em</code></td><td>Trong 12 giây, banner "AI tạm ngừng" hiện. Ca mới vẫn lưu và đọc được, hiển thị "AI tạm ngừng", không bao giờ giống ca âm tính.</td></tr>
-<tr><td class="k">11</td><td><code>bash demo/scenarios.sh ai-up</code></td><td>AI chạy lại và xử lý bù ca đến trong lúc ngừng; ca được gắn cờ.</td></tr>
+<tr><th>Làm</th><th>Nhìn vào đâu</th><th>Ý chính để nói</th></tr>
+<tr><td class="k">Mở danh sách</td><td>Danh sách trống, góc phải "AI hoạt động".</td><td>Đây là danh sách bác sĩ đọc: ca trong PACS (QIDO-RS) ghép với kết quả AI.</td></tr>
+<tr><td class="k"><code>order an</code></td><td>Bảng Modality Worklist cuối trang: trong 4 giây có dòng NGUYEN VAN AN, SCHEDULED. Terminal có <code>MSA|AA</code>.</td><td><b>Luồng 1.4.</b> HIS gửi HL7 ORM^O01, PACS dựng worklist cho máy CT. Không ai phải gõ tay tên bệnh nhân.</td></tr>
+<tr><td class="k"><code>scan an</code></td><td>Bảng Ca chụp: dòng AN, 48 ảnh, "Chờ AI phân tích" rồi "AI đang phân tích".</td><td><b>Luồng 1.1.</b> Máy CT tra worklist (C-FIND) lấy định danh, gửi ảnh (C-STORE). Ca đọc được ngay, không ai phải chờ AI.</td></tr>
 </table></div>
-<p>Muốn chạy tự động không cần thao tác: <code>bash demo/scenarios.sh all</code> (các ca an, bich, cuong và tình huống AI ngừng).</p>
+
+<h3>Màn 2. AI gắn cờ ưu tiên</h3>
+<div class="tbl"><table>
+<tr><th>Làm</th><th>Nhìn vào đâu</th><th>Ý chính để nói</th></tr>
+<tr><td class="k">Chờ khoảng 25 s (terminal đếm giờ)</td><td>Dòng AN chuyển đỏ, nhãn "▲ ƯU TIÊN", lên đầu; thông báo góc dưới phải. Nhãn: "Nghi xuất huyết · … mL · chờ xác nhận".</td><td><b>Luồng 2.5.</b> AI chỉ nói "nghi", bác sĩ mới kết luận. Cờ gửi trước, mask và báo cáo đến sau, để thông báo không phải chờ.</td></tr>
+<tr><td class="k"><code>case bich</code>, <code>case cuong</code></td><td>Hai ca mới hơn vẫn nằm dưới AN. BICH "AI không thấy dấu hiệu", CUONG "Không phân tích được".</td><td>AI chỉ được nâng ưu tiên. "Không phân tích được" (thiếu chuỗi lát mỏng) khác hẳn "âm tính": bác sĩ phải biết AI chưa xem ca đó.</td></tr>
+</table></div>
+
+<h3>Màn 3. Bác sĩ đọc ca trong OHIF</h3>
+<div class="tbl"><table>
+<tr><th>Làm</th><th>Nhìn vào đâu</th><th>Ý chính để nói</th></tr>
+<tr><td class="k">Bấm "Mở trong OHIF" ở dòng AN</td><td>Ảnh CT ở giữa; panel AI góc dưới phải (trạng thái, thể tích, phiên bản mô hình); panel trái có "SEG AI ICH mask" và SR.</td><td><b>Luồng 1.3.</b> OHIF đọc ảnh thẳng từ PACS qua DICOMweb. Lớp phủ tắt sẵn để bác sĩ nhìn ảnh gốc trước. Khán giả kỹ thuật: F12 → Network → lọc <code>rs/</code> để thấy QIDO-RS và WADO-RS.</td></tr>
+<tr><td class="k">Nhấn đúp "SEG AI ICH mask", chọn Yes</td><td>Màn hình nhảy tới lát giữa khối máu, vùng đỏ phủ lên khối sáng.</td><td><b>Luồng 1.5 / 2.4.</b> Vùng đỏ là DICOM SEG chuẩn trong PACS; OHIF hiển thị mà không sửa mã.</td></tr>
+<tr><td class="k">Bấm "Xác nhận", rồi "Danh sách ↗"</td><td>Dòng AN hết đỏ, ghi "Bác sĩ đã xác nhận XH", xếp lại theo giờ chụp.</td><td>Quyết định của bác sĩ được lưu; ca đã xử lý rời nhóm ưu tiên.</td></tr>
+<tr><td class="k"><code>case dung</code>, mở ca DUNG ngay</td><td>Ảnh mở được; panel "AI đang phân tích". Khi mask về, panel báo và có nút "Tải lại ca".</td><td>OHIF chỉ đọc danh sách chuỗi một lần lúc mở ca. Bản thật cần extension tự nạp SEG mới: đây là phần phải tự làm.</td></tr>
+</table></div>
+
+<h3>Màn 4. Khi AI hỏng</h3>
+<div class="tbl"><table>
+<tr><th>Làm</th><th>Nhìn vào đâu</th><th>Ý chính để nói</th></tr>
+<tr><td class="k"><code>ai-down</code></td><td>Trong 12 giây: banner vàng "AI tạm ngừng", góc phải đổi theo.</td><td>Dịch vụ triage theo dõi nhịp tim của AI, không đợi bác sĩ phát hiện.</td></tr>
+<tr><td class="k"><code>case em</code></td><td>Ca HOANG VAN EM vẫn vào PACS, mở được, nhãn "AI tạm ngừng".</td><td>AI hỏng không chặn chụp và đọc. Ca không có cờ không bao giờ trông giống ca âm tính.</td></tr>
+<tr><td class="k"><code>ai-up</code></td><td>AI xử lý bù ca của EM; ca được gắn cờ, lên đầu.</td><td>Không mất ca nào trong lúc AI ngừng.</td></tr>
+</table></div>
+<div class="callout"><b>Chốt lại bằng 4 câu</b> (tour cũng in ra cuối demo):
+<ul>
+<li>Chỉ định HL7 → worklist → máy CT → PACS: định danh đi tự động, ảnh đọc được ngay.</li>
+<li>AI chạy nền, chỉ nâng ưu tiên ca nghi xuất huyết và luôn chờ bác sĩ xác nhận.</li>
+<li>OHIF hiển thị mask AI (DICOM SEG) không cần sửa; ưu tiên, thông báo và panel AI phải tự làm.</li>
+<li>AI hỏng thì hệ thống vẫn chạy, không ca nào bị hiểu nhầm là âm tính, AI lên lại thì xử lý bù.</li>
+</ul></div>
+
+<h3>Bảng tra nhanh</h3>
+<div class="tbl"><table>
+<tr><th>Bệnh nhân (tổng hợp)</th><th>Lệnh</th><th>Loại ảnh</th><th>Dùng ở</th></tr>
+<tr><td class="k">NGUYEN VAN AN</td><td><code>an</code></td><td>Có khối 72 HU, AI gắn cờ</td><td>Màn 1–3</td></tr>
+<tr><td class="k">TRAN THI BICH</td><td><code>bich</code></td><td>Bình thường</td><td>Màn 2</td></tr>
+<tr><td class="k">LE VAN CUONG</td><td><code>cuong</code></td><td>Chỉ có chuỗi dày 5 mm</td><td>Màn 2</td></tr>
+<tr><td class="k">PHAM THI DUNG</td><td><code>dung</code></td><td>Có khối, mở trước khi AI xong</td><td>Màn 3</td></tr>
+<tr><td class="k">HOANG VAN EM</td><td><code>em</code></td><td>Có khối, gửi lúc AI ngừng</td><td>Màn 4</td></tr>
+</table></div>
+<div class="tbl"><table>
+<tr><th>Nhãn trên danh sách</th><th>Nghĩa</th></tr>
+<tr><td class="k">Chờ AI phân tích</td><td>Ảnh đã vào PACS, AI đang chờ đủ ảnh (khoảng 6 giây)</td></tr>
+<tr><td class="k">AI đang phân tích</td><td>AI đang chạy; ca vẫn đọc được bình thường</td></tr>
+<tr><td class="k">Nghi xuất huyết · chờ xác nhận</td><td>AI gắn cờ; ca nằm đầu danh sách cho tới khi bác sĩ xác nhận hoặc bác bỏ</td></tr>
+<tr><td class="k">AI không thấy dấu hiệu</td><td>AI đã xem và không thấy; không phải kết luận âm tính</td></tr>
+<tr><td class="k">Không phân tích được</td><td>Ảnh không đủ điều kiện (thiếu chuỗi trục lát mỏng); AI chưa xem</td></tr>
+<tr><td class="k">Không có kết quả AI</td><td>AI lỗi hoặc quá 60 giây chưa xong</td></tr>
+<tr><td class="k">AI tạm ngừng</td><td>Mất nhịp tim của AI quá 12 giây</td></tr>
+</table></div>
+
+<h3>Nếu có trục trặc</h3>
+<ul>
+<li><b>Tour báo "Stack chưa chạy"</b>: chạy <code>bash demo/scenarios.sh reset</code> và chờ lệnh xong.</li>
+<li><b>PACS còn ca của lượt trước</b>: <code>reset</code> rồi chạy lại tour. Đang giữa chừng thì vào thẳng màn kế, ví dụ <code>bash demo/scenarios.sh tour 3</code>.</li>
+<li><b>AI xong trước khi kịp mở ca DUNG</b>: AI đang chạy nhanh hơn 20 giây; <code>reset</code> sẽ đặt lại. Muốn chậm hơn: <code>INFERENCE_SECONDS=30 bash demo/scenarios.sh reset</code>.</li>
+<li><b>OHIF không thấy chuỗi SEG</b>: bấm "Tải lại ca" trong panel AI, hoặc F5.</li>
+<li><b>Quên bật lại AI</b>: <code>bash demo/scenarios.sh ai-up</code>.</li>
+</ul>
+<p>Vẫn chạy được từng lệnh lẻ (<code>order</code>, <code>scan</code>, <code>case</code>, <code>wait</code>, <code>ai-down</code>, <code>ai-up</code>). <code>bash demo/scenarios.sh all</code> chạy các ca an, bich, cuong và tình huống AI ngừng mà không cần thao tác.</p>
 
 <h2 class="sec" id="next"><span class="n">10</span>Việc tiếp theo</h2>
 <ol>
