@@ -182,6 +182,8 @@ td.st{white-space:nowrap}
     <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
     <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
     <a href="viewer.html" aria-current="page"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
+    <a href="slicer.html"><b>3D Slicer</b><span>Proposed viewer</span></a>
+    <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
   <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
 </div><div class="progress"><span></span></div></header>
@@ -217,6 +219,7 @@ td.st{white-space:nowrap}
   <div class="card c-pink"><h4>Ưu tiên + thông báo</h4><div class="v" style="color:var(--rose)">Không có sẵn · tự làm</div><p>QIDO không có trường "nghi xuất huyết", OHIF không có kênh đẩy sự kiện. PoC lấp bằng dịch vụ kết quả AI + panel trong OHIF.</p></div>
 </div>
 <div class="callout"><b>Khuyến nghị:</b> giữ OHIF làm trình xem, không tự viết viewer. Phần còn thiếu là một <b>dịch vụ kết quả AI</b> nhỏ (API + Server-Sent Events) và một <b>extension OHIF</b> (panel trạng thái AI, xác nhận/bác bỏ, thông báo, tự nạp SEG mới), cộng một danh sách ca ưu tiên nếu HIS/RIS của bệnh viện không nhận được cờ ưu tiên. PoC đã chứng minh từng mảnh chạy được.</div>
+<div class="callout amber"><b>Cập nhật: đề xuất chuyển sang 3D Slicer.</b> Giảng viên hướng dẫn đề xuất dùng 3D Slicer thay cho lớp giao diện tự làm trên OHIF. Toàn bộ phía server của PoC này (PACS, AI giả lập, dịch vụ kết quả AI) được giữ nguyên; chỉ panel tiêm vào OHIF được thay bằng một module Python trong Slicer. Trang này vẫn là kết quả kiểm chứng OHIF và là phương án dự phòng. Đánh giá chi tiết ở trang <a href="slicer.html">3D Slicer</a>.</div>
 
 <h2 class="sec" id="basics"><span class="n">2</span>Kiến thức nền: DICOM và DICOMweb</h2>
 <p>Mỗi ca chụp có cấu trúc <b>Patient → Study (ca chụp) → Series (chuỗi ảnh) → Instance (một lát)</b>, mỗi cấp có một UID. Kết quả AI cũng là Instance, nằm trong <b>Series riêng của cùng Study</b>: mask là <code>Modality = SEG</code>, báo cáo số đo là <code>Modality = SR</code>. Nhờ đó kết quả AI đi theo ca chụp gốc, và trình xem nào đọc được DICOM chuẩn cũng thấy.</p>
@@ -417,6 +420,7 @@ INFERENCE_SECONDS=20 docker compose up -d --build --wait <span class="c"># PACS,
 <li>Thử OHIF với Keycloak (OIDC) sau reverse proxy, đúng như kiến trúc.</li>
 <li>Thử bước bác sĩ sửa mask và lưu bằng STOW-RS; quyết định mask đã sửa nằm cạnh mask AI hay thay thế nó.</li>
 <li>Nối PoC này với bản mẫu cũ: thay AI đọc PACS bằng quy tắc xuất của dcm4chee sang Orthanc.</li>
+<li>Chạy PoC 3D Slicer trên cùng stack này (6 bước ở trang <a href="slicer.html#plan">3D Slicer</a>) và so thời gian mở ca với OHIF trước khi chốt D10.</li>
 </ol>
 
 <h2 class="sec" id="refs"><span class="n">11</span>Tài liệu tham khảo</h2>

@@ -108,11 +108,17 @@ Internet hay vào bất kỳ tầng AI nào.
       không giữ trạng thái trong tiến trình: ảnh nằm trên SeaweedFS, chỉ mục và các tác
       vụ đang chờ nằm trong PostgreSQL, cấu hình nằm trong OpenLDAP. Vì vậy có thể chạy
       nhiều nút song song sau một bộ cân bằng tải (Mục~\ref{sec:ha}).
-\item[Trình xem] OHIF \cite{ziegler2020ohif}, ứng dụng web tĩnh chạy trên trình duyệt
-      của máy trạm, đứng sau một reverse proxy có kiểm tra token đăng nhập. Trình xem mở
-      được ca chụp ngay khi các chuỗi ảnh sau vẫn đang được gửi tới, và hiển thị lớp phủ
-      AI khi có. Lớp phủ mặc định tắt với bác sĩ chẩn đoán hình ảnh, để kết quả AI không
-      định hướng trước cách đọc.
+\item[Trình xem] 3D Slicer \cite{fedorov2012slicer}, ứng dụng máy trạm mã nguồn mở
+      cài trên máy của bác sĩ, kèm một mô-đun Python của đề tài (ICH Triage) hiển thị
+      danh sách ca theo mức ưu tiên, trạng thái AI và nút xác nhận hoặc bác bỏ. Slicer tải
+      ảnh từ PACS qua DICOMweb; mọi yêu cầu mang token đăng nhập và được kiểm tra tại một
+      reverse proxy. Bác sĩ mở được các chuỗi ảnh đã tới trong khi các chuỗi sau vẫn đang
+      được gửi. Slicer hiển thị mặt nạ (DICOM SEG) và báo cáo (SR) của AI, và cho bác sĩ
+      sửa mặt nạ bằng Segment Editor rồi lưu lại PACS thành một chuỗi mới. Lớp phủ mặc
+      định tắt với bác sĩ chẩn đoán hình ảnh, để kết quả AI không định hướng trước cách
+      đọc. Đề tài dùng Slicer thay vì tự xây dựng giao diện trên một trình xem web, vì các
+      chức năng hiển thị và chỉnh sửa đã có sẵn, phần còn thiếu chỉ là một mô-đun Python.
+      Slicer chỉ thay trình xem: lưu trữ, worklist và quy tắc xuất vẫn do PACS đảm nhận.
 \item[Đăng nhập] Keycloak \cite{keycloak}: đăng nhập một lần qua OpenID Connect, xác
       thực đa yếu tố bằng khoá phần cứng (FIDO2) với mã TOTP làm phương án dự phòng; không
       dùng SMS hay email vì cả hai phụ thuộc mạng bên ngoài. Keycloak có cơ sở dữ liệu
@@ -183,8 +189,8 @@ duyệt mới được đưa sang tầng suy luận.
 
 \textbf{Thành phần.}
 \begin{description}[leftmargin=3.4cm,style=nextline]
-\item[Gán nhãn] MONAI Label \cite{monailabel} làm máy chủ gán nhãn, với 3D Slicer hoặc
-      OHIF làm công cụ phía người dùng. Công cụ đọc ảnh đã khử định danh và ghi nhãn
+\item[Gán nhãn] MONAI Label \cite{monailabel} làm máy chủ gán nhãn, với 3D Slicer làm
+      công cụ phía người dùng, cùng ứng dụng mà bác sĩ dùng để đọc ảnh. Công cụ đọc ảnh đã khử định danh và ghi nhãn
       (DICOM SEG) qua DICOMweb của cổng trung gian, không đọc trực tiếp từ kho đối tượng.
 \item[Huấn luyện và registry] Khối trừu tượng: huấn luyện trên GPU, đánh giá trên tập
       kiểm tra giữ riêng, và lưu mô hình kèm số đo, phiên bản dataset và trạng thái duyệt
@@ -295,8 +301,8 @@ kết quả; và vùng nghiên cứu chỉ được gọi DICOMweb tới cổng 
 \midrule
 Máy chụp CT & PACS & DICOM, 11112 (TLS nếu thiết bị hỗ trợ) & Ca chụp (C-STORE); truy vấn worklist (C-FIND) \\
 HIS/RIS & PACS & HL7 v2 qua MLLP, 2575 & Thông tin bệnh nhân, chỉ định (ADT, ORM) \\
-Trình xem & PACS & HTTPS, qua reverse proxy & QIDO-RS, WADO-RS; token đăng nhập được kiểm tra tại proxy \\
-Trình xem & Keycloak & HTTPS & Đăng nhập OpenID Connect \\
+Trình xem (3D Slicer) & PACS & HTTPS, qua reverse proxy & QIDO-RS, WADO-RS; STOW-RS cho mặt nạ đã sửa; token đăng nhập được kiểm tra tại proxy \\
+Trình xem (3D Slicer) & Keycloak & HTTPS & Đăng nhập OpenID Connect qua trình duyệt hệ thống (Authorization Code + PKCE), do mô-đun ICH Triage thực hiện \\
 PACS & Cổng trung gian & DICOM, 4242 & Xuất chuỗi ảnh (C-STORE), do PACS khởi tạo \\
 Cổng trung gian & PACS (AE \texttt{AI\_RESULTS}) & DICOM, 11113 & Chỉ C-STORE kết quả AI; AE này không nhận truy vấn \\
 Cổng trung gian & Dịch vụ suy luận & API nội bộ & Giao tác vụ, trả mặt nạ (Mục~\ref{sec:aicontract}) \\
@@ -341,9 +347,10 @@ mạng nội bộ.
       PostgreSQL rồi mới trả lời thành công cho máy chụp (nguyên tắc P5). Ca chụp truy
       vấn được ngay khi những ảnh đầu tiên đã được lưu; bản mẫu đo được 0{,}4--1{,}6 giây
       kể từ khi bắt đầu gửi.
-\item[1.3] Trình xem truy vấn danh sách chuỗi ảnh bằng QIDO-RS rồi tải siêu dữ liệu và
-      điểm ảnh bằng WADO-RS. Ca chụp mở được ngay cả khi các chuỗi ảnh sau vẫn đang được
-      gửi tới; bác sĩ không phải chờ máy chụp gửi xong toàn bộ.
+\item[1.3] Trình xem truy vấn danh sách chuỗi ảnh bằng QIDO-RS rồi tải từng chuỗi bằng
+      WADO-RS. Ca chụp mở được ngay cả khi các chuỗi ảnh sau vẫn đang được gửi tới: bác
+      sĩ đọc các chuỗi đã có, mô-đun ICH Triage tải thêm các chuỗi đến sau, nên bác sĩ
+      không phải chờ máy chụp gửi xong toàn bộ.
 \item[1.4] HIS/RIS gửi chỉ định qua HL7. PACS dựng worklist cho máy chụp từ chỉ định,
       và dùng chính sự kiện có chỉ định mới để nạp trước các ca cũ của bệnh nhân.
 \item[1.5] Bác sĩ đọc phim và chẩn đoán. Khi kết quả AI có sẵn (Luồng 2), lớp phủ xuất
@@ -758,7 +765,7 @@ Khử định danh từ chối khi không chắc chắn & Đạt; ca còn tên b
 Loại bỏ ảnh có nguy cơ chứa chữ trên điểm ảnh & Đạt; ảnh định vị, Secondary Capture và ảnh có \texttt{BurnedInAnnotation} bị loại (57/60 ảnh được giữ) \\
 Bản đã khử định danh phục vụ qua DICOMweb của cổng & Đạt; không còn giá trị định danh nào trong siêu dữ liệu \\
 PACS lưu tệp ảnh trên SeaweedFS & Đạt; không còn tệp nào trên đĩa cục bộ của PACS \\
-OHIF, cổng chạy active-active, sẵn sàng cao, chịu tải, xác thực & Chưa kiểm chứng \\
+Trình xem 3D Slicer, cổng chạy active-active, sẵn sàng cao, chịu tải, xác thực & Chưa kiểm chứng \\
 \bottomrule
 \end{tabularx}
 \caption{Kết quả bản mẫu Kịch bản 1.}

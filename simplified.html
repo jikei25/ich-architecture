@@ -143,6 +143,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
     <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
     <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
     <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
+    <a href="slicer.html"><b>3D Slicer</b><span>Proposed viewer</span></a>
     <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
   <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
@@ -206,8 +207,8 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="bt" x="595" y="156" text-anchor="middle" dominant-baseline="central">PACS · dcm4chee</text>
 <text class="bs" x="595" y="176" text-anchor="middle" dominant-baseline="central">archive + DICOMweb</text></g>
 <g><rect class="bx s-blue" x="1000" y="133" width="150" height="64" rx="12"/>
-<text class="bt" x="1075" y="156" text-anchor="middle" dominant-baseline="central">Radiologist viewer</text>
-<text class="bs" x="1075" y="176" text-anchor="middle" dominant-baseline="central">OHIF · reads + confirms</text></g>
+<text class="bt" x="1075" y="156" text-anchor="middle" dominant-baseline="central">3D Slicer</text>
+<text class="bs" x="1075" y="176" text-anchor="middle" dominant-baseline="central">reads + confirms</text></g>
 
 <!-- AI inference lane -->
 <g><rect class="bx s-violet" x="520" y="303" width="150" height="64" rx="12"/>
@@ -318,7 +319,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tbody>
 <tr><td class="k">CT</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Sends the head scan as a DICOM study straight to the PACS</td></tr>
 <tr><td class="k">PACS (dcm4chee)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>The hospital's central image archive: receives studies from the scanner, serves them to the viewer over DICOMweb, holds the official clinical record and pushes selected series once to the gateway. Its configuration is kept in OpenLDAP on the same server</td></tr>
-<tr><td class="k">Radiologist viewer (OHIF)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Opens a study while its series are still arriving and overlays the AI mask once it is ready; the doctor confirms and diagnoses here</td></tr>
+<tr><td class="k">3D Slicer (radiologist viewer, proposed)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Desktop workstation with an ICH Triage Python module (<a href="slicer.html">assessment</a>). Opens the series that have arrived while later ones are still coming and overlays the AI mask once it is ready; the doctor confirms or corrects it and diagnoses here</td></tr>
 <tr><td class="k">Gateway (Orthanc)</td><td><span class="pilltag tc-violet">AI inference</span></td><td>Receives the series exported by the PACS, hands them to the AI service and returns the AI results to the PACS by C-STORE, so the AI holds no PACS credentials</td></tr>
 <tr><td class="k">AI inference service</td><td><span class="pilltag tc-violet">AI inference</span></td><td>Abstract block, implemented by the AI team: turns a series into a hemorrhage mask (DICOM SEG) and a report (SR)</td></tr>
 <tr><td class="k">SeaweedFS</td><td><span class="pilltag tc-emerald">Data</span></td><td>Self-hosted object storage with an S3 interface; one bucket for the PACS image files and one for the gateway files</td></tr>

@@ -162,6 +162,7 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
     <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
     <a href="decisions.html" aria-current="page"><b>Decisions</b><span>Why these products</span></a>
     <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
+    <a href="slicer.html"><b>3D Slicer</b><span>Proposed viewer</span></a>
     <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
   <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
@@ -200,7 +201,7 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 <tr><td><a href="#d7">D7</a></td><td>Database backup</td><td>pgBackRest</td><td>pg_dump, Barman, WAL-G</td><td>Point-in-time recovery, encryption, S3 repository, dedicated repo host over TLS</td></tr>
 <tr><td><a href="#d8">D8</a></td><td>File copy to cloud</td><td>rclone copy</td><td>SeaweedFS remote sync, provider CLIs</td><td>Provider-neutral, never deletes at the destination, checksums and bandwidth limits</td></tr>
 <tr><td><a href="#d9">D9</a></td><td>Identity</td><td><span class="o">Keycloak (stand-in)</span></td><td>The hospital's existing identity system</td><td>Represents "an on-premise OIDC provider with MFA"; will integrate with what the hospital has</td></tr>
-<tr><td><a href="#d10">D10</a></td><td>Radiologist viewer</td><td><span class="o">Not decided</span></td><td>OHIF, Weasis, the hospital's certified viewer</td><td>Requirements are fixed; the product is still being evaluated</td></tr>
+<tr><td><a href="#d10">D10</a></td><td>Radiologist viewer</td><td><span class="o">3D Slicer (proposed)</span></td><td>OHIF (tried in a PoC), Weasis, the hospital's certified viewer</td><td>Advisor's recommendation: reads the PACS, SEG and SR, and edits masks out of the box; the missing parts are one Python module. To be confirmed by a PoC</td></tr>
 </table></div>
 
 <h2 class="sec" id="dicom"><span class="n">2</span>DICOM servers</h2>
@@ -373,8 +374,8 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 </ul>
 <div class="callout amber"><b>Whatever replaces it must</b> run on-premise, support OpenID Connect and MFA, and be highly available: if login is down, doctors cannot open the viewer. The High availability table does not list identity yet.</div>
 
-<h3 class="dec" id="d10"><span class="dn open">D10</span>Radiologist viewer: not decided</h3>
-<p><b>Context.</b> The diagram shows OHIF as a placeholder. The viewer has not been chosen; the requirements below come from Flow 1 and Flow 2 and are what each candidate will be measured against.</p>
+<h3 class="dec" id="d10"><span class="dn open">D10</span>Radiologist viewer: 3D Slicer proposed</h3>
+<p><b>Context.</b> The project advisor recommended 3D Slicer instead of building our own viewer layer, so the diagram now shows 3D Slicer. It stays open until a 3D Slicer PoC passes the requirements below, which come from Flow 1 and Flow 2 and are what each candidate is measured against.</p>
 <div class="tbl"><table>
 <tr><th>Requirement</th><th>Where it comes from</th></tr>
 <tr><td class="k">Reads from the PACS over DICOMweb (QIDO-RS, WADO-RS)</td><td>Flow 1.3</td></tr>
@@ -386,12 +387,14 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 </table></div>
 <div class="tbl"><table>
 <tr><th>Candidate</th><th>Strengths</th><th>Open questions</th></tr>
+<tr><td class="k win">3D Slicer (proposed)</td><td class="win">Open-source desktop workstation (BSD-style licence). Since 5.12, DICOM SEG and TID 1500 SR are in the core, so it shows the volumetric report that OHIF cannot. It reads the PACS over DICOMweb or DIMSE, and its Segment Editor is the strongest tool here for correcting the mask. It is extended by Python scripted modules with no rebuild, and it is already the MONAI Label client used for annotation</td><td class="win">Installed on every workstation, and it downloads each series before showing it, with no progressive display. It has no built-in OIDC login, so the module must handle it. Priority list, alerts and confirm-or-reject are a custom module, as with OHIF. Its documentation says it is not approved for clinical use</td></tr>
 <tr><td class="k">OHIF</td><td>Zero-footprint web viewer over DICOMweb, displays SEG and SR, OIDC login, MIT licence, extensible</td><td>The base viewer is not FDA-cleared or CE-marked; compliance is the user's responsibility</td></tr>
 <tr><td class="k">Weasis</td><td>Rich desktop viewer that pairs well with dcm4chee</td><td>Must be installed and updated on every workstation; SEG and SR display to be checked</td></tr>
 <tr><td class="k">The hospital's existing certified viewer</td><td>Already approved and familiar to radiologists</td><td>Must read from the PACS and display SEG; confirm-or-correct may need a separate tool</td></tr>
 </table></div>
 <div class="callout"><b>The architecture does not depend on this choice.</b> AI results are stored in the PACS as standard SEG and SR, so any viewer that reads DICOMweb and displays SEG shows them. Choosing the viewer changes no other component.</div>
 <div class="callout"><b>OHIF has been tried.</b> A proof of concept (dcm4chee 5.35.2 + OHIF 3.13.14) shows OHIF reading the PACS over DICOMweb and displaying the AI mask (SEG) with no code changes. It does not display the volumetric SR, does not pick up a mask that arrives after the study is opened, and has no notion of priority or alerts; those come from a small AI results service and an OHIF panel. See <a href="viewer.html">Viewer PoC</a>.</div>
+<div class="callout"><b>Why 3D Slicer is proposed.</b> Every server-side piece of the OHIF PoC stays the same: the PACS, the simulated AI and the AI results service. Only the panel injected into OHIF is replaced, by an "ICH Triage" Python module inside Slicer. That module lists studies by priority, listens to the same Server-Sent Events, shows the AI state, confirms or rejects, loads a late mask without reopening the study, and saves a corrected mask as a new SEG over STOW-RS. The assessment, risks and a six-step PoC plan are on <a href="slicer.html">3D Slicer</a>. If the PoC is too slow to open a study, or the hospital does not allow software on reading workstations, fall back to OHIF with an extension.</div>
 
 <h2 class="sec" id="qa"><span class="n">6</span>Questions reviewers ask</h2>
 <dl class="qa">
@@ -444,6 +447,9 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 <li><a href="https://www.theregister.com/databases/2026/05/20/postgresql-backup-tool-gets-some-backup-of-its-own-after-sole-maintainer-sounds-alarm/5242822">The Register: pgBackRest gets sponsors after its maintainer sounds the alarm</a></li>
 <li><a href="https://rclone.org/flags">rclone: global flags (--checksum, --bwlimit)</a></li>
 <li><a href="https://docs.ohif.org/faq">OHIF FAQ: regulatory status of the base viewer</a></li>
+<li><a href="https://www.kitware.com/announcing-3d-slicer-5-12/">Kitware: Announcing 3D Slicer 5.12 (DICOM SEG and TID 1500 SR in the core)</a></li>
+<li><a href="https://slicer.readthedocs.io/en/latest/user_guide/modules/dicom.html">3D Slicer: DICOM module (DIMSE, DICOMweb, STOW-RS)</a></li>
+<li><a href="https://slicer.readthedocs.io/en/latest/user_guide/about.html">3D Slicer: licence and regulatory statement</a></li>
 </ol>
 
 </main>

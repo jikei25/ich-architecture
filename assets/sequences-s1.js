@@ -16,7 +16,7 @@ window.SEQ.s1 = [
     },
     participants: [
       { id: "rad", name: "Radiologist", sub: "reads + diagnoses", kind: "actor", color: "blue", group: "clin" },
-      { id: "viewer", name: "OHIF viewer", sub: "web UI", kind: "ui", color: "blue", group: "clin" },
+      { id: "viewer", name: "3D Slicer", sub: "workstation", kind: "ui", color: "blue", group: "clin" },
       { id: "kc", name: "Keycloak", sub: "SSO + MFA", color: "blue", group: "clin" },
       { id: "his", name: "HIS / RIS", sub: "orders · worklist UI", kind: "ui", color: "blue", group: "clin" },
       { id: "ct", name: "CT scanner", sub: "modality", color: "blue", group: "clin" },
@@ -42,12 +42,12 @@ window.SEQ.s1 = [
 
       { t: "par", label: "radiologist reads" },
       { t: "msg", from: "rad", to: "viewer", style: "ui", label: "open the viewer" },
-      { t: "msg", from: "viewer", to: "kc", style: "ui", label: "OIDC login (redirect)", detail: "Single sign-on with multi-factor authentication. The viewer never sees the password." },
+      { t: "msg", from: "viewer", to: "kc", style: "ui", label: "OIDC login (system browser)", detail: "Single sign-on with multi-factor authentication, through the system browser with PKCE. Slicer has no built-in OIDC, so the ICH module runs this flow. The viewer never sees the password." },
       { t: "msg", from: "kc", to: "viewer", style: "ui", ret: true, label: "tokens after MFA" },
       { t: "msg", from: "viewer", to: "pacs", style: "crit", label: "QIDO-RS search studies" },
       { t: "msg", from: "pacs", to: "viewer", style: "crit", ret: true, label: "study list · AI status: not run yet" },
       { t: "msg", from: "rad", to: "viewer", style: "ui", label: "open the new study" },
-      { t: "msg", from: "viewer", to: "pacs", style: "crit", label: "WADO-RS frames", detail: "The viewer opens the study while later series are still arriving, so reading starts before the transfer ends." },
+      { t: "msg", from: "viewer", to: "pacs", style: "crit", label: "WADO-RS series", detail: "Slicer downloads and shows each series that has already arrived; the ICH module fetches series that arrive later, so reading starts before the transfer ends." },
       { t: "msg", from: "pacs", to: "viewer", style: "crit", ret: true, label: "images, while series still arrive" },
       { t: "else", label: "AI triage · best-effort" },
       { t: "msg", from: "pacs", to: "gw", style: "ai", label: "C-STORE export of selected series (push, retried)", detail: "An export rule in dcm4chee picks the series the AI needs (and prior studies of the same patient if required) and pushes them once. If Orthanc is down, dcm4chee queues the task and retries; the clinical flow is not affected." },
@@ -148,7 +148,7 @@ window.SEQ.s1 = [
     participants: [
       { id: "ops", name: "IT operator", sub: "approves restores", kind: "actor", color: "slate", group: "ops" },
       { id: "rad", name: "Radiologist", sub: "reads", kind: "actor", color: "blue", group: "clin" },
-      { id: "viewer", name: "OHIF viewer", sub: "web UI", kind: "ui", color: "blue", group: "clin" },
+      { id: "viewer", name: "3D Slicer", sub: "workstation", kind: "ui", color: "blue", group: "clin" },
       { id: "pacs", name: "PACS", sub: "dcm4chee", color: "blue", group: "clin" },
       { id: "pg", name: "PostgreSQL", sub: "primary + standby", color: "emerald", group: "data" },
       { id: "s3", name: "SeaweedFS", sub: "PACS bucket", color: "emerald", group: "data" },
