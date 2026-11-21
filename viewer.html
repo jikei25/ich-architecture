@@ -415,7 +415,7 @@ bash demo/scenarios.sh tour    <span class="c"># bắt đầu demo; "tour 3" đ�
 <h3>Màn 2. AI gắn cờ ưu tiên</h3>
 <div class="tbl"><table>
 <tr><th>Làm</th><th>Nhìn vào đâu</th><th>Ý chính để nói</th></tr>
-<tr><td class="k">Chờ khoảng 25 s (terminal đếm giờ)</td><td>Dòng AN chuyển đỏ, nhãn "▲ ƯU TIÊN", lên đầu; thông báo góc dưới phải. Nhãn: "Nghi xuất huyết · … mL · chờ xác nhận".</td><td><b>Luồng 2.5.</b> AI chỉ nói "nghi", bác sĩ mới kết luận. Cờ gửi trước, mask và báo cáo đến sau, để thông báo không phải chờ.</td></tr>
+<tr><td class="k">Chờ khoảng 30 s (terminal đếm giờ)</td><td>Dòng AN chuyển đỏ, nhãn "▲ ƯU TIÊN", lên đầu; thông báo góc dưới phải. Nhãn: "Nghi xuất huyết · … mL · chờ xác nhận".</td><td><b>Luồng 2.5.</b> AI chỉ nói "nghi", bác sĩ mới kết luận. Cờ gửi trước, mask và báo cáo đến sau, để thông báo không phải chờ.</td></tr>
 <tr><td class="k"><code>case bich</code>, <code>case cuong</code></td><td>Hai ca mới hơn vẫn nằm dưới AN. BICH "AI không thấy dấu hiệu", CUONG "Không phân tích được".</td><td>AI chỉ được nâng ưu tiên. "Không phân tích được" (thiếu chuỗi lát mỏng) khác hẳn "âm tính": bác sĩ phải biết AI chưa xem ca đó.</td></tr>
 </table></div>
 
@@ -431,7 +431,7 @@ bash demo/scenarios.sh tour    <span class="c"># bắt đầu demo; "tour 3" đ�
 <h3>Màn 4. Khi AI hỏng</h3>
 <div class="tbl"><table>
 <tr><th>Làm</th><th>Nhìn vào đâu</th><th>Ý chính để nói</th></tr>
-<tr><td class="k"><code>ai-down</code></td><td>Trong 12 giây: banner vàng "AI tạm ngừng", góc phải đổi theo.</td><td>Dịch vụ triage theo dõi nhịp tim của AI, không đợi bác sĩ phát hiện.</td></tr>
+<tr><td class="k"><code>ai-down</code></td><td>Sau khoảng 12–15 giây: banner vàng "AI tạm ngừng", góc phải đổi theo.</td><td>Dịch vụ triage theo dõi nhịp tim của AI, không đợi bác sĩ phát hiện.</td></tr>
 <tr><td class="k"><code>case em</code></td><td>Ca HOANG VAN EM vẫn vào PACS, mở được, nhãn "AI tạm ngừng".</td><td>AI hỏng không chặn chụp và đọc. Ca không có cờ không bao giờ trông giống ca âm tính.</td></tr>
 <tr><td class="k"><code>ai-up</code></td><td>AI xử lý bù ca của EM; ca được gắn cờ, lên đầu.</td><td>Không mất ca nào trong lúc AI ngừng.</td></tr>
 </table></div>

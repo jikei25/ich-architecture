@@ -53,13 +53,13 @@ Show http://localhost:8000/triage/ on the projector and keep the terminal next t
 |---|---|---|---|
 | 1. A study enters the system | `order an` | Modality Worklist table (bottom): NGUYEN VAN AN, SCHEDULED within 4 s. Terminal: `MSA\|AA` | **Flow 1.4.** HIS sends HL7 ORM^O01, the PACS builds the worklist for the scanner. Nobody types the patient's name. |
 | | `scan an` | Study table: AN, 48 images, "Chờ AI phân tích", then "AI đang phân tích" | **Flow 1.1.** The scanner takes the identifiers from the worklist (C-FIND), sends images (C-STORE). The study can be read now: nobody waits for the AI. |
-| 2. The AI flags it | wait about 25 s (the terminal counts) | AN turns red, "▲ ƯU TIÊN", moves to the top, toast bottom right | **Flow 2.5.** The AI only says "suspected"; the radiologist decides. The flag is sent before the mask and report. |
+| 2. The AI flags it | wait about 30 s (the terminal counts) | AN turns red, "▲ ƯU TIÊN", moves to the top, toast bottom right | **Flow 2.5.** The AI only says "suspected"; the radiologist decides. The flag is sent before the mask and report. |
 | | `case bich`, `case cuong` | Newer studies stay below AN. BICH "AI không thấy dấu hiệu", CUONG "Không phân tích được" | The AI only raises priority. "Unanalyzable" (no thin axial series) is not "negative": the AI never looked. |
 | 3. The radiologist reads it in OHIF | "Mở trong OHIF" on AN | AI panel bottom right; AI SEG and SR series in the left panel; overlay off | **Flow 1.3.** OHIF reads the PACS over DICOMweb. Optional: F12, Network, filter `rs/` for QIDO-RS and WADO-RS. |
 | | double-click "SEG AI ICH mask", Yes | The view moves to the middle of the bleed, red overlay | **Flow 1.5 / 2.4.** A standard DICOM SEG from the PACS; OHIF shows it with no code change. |
 | | "Xác nhận", then "Danh sách ↗" | AN is no longer red, "Bác sĩ đã xác nhận XH" | The decision is stored; the study leaves the priority group. |
 | | `case dung`, open DUNG right away | Panel says "AI đang phân tích", then that the mask came late, with "Tải lại ca" | OHIF reads the series list once. The real extension must load new SEGs itself. |
-| 4. The AI goes down | `ai-down` | Within 12 s, yellow banner "AI tạm ngừng" | The triage service watches the AI heartbeat. |
+| 4. The AI goes down | `ai-down` | After about 12–15 s, yellow banner "AI tạm ngừng" | The triage service watches the AI heartbeat. |
 | | `case em` | EM is stored and readable, shown as "AI tạm ngừng" | An unflagged study never looks negative. |
 | | `ai-up` | EM is processed and flagged | No study is lost while the AI is down. |
 

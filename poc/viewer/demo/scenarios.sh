@@ -23,7 +23,7 @@ cd "$(dirname "$0")/.."
 
 URL=http://localhost:8000
 
-tools() { docker compose run --rm -T tools python "$@"; }
+tools() { docker compose --progress quiet run --rm -T tools python "$@"; }
 
 patient() {  # sets ID NAME BIRTH SEX ACC KIND
   case "$1" in
@@ -89,7 +89,7 @@ wait_ai() {
 wait_offline() {
   local t0=$SECONDS
   until [ "$(ai_state online)" = no ]; do
-    printf '\r   Chờ danh sách phát hiện AI mất tín hiệu (tối đa 12 s) ... %2ds ' $((SECONDS - t0))
+    printf '\r   Chờ danh sách phát hiện AI mất tín hiệu (khoảng 12 s) ... %2ds ' $((SECONDS - t0))
     if (( SECONDS - t0 > 60 )); then echo; echo "   (quá 1 phút, bỏ qua)"; return; fi
     sleep 2
   done
@@ -143,7 +143,7 @@ tour1() {
 
 tour2() {
   act 2 "AI gắn cờ ưu tiên" \
-    "AI giả lập đang phân tích ca của AN (khoảng 25 s). Trong lúc chờ, giải thích: AI chạy nền, không chặn việc đọc."
+    "AI giả lập đang phân tích ca của AN (khoảng 30 s). Trong lúc chờ, giải thích: AI chạy nền, không chặn việc đọc."
   run "chờ kết quả AI cho AN"
   wait_ai an
   look "dòng của AN chuyển đỏ, có nhãn '▲ ƯU TIÊN', nhảy lên đầu; góc dưới phải hiện thông báo."
@@ -165,7 +165,7 @@ tour3() {
   act 3 "Bác sĩ đọc ca trong OHIF" \
     "Đóng vai bác sĩ: mở ca có cờ, xem vùng AI khoanh, rồi xác nhận."
   you "bấm 'Mở trong OHIF' ở dòng NGUYEN VAN AN."
-  look "ảnh CT ở giữa; panel 'Kết quả AI' góc dưới phải (trạng thái, thể tích, phiên bản mô hình); panel trái có chuỗi 'SEG AI ICH mask' và SR."
+  look "ảnh CT ở giữa; panel AI góc dưới phải, tiêu đề 'AI · NGUYEN VAN AN' (trạng thái, thể tích, phiên bản mô hình); panel trái có chuỗi 'SEG AI ICH mask' và SR."
   point "OHIF đọc ảnh thẳng từ PACS qua DICOMweb. Lớp phủ AI tắt sẵn để bác sĩ nhìn ảnh gốc trước."
   echo "${D}  Tuỳ chọn (khán giả kỹ thuật): F12 → Network → lọc 'rs/' để thấy QIDO-RS (…/series) và WADO-RS (…/metadata, …/frames/1).${R}"
   pause
