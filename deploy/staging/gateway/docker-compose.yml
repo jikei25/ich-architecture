@@ -7,8 +7,10 @@ x-logging: &logging
 services:
   # Orthanc gateway: index in PostgreSQL (database orthanc), files in SeaweedFS (bucket orthanc).
   # The image enables each plugin whose configuration section is present.
+  # The local build adds the AI bridge plugin (plugin/ai_bridge.py) to the orthancteam image.
   orthanc:
-    image: orthancteam/orthanc:26.9.1
+    build: .
+    image: medical-ai/orthanc-ai:26.9.1
     restart: unless-stopped
     ports:
       - "${BIND_ADDRESS:-0.0.0.0}:${ORTHANC_DICOM_PORT:-4242}:4242"
@@ -36,6 +38,8 @@ services:
       ORTHANC__AWS_S3_STORAGE__ACCESS_KEY: ${GATEWAY_S3_ACCESS_KEY:?run generate-env.sh}
       ORTHANC__AWS_S3_STORAGE__SECRET_KEY: ${GATEWAY_S3_SECRET_KEY:?run generate-env.sh}
       ORTHANC__AWS_S3_STORAGE__VIRTUAL_ADDRESSING: "false"
+      ORTHANC__PYTHON_SCRIPT: /plugin/ai_bridge.py
+      AI_SEGMENT_URL: ${AI_SEGMENT_URL:-}
     volumes:
       - ${DATA_ROOT:?run generate-env.sh}/medical-ai-orthanc/db:/var/lib/orthanc/db
     logging: *logging

@@ -85,6 +85,35 @@ docker run --rm -v /path/to/ct_scans:/ct:ro medical-ai-staging-tools --host <PAC
 
 Viewer: `http://<PACS_HOST>/`. Archive UI: `http://<PACS_HOST>/dcm4chee-arc/ui2`.
 
+## AI bridge (gateway plugin)
+
+`gateway/plugin/ai_bridge.py` runs inside Orthanc when `AI_SEGMENT_URL` is set. For each CT series that
+becomes stable (no new slice for `STABLE_AGE` seconds), the plugin:
+
+1. converts the series to one NIfTI volume (int16 HU, RAS affine) with `nifti_bridge.series_to_nifti`;
+2. posts the gzip NIfTI to `AI_SEGMENT_URL` and receives a gzip NIfTI mask on the same grid;
+3. rejects a mask whose shape or affine differs from the volume, then builds a DICOM SEG that references
+   every source slice (UIDs derived from the source series and the algorithm version, so a rerun replaces
+   the previous result);
+4. stores the SEG in Orthanc and sends it to the PACS AE `AI_RESULTS`, where the viewer overlays it.
+
+Self-checks of the conversion (run after any change to `nifti_bridge.py`):
+
+```bash
+docker compose -f gateway/docker-compose.yml build
+docker run --rm -e PYTHONDONTWRITEBYTECODE=1 -v "$PWD:/staging" --entrypoint python3 \
+  medical-ai/orthanc-ai:26.9.1 /staging/gateway/plugin/test_nifti_bridge.py
+```
+
+`tools/mock_ai.py` stands in for the AI service: it answers with the CT-ICH ground-truth mask of the received
+volume, matched by voxel content, so a correct overlay in the viewer confirms the geometry end to end.
+
+```bash
+docker run -d --name medical-ai-mock-ai -p 8000:8000 -v /path/to/CT-ICH-PhysioNet:/data:ro \
+  --entrypoint python medical-ai-staging-tools /usr/local/bin/mock_ai.py --dataset /data
+# servers.env: AI_SEGMENT_URL=http://<host of the mock>:8000/segment, then ./generate-env.sh and recreate the gateway
+```
+
 ## Local test on one machine
 
 Run the four projects on one host and let them reach each other through the Docker bridge:
