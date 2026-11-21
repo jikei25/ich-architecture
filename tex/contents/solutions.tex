@@ -69,6 +69,16 @@ phương thức chụp và có thể khởi chạy trực tiếp từ liên kế
 điểm của trình xem desktop là khai thác tốt tài nguyên máy cục bộ, nhưng đi kèm
 với đó là yêu cầu cài đặt và duy trì phần mềm trên từng máy.
 
+\textbf{3D Slicer} \cite{fedorov2012slicer} là nền tảng mã nguồn mở để hiển thị và
+phân tích ảnh y khoa, chạy trên máy trạm Windows, macOS và Linux, viết bằng C++ với
+Python nhúng và phát hành theo giấy phép kiểu BSD. Slicer đọc ảnh từ PACS qua DICOM cổ
+điển hoặc DICOMweb, đọc và ghi mặt nạ DICOM SEG và báo cáo SR, và có bộ công cụ phân
+đoạn đầy đủ (Segment Editor) để vẽ hoặc chỉnh vùng tổn thương rồi tính thể tích. Chức
+năng được mở rộng bằng mô-đun Python mà không phải biên dịch lại ứng dụng, và Slicer
+cũng là giao diện chính của MONAI Label. Đổi lại, Slicer phải được cài trên từng máy,
+chỉ hiển thị sau khi đã tải xong một chuỗi ảnh, không có sẵn đăng nhập OpenID Connect,
+và theo chính tài liệu của dự án thì chưa được phê duyệt cho sử dụng lâm sàng.
+
 \subsection{Các thành phần mã nguồn mở chuyên biệt}
 
 Ngoài PACS và trình xem, một số dự án mã nguồn mở giải quyết đúng từng khâu mà
@@ -225,6 +235,7 @@ Orthanc & Nhẹ, một tệp nhị phân; hỗ trợ cả DICOM cổ điển l�
 dcm4che/dcm4chee-arc & Trưởng thành; đầy đủ dịch vụ DICOM; phù hợp quy mô doanh nghiệp & Hạ tầng nặng; cấu hình phức tạp; đòi hỏi nhân lực quản trị Java và cơ sở dữ liệu \\
 OHIF Viewer & Chạy trên trình duyệt, không cần cài đặt tại máy trạm; kiến trúc mở rộng theo mô-đun & Phụ thuộc năng lực máy khách và đường truyền; cần tuỳ biến để khớp quy trình đọc ảnh cụ thể \\
 Weasis & Trình xem desktop giàu chức năng; khai thác tốt tài nguyên máy cục bộ & Phải cài đặt và cập nhật trên từng máy trạm \\
+3D Slicer & Nền tảng máy trạm mạnh về phân đoạn và định lượng; đọc, ghi DICOM SEG và SR; mở rộng bằng mô-đun Python & Phải cài đặt trên từng máy trạm; không tải lũy tiến; không có sẵn đăng nhập OIDC; chưa được phê duyệt lâm sàng \\
 Cornerstone.js & Thư viện hiển thị linh hoạt, nhúng được vào ứng dụng web sẵn có & Chỉ là thư viện, không phải trình xem hoàn chỉnh; phải tự xây dựng giao diện \\
 Plugin Orthanc (PostgreSQL, lưu trữ đối tượng, phân quyền) & Bổ sung chỉ mục chịu tải, lưu trữ S3, phân quyền qua Keycloak mà không sửa lõi & Mỗi plugin là một điểm cấu hình và nâng cấp riêng; cần kiểm thử tổ hợp \\
 KHEOPS & Chia sẻ ca chụp bằng token phạm vi hẹp; DICOMweb; tích hợp OHIF và Weasis & Thêm một hệ thống cần vận hành; không tiếp nhận trực tiếp từ máy chụp \\
