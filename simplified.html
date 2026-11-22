@@ -144,6 +144,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
     <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
     <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
     <a href="slicer.html"><b>3D Slicer</b><span>Proposed viewer</span></a>
+    <a href="monai.html"><b>Slicer + MONAI</b><span>AI blocks</span></a>
     <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
   <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
@@ -216,10 +217,10 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="bs" x="595" y="346" text-anchor="middle" dominant-baseline="central">receives exports, feeds AI</text></g>
 <g><rect class="abs s-violet af-violet" x="800" y="296" width="440" height="78" rx="14"/>
 <rect class="tagbg h-violet" x="1095" y="304" width="135" height="18" rx="9"/>
-<text class="tagt t-violet" x="1162" y="313" text-anchor="middle" dominant-baseline="central">IMPLEMENTATION TBD</text>
-<text class="bt big" x="990" y="321" text-anchor="middle" dominant-baseline="central">AI inference service</text>
+<text class="tagt t-violet" x="1162" y="313" text-anchor="middle" dominant-baseline="central">PROPOSED · MONAI</text>
+<text class="bt big" x="990" y="321" text-anchor="middle" dominant-baseline="central">AI inference · MONAI</text>
 <text class="bs" x="1020" y="343" text-anchor="middle" dominant-baseline="central">Input: series from the gateway  →  Output: hemorrhage mask + report</text>
-<text class="bs" x="1020" y="359" text-anchor="middle" dominant-baseline="central">Implemented and deployed by the AI team</text></g>
+<text class="bs" x="1020" y="359" text-anchor="middle" dominant-baseline="central">MONAI Label server, infer-only, hemorrhage model</text></g>
 
 <!-- data lane -->
 <g><path class="cy s-emerald" d="M520 455 L520 525 A75 10 0 0 0 670 525 L670 455 A75 10 0 0 1 520 455 Z"/>
@@ -292,7 +293,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <g class="stepb sb-tri"><circle cx="832" cy="668" r="11"/><text x="832" y="668" text-anchor="middle" dominant-baseline="central">2.3</text></g>
 <text class="lgt" x="850" y="668" dominant-baseline="central">Flow 2, step 3</text>
 <rect class="bx s-slate" x="40" y="684" width="54" height="28" rx="9"/><text class="lgt" x="106" y="698" dominant-baseline="central">Component</text>
-<rect class="abs s-violet af-violet" x="300" y="684" width="54" height="28" rx="9"/><text class="lgt" x="366" y="698" dominant-baseline="central">Abstract block (TBD)</text>
+<rect class="abs s-violet af-violet" x="300" y="684" width="54" height="28" rx="9"/><text class="lgt" x="366" y="698" dominant-baseline="central">Proposed block (PoC pending)</text>
 <path class="cy s-slate" d="M560 690 L560 708 A27 5 0 0 0 614 708 L614 690 A27 5 0 0 1 560 690 Z"/><ellipse class="cyt s-slate" cx="587" cy="690" rx="27" ry="5"/>
 <text class="lgt" x="626" y="698" dominant-baseline="central">Data store</text>
 <rect class="lh h-blue" x="822" y="688" width="20" height="20" rx="5"/>
@@ -321,7 +322,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tr><td class="k">PACS (dcm4chee)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>The hospital's central image archive: receives studies from the scanner, serves them to the viewer over DICOMweb, holds the official clinical record and pushes selected series once to the gateway. Its configuration is kept in OpenLDAP on the same server</td></tr>
 <tr><td class="k">3D Slicer (radiologist viewer, proposed)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Desktop workstation with an ICH Triage Python module (<a href="slicer.html">assessment</a>). Opens the series that have arrived while later ones are still coming and overlays the AI mask once it is ready; the doctor confirms or corrects it and diagnoses here</td></tr>
 <tr><td class="k">Gateway (Orthanc)</td><td><span class="pilltag tc-violet">AI inference</span></td><td>Receives the series exported by the PACS, hands them to the AI service and returns the AI results to the PACS by C-STORE, so the AI holds no PACS credentials</td></tr>
-<tr><td class="k">AI inference service</td><td><span class="pilltag tc-violet">AI inference</span></td><td>Abstract block, implemented by the AI team: turns a series into a hemorrhage mask (DICOM SEG) and a report (SR)</td></tr>
+<tr><td class="k">AI inference service</td><td><span class="pilltag tc-violet">AI inference</span></td><td>MONAI Label server in infer-only mode with the AI team's <code>hemorrhage</code> model (proposed, <a href="monai.html">Slicer + MONAI</a>): turns the volume the gateway sends into a mask with one label per subtype, which the gateway stores as DICOM SEG and SR</td></tr>
 <tr><td class="k">SeaweedFS</td><td><span class="pilltag tc-emerald">Data</span></td><td>Self-hosted object storage with an S3 interface; one bucket for the PACS image files and one for the gateway files</td></tr>
 <tr><td class="k">PostgreSQL</td><td><span class="pilltag tc-emerald">Data</span></td><td>Relational database holding the PACS index and the gateway index in separate databases</td></tr>
 </tbody></table></div>

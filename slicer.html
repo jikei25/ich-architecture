@@ -187,6 +187,7 @@ main p code,main li code,main .callout code{overflow-wrap:anywhere}
     <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
     <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
     <a href="slicer.html" aria-current="page"><b>3D Slicer</b><span>Proposed viewer</span></a>
+    <a href="monai.html"><b>Slicer + MONAI</b><span>AI blocks</span></a>
     <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
   <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
@@ -223,7 +224,7 @@ main p code,main li code,main .callout code{overflow-wrap:anywhere}
 <div class="callout"><b>Khuyến nghị: khả thi, nên làm PoC rồi chốt.</b> Dùng 3D Slicer làm máy trạm đọc của bác sĩ, kèm một module Python "ICH Triage" gọi lại đúng <b>dịch vụ kết quả AI</b> đã có trong PoC (<code>poc/viewer/py/triage_api.py</code>). Nhóm không phải tự viết viewer, và phần tự làm viết bằng Python, cùng ngôn ngữ với đội AI và với MONAI Label. Đổi lại phải chấp nhận hai điều: <b>cài Slicer trên từng máy trạm</b> (mất ưu điểm "zero-footprint" của OHIF), và Slicer cũng <b>không được phép dùng cho chẩn đoán lâm sàng</b>, giống OHIF. Kiến trúc không đổi: kết quả AI vẫn là SEG và SR chuẩn trong PACS.</div>
 
 <h2 class="sec" id="what"><span class="n">2</span>3D Slicer là gì, khác OHIF ở đâu</h2>
-<p>3D Slicer là nền tảng mã nguồn mở để hiển thị và phân tích ảnh y khoa, viết bằng C++ (VTK, ITK, CTK, Qt) và có Python nhúng. Nó chạy như một ứng dụng desktop trên Windows, macOS và Linux. Bản ổn định hiện tại là <b>5.12</b> (Kitware công bố ngày 15/07/2026), với giấy phép kiểu BSD và không hạn chế dùng thương mại. Có thể mở rộng Slicer bằng extension hoặc <b>scripted module</b> Python. Một scripted module truy cập được toàn bộ scene, giao diện Qt và các thư viện Python như <code>requests</code>, <code>pydicom</code>, <code>dicomweb_client</code>. Slicer cũng là client chính của MONAI Label, nên trong kiến trúc nó đã có mặt ở khối <a href="decisions.html#d2">gán nhãn</a>.</p>
+<p>3D Slicer là nền tảng mã nguồn mở để hiển thị và phân tích ảnh y khoa, viết bằng C++ (VTK, ITK, CTK, Qt) và có Python nhúng. Nó chạy như một ứng dụng desktop trên Windows, macOS và Linux. Bản ổn định hiện tại là <b>5.12</b> (Kitware công bố ngày 15/07/2026), với giấy phép kiểu BSD và không hạn chế dùng thương mại. Có thể mở rộng Slicer bằng extension hoặc <b>scripted module</b> Python. Một scripted module truy cập được toàn bộ scene, giao diện Qt và các thư viện Python như <code>requests</code>, <code>pydicom</code>, <code>dicomweb_client</code>. Slicer cũng là client chính của MONAI Label, nên trong kiến trúc nó đã có mặt ở khối <a href="decisions.html#d2">gán nhãn</a>. Lõi Slicer không chứa MONAI: extension MONAILabel chỉ là client, mô hình chạy trên máy chủ MONAI Label (xem <a href="monai.html">Slicer + MONAI</a>).</p>
 <div class="tbl"><table>
 <tr><th>Khía cạnh</th><th>OHIF (đã làm PoC)</th><th>3D Slicer (đề xuất)</th></tr>
 <tr><td class="k">Loại ứng dụng</td><td>Web app tĩnh (React), mở bằng trình duyệt</td><td>Ứng dụng desktop (Qt), cài trên máy trạm</td></tr>

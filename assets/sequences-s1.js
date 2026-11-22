@@ -22,7 +22,7 @@ window.SEQ.s1 = [
       { id: "ct", name: "CT scanner", sub: "modality", color: "blue", group: "clin" },
       { id: "pacs", name: "PACS", sub: "dcm4chee · N+1", color: "blue", group: "clin" },
       { id: "gw", name: "Orthanc gateway", sub: "working copy", color: "violet", group: "ai" },
-      { id: "ai", name: "AI inference", sub: "service · TBD", color: "violet", group: "ai" },
+      { id: "ai", name: "MONAI Label", sub: "infer-only", color: "violet", group: "ai" },
       { id: "s3", name: "SeaweedFS", sub: "PACS bucket", color: "emerald", group: "data" },
       { id: "pg", name: "PostgreSQL", sub: "index · AI results", color: "emerald", group: "data" }
     ],
@@ -52,12 +52,13 @@ window.SEQ.s1 = [
       { t: "else", label: "AI triage · best-effort" },
       { t: "msg", from: "pacs", to: "gw", style: "ai", label: "C-STORE export of selected series (push, retried)", detail: "An export rule in dcm4chee picks the series the AI needs (and prior studies of the same patient if required) and pushes them once. If Orthanc is down, dcm4chee queues the task and retries; the clinical flow is not affected." },
       { t: "msg", from: "gw", to: "gw", style: "ai", label: "store working copy; de-identified copy if picked for research", detail: "Orthanc keeps the index in PostgreSQL and the files in SeaweedFS. It raises a stable-study event once no new instance has arrived for the StableAge interval (default 60 s), and that event creates the AI job. Set StableAge explicitly for emergency cases; it adds to the export scheduler delay of dcm4chee." },
-      { t: "msg", from: "gw", to: "ai", style: "ai", label: "DICOMweb WADO-RS series for inference", detail: "The AI pulls from the gateway as often as it needs (preprocessing, retries, re-runs) without loading the PACS. The gateway never connects to the AI by itself: it only raises the stable-study event." },
-      { t: "msg", from: "ai", to: "ai", style: "ai", label: "validated model → mask, report, priority" },
-      { t: "msg", from: "ai", to: "gw", style: "ai", label: "STOW-RS DICOM SEG + SR" },
-      { t: "msg", from: "gw", to: "pacs", style: "ai", label: "C-STORE SEG + SR", detail: "Only the gateway talks to the PACS. The AI service holds no PACS credentials at all, not even for writing results." },
-      { t: "msg", from: "ai", to: "his", style: "ai", label: "priority flag · HL7 ORU / FHIR" },
-      { t: "msg", from: "ai", to: "pg", style: "flow", label: "result metadata (AI results DB)" },
+      { t: "msg", from: "gw", to: "ai", style: "ai", label: "POST /infer/hemorrhage · NIfTI volume", detail: "The ai_bridge plugin in Orthanc turns the stable CT series into one NIfTI volume and uploads it to the infer-only MONAI Label server. The gateway keeps the working copy, so retries and re-runs never load the PACS. The MONAI server holds no PACS credentials and keeps no copy of the images." },
+      { t: "msg", from: "ai", to: "ai", style: "ai", label: "validated hemorrhage model (MONAI bundle)" },
+      { t: "msg", from: "ai", to: "gw", style: "ai", ret: true, label: "mask on the same grid, one label per subtype" },
+      { t: "msg", from: "gw", to: "gw", style: "ai", label: "build DICOM SEG + SR, derive priority flag", detail: "One SEG segment per hemorrhage subtype, and an SR with the volume of each. The priority flag comes from the mask by probability and minimum-volume thresholds. Each result carries the model version." },
+      { t: "msg", from: "gw", to: "pacs", style: "ai", label: "C-STORE SEG + SR", detail: "Only the gateway talks to the PACS. The MONAI server holds no PACS credentials at all, not even for writing results." },
+      { t: "msg", from: "gw", to: "his", style: "ai", label: "priority flag · HL7 ORU / FHIR" },
+      { t: "msg", from: "gw", to: "pg", style: "flow", label: "result metadata (AI results DB)" },
       { t: "end" },
 
       { t: "sep", label: "What the radiologist sees" },
@@ -88,13 +89,13 @@ window.SEQ.s1 = [
     },
     participants: [
       { id: "ann", name: "Clinician", sub: "annotates · validates", kind: "actor", color: "pink", group: "res" },
-      { id: "aui", name: "Annotation UI", sub: "tool · TBD", kind: "ui", color: "pink", group: "res" },
+      { id: "aui", name: "3D Slicer", sub: "+ MONAI Label (research)", kind: "ui", color: "pink", group: "res" },
       { id: "pacs", name: "PACS", sub: "dcm4chee", color: "blue", group: "clin" },
       { id: "gw", name: "Orthanc gateway", sub: "de-id · DICOMweb", color: "violet", group: "ai" },
       { id: "s3", name: "SeaweedFS", sub: "research bucket", color: "emerald", group: "data" },
-      { id: "trn", name: "Model training", sub: "GPU · TBD", color: "pink", group: "res" },
+      { id: "trn", name: "Model training", sub: "MONAI Label trainer", color: "pink", group: "res" },
       { id: "reg", name: "Model registry", sub: "approved versions", color: "pink", group: "res" },
-      { id: "inf", name: "AI inference", sub: "service · TBD", color: "violet", group: "ai" }
+      { id: "inf", name: "MONAI Label", sub: "infer-only", color: "violet", group: "ai" }
     ],
     steps: [
       { t: "sep", label: "Prepare de-identified cases" },

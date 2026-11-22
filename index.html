@@ -144,6 +144,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
     <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
     <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
     <a href="slicer.html"><b>3D Slicer</b><span>Proposed viewer</span></a>
+    <a href="monai.html"><b>Slicer + MONAI</b><span>AI blocks</span></a>
     <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
   <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
@@ -244,31 +245,31 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="bs" x="530" y="340" text-anchor="middle" dominant-baseline="central">PG index · SeaweedFS</text></g>
 <g><rect class="abs s-violet af-violet" x="695" y="286" width="630" height="78" rx="14"/>
 <rect class="tagbg h-violet" x="1180.2" y="294" width="135" height="18" rx="9"/>
-<text class="tagt t-violet" x="1248" y="303" text-anchor="middle" dominant-baseline="central">IMPLEMENTATION TBD</text>
-<text class="bt big" x="1010.0" y="311" text-anchor="middle" dominant-baseline="central">AI inference service</text>
+<text class="tagt t-violet" x="1248" y="303" text-anchor="middle" dominant-baseline="central">PROPOSED · MONAI</text>
+<text class="bt big" x="1010.0" y="311" text-anchor="middle" dominant-baseline="central">AI inference service · MONAI Label</text>
 <text class="bs" x="1010.0" y="333" text-anchor="middle" dominant-baseline="central">Input: series from the gateway  →  Output: hemorrhage mask + report + priority flag</text>
-<text class="bs" x="1010.0" y="349" text-anchor="middle" dominant-baseline="central">Internals (preprocessing, model, post-processing) to be decided</text>
+<text class="bs" x="1010.0" y="349" text-anchor="middle" dominant-baseline="central">Infer-only server, hemorrhage model (MONAI bundle), called by the gateway</text>
 </g>
 
 <!-- AI research lane -->
 <g><rect class="abs s-pink af-pink" x="680" y="425" width="200" height="100" rx="14"/>
 <rect class="tagbg h-pink" x="735.2" y="433" width="135" height="18" rx="9"/>
-<text class="tagt t-pink" x="803" y="442" text-anchor="middle" dominant-baseline="central">IMPLEMENTATION TBD</text>
+<text class="tagt t-pink" x="803" y="442" text-anchor="middle" dominant-baseline="central">PROPOSED · MONAI</text>
 <text class="bt big" x="780.0" y="469" text-anchor="middle" dominant-baseline="central">Annotation</text>
-<text class="bs" x="780.0" y="491" text-anchor="middle" dominant-baseline="central">Clinicians label + correct</text>
+<text class="bs" x="780.0" y="491" text-anchor="middle" dominant-baseline="central">3D Slicer + MONAI Label</text>
 <text class="bs" x="780.0" y="507" text-anchor="middle" dominant-baseline="central">AI drafts from current model</text>
 </g>
 <g><rect class="abs s-pink af-pink" x="960" y="425" width="210" height="100" rx="14"/>
 <rect class="tagbg h-pink" x="1025.2" y="433" width="135" height="18" rx="9"/>
-<text class="tagt t-pink" x="1093" y="442" text-anchor="middle" dominant-baseline="central">IMPLEMENTATION TBD</text>
+<text class="tagt t-pink" x="1093" y="442" text-anchor="middle" dominant-baseline="central">PROPOSED · MONAI</text>
 <text class="bt big" x="1065.0" y="469" text-anchor="middle" dominant-baseline="central">Model training</text>
-<text class="bs" x="1065.0" y="491" text-anchor="middle" dominant-baseline="central">Train + evaluate models</text>
-<text class="bs" x="1065.0" y="507" text-anchor="middle" dominant-baseline="central">Tools to be decided</text>
+<text class="bs" x="1065.0" y="491" text-anchor="middle" dominant-baseline="central">MONAI Label trainer</text>
+<text class="bs" x="1065.0" y="507" text-anchor="middle" dominant-baseline="central">train + evaluate on GPU</text>
 </g>
 <g><path class="cy s-pink" d="M1415 440 L1415 510 A75.0 10 0 0 0 1565 510 L1565 440 A75.0 10 0 0 1 1415 440 Z"/>
 <ellipse class="cyt s-pink" cx="1490.0" cy="440" rx="75.0" ry="10"/>
 <text class="bt" x="1490" y="471.0" text-anchor="middle" dominant-baseline="central">Model registry</text>
-<text class="bs" x="1490" y="491.0" text-anchor="middle" dominant-baseline="central">approved versions</text></g>
+<text class="bs" x="1490" y="491.0" text-anchor="middle" dominant-baseline="central">MONAI bundles, approved</text></g>
 
 <!-- data lane -->
 <rect class="grp" x="440" y="578" width="660" height="114" rx="14"/>
@@ -458,7 +459,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <path class="a loop" d="M1540 1008 L1584 1008" marker-end="url(#ar)"/>
 <text class="lgt" x="1596" y="1008" dominant-baseline="central">Annotation loop</text>
 <rect class="bx s-slate" x="40" y="1036" width="54" height="32" rx="9"/><text class="lgt" x="106" y="1052" dominant-baseline="central">Component</text>
-<rect class="abs s-violet af-violet" x="230" y="1036" width="54" height="32" rx="9"/><text class="lgt" x="296" y="1052" dominant-baseline="central">Abstract block (TBD)</text>
+<rect class="abs s-violet af-violet" x="230" y="1036" width="54" height="32" rx="9"/><text class="lgt" x="296" y="1052" dominant-baseline="central">Proposed block (PoC pending)</text>
 <path class="cy s-slate" d="M480 1040 L480 1064 A27 6 0 0 0 534 1064 L534 1040 A27 6 0 0 1 480 1040 Z"/><ellipse class="cyt s-slate" cx="507" cy="1040" rx="27" ry="6"/>
 <text class="lgt" x="546" y="1052" dominant-baseline="central">Data store</text>
 <rect class="tagbg h-slate" x="660" y="1043" width="64" height="18" rx="9"/><text class="tagt t-slate" x="692" y="1052" text-anchor="middle" dominant-baseline="central">HA</text>
@@ -505,10 +506,10 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tr><td class="k">HIS / RIS</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Hospital and Radiology Information Systems: orders, patient records, worklists</td><td>Sends orders to the PACS worklist and receives the AI priority flag</td></tr>
 <tr><td class="k">HL7 / FHIR</td><td>n/a</td><td>Standards for exchanging clinical messages and records</td><td>How orders reach the PACS and how the AI flag reaches HIS/RIS</td></tr>
 <tr><td class="k">Gateway (Orthanc)</td><td><span class="pilltag tc-violet">AI inference</span></td><td>A lightweight DICOM server, run as N+1 active-active nodes behind a load balancer that share one PostgreSQL index and keep their files in SeaweedFS</td><td>The single receiver of PACS exports and the only AI-side system that talks to the PACS: it also returns AI results to the PACS by C-STORE. Keeps series close to the GPU so the AI can read them as often as it needs, and keeps de-identified copies of selected cases and serves them to annotation over DICOMweb; it also stores the labels annotators save and copies them to the research bucket (fail-closed: if it cannot de-identify a study, nothing is written; instances that may carry text burned into the pixels are rejected, and pixel redaction can be added later as a plugin step)</td></tr>
-<tr><td class="k">AI inference service</td><td><span class="pilltag tc-violet">AI inference</span></td><td>Abstract block, implementation to be decided</td><td>Turns the series from the gateway into a hemorrhage mask, a report and a priority flag</td></tr>
-<tr><td class="k">Annotation</td><td><span class="pilltag tc-pink">AI research</span></td><td>Abstract block, tool to be decided</td><td>Clinicians label or correct hemorrhage regions, starting from AI-generated drafts</td></tr>
-<tr><td class="k">Model training</td><td><span class="pilltag tc-pink">AI research</span></td><td>Abstract block, stack to be decided</td><td>Trains and evaluates models on the labeled dataset</td></tr>
-<tr><td class="k">Model registry</td><td><span class="pilltag tc-pink">AI research</span></td><td>A versioned store of trained models with their metrics and status</td><td>The only handoff between research and inference; inference loads only validated versions</td></tr>
+<tr><td class="k">AI inference service</td><td><span class="pilltag tc-violet">AI inference</span></td><td>MONAI Label server in infer-only mode running the <code>hemorrhage</code> model, a MONAI bundle (proposed, <a href="decisions.html#d11">D11</a>, <a href="monai.html">details</a>)</td><td>Turns the volume the gateway sends into a hemorrhage mask with one label per subtype; the gateway turns it into SEG, SR and the priority flag</td></tr>
+<tr><td class="k">Annotation</td><td><span class="pilltag tc-pink">AI research</span></td><td>3D Slicer with the MONAI Label extension, talking to a research MONAI Label server whose datastore is the gateway's de-identified DICOMweb (proposed, D11)</td><td>Clinicians label or correct hemorrhage regions, starting from AI-generated drafts, SAM clicks or scribbles</td></tr>
+<tr><td class="k">Model training</td><td><span class="pilltag tc-pink">AI research</span></td><td>The trainer of the same MONAI Label app, on research GPUs (proposed, D11)</td><td>Trains and evaluates models on the labeled dataset</td></tr>
+<tr><td class="k">Model registry</td><td><span class="pilltag tc-pink">AI research</span></td><td>A versioned store of trained MONAI bundles with their metrics, dataset version and status</td><td>The only handoff between research and inference; inference loads only validated versions</td></tr>
 <tr><td class="k">SeaweedFS</td><td><span class="pilltag tc-emerald">Data</span></td><td>Self-hosted, distributed object storage with an S3-compatible interface (Apache 2.0 licence). Chosen over MinIO, whose community edition is no longer maintained</td><td>One cluster with two buckets: the PACS bucket holds the clinical image files (last 90 days on-premise); the research bucket holds labels and frozen, versioned research datasets and is writable only by the gateway. Both are copied to the cloud</td></tr>
 <tr><td class="k">OpenLDAP</td><td><span class="pilltag tc-emerald">Data</span></td><td>Replicated directory service</td><td>Holds the dcm4chee configuration shared by all PACS nodes</td></tr>
 <tr><td class="k">PostgreSQL primary / standby</td><td><span class="pilltag tc-emerald">Data</span></td><td>Relational database in a high-availability pair (Patroni handles automatic failover). The pair protects against server failure, not against bad data, which is why cloud backups are still needed</td><td>Stores the PACS index and pending PACS work, plus label metadata and AI results in separate databases</td></tr>
@@ -562,9 +563,9 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <p>This is the path shown in pink. It is not time-critical and repeats over weeks and months to keep improving the model.</p>
 <ol class="flow f-ai">
 <li><b class="t">De-identified data is prepared</b>The gateway removes patient identifiers from the selected cases and keeps the de-identified copies, which annotation tools read over DICOMweb. Annotators never see patient identity and never reach the PACS.<br><span class="pr">DICOMweb · de-identified studies on the gateway</span></li>
-<li><b class="t">Clinicians annotate</b>The annotation tool shows each scan with a draft mask from the current model. Clinicians correct the draft instead of drawing from scratch. Labels are saved back to the gateway as DICOM SEG over DICOMweb, and the gateway immediately copies each one to the research bucket on SeaweedFS, so every label is also kept with the research datasets.<br><span class="pr">DICOMweb: images in, SEG labels out · gateway copies to S3</span></li>
+<li><b class="t">Clinicians annotate</b>The annotation tool (3D Slicer with the MONAI Label extension, talking to the research MONAI Label server) shows each scan with a draft mask from the current model. Clinicians correct the draft instead of drawing from scratch. Labels are saved back to the gateway as DICOM SEG over DICOMweb, and the gateway immediately copies each one to the research bucket on SeaweedFS, so every label is also kept with the research datasets.<br><span class="pr">DICOMweb: images in, SEG labels out · gateway copies to S3</span></li>
 <li><b class="t">A labeled dataset is frozen</b>The gateway exports a versioned set of images and labels to the research bucket, which is handed to model training, so every model can be traced to the exact data it learned from.</li>
-<li><b class="t">The model is trained and evaluated</b>Training produces a candidate model with its metrics and publishes it to the model registry.</li>
+<li><b class="t">The model is trained and evaluated</b>Training (the trainer of the MONAI Label app) produces a candidate model with its metrics and publishes it to the model registry.</li>
 <li><b class="t">The model is validated</b>Clinicians and the AI team review the candidate on a held-out test set. Only an approved version is marked validated.</li>
 <li><b class="t">Both sides pick up the new model</b>The inference service loads the validated version for patient care. Annotation uses the latest model for better drafts, which closes the annotation loop.</li>
 </ol>
@@ -611,6 +612,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tr><td class="k tc-pink">Model training</td><td>A versioned labeled dataset</td><td>Candidate model, metrics and documentation to the registry</td><td>GPU access, reproducible runs, no path to clinical systems</td></tr>
 <tr><td class="k tc-pink">Model registry</td><td>Candidate models from training</td><td>Validated models to inference; latest model to annotation</td><td>Version history, approval status, traceability to the dataset</td></tr>
 </tbody></table></div>
+<div class="callout"><b>Proposed implementation: MONAI (<a href="decisions.html#d11">D11</a>).</b> The three AI blocks are filled with one MONAI Label app that holds the <code>hemorrhage</code> model, run as two servers with different settings. In VLAN 30 an infer-only server is called by the gateway plugin (<code>POST /infer/hemorrhage</code> with the NIfTI volume); it has no research datastore and no trainer. In VLAN 40 a research server reads de-identified studies and writes SEG labels over the gateway's DICOMweb, and serves 3D Slicer with the MONAI Label extension for drafts, interactive tools and training. The registry stores versioned MONAI bundles, and the inference server loads only an approved one. The interfaces above do not change. See <a href="monai.html">Slicer + MONAI</a>.</div>
 
 <h2 class="sec" id="principles"><span class="n">12</span>Design principles</h2>
 <div class="grid">

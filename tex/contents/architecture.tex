@@ -161,9 +161,12 @@ P1).
       suy luận cho mỗi ca, gán hạn chót và độ ưu tiên (ca cấp cứu trước), và loại bỏ tác
       vụ trùng khi nhiều nút cổng cùng phát sự kiện cho một ca (khoá theo Study Instance
       UID). Thành phần này là mã nguồn riêng của đề tài.
-\item[Dịch vụ suy luận AI] Khối trừu tượng, công cụ cụ thể chưa chốt; các ứng viên là
-      ứng dụng MONAI Deploy chạy mô hình phân đoạn 3D trên một máy chủ suy luận như
-      NVIDIA Triton. Hợp đồng đầu vào, đầu ra của khối này được cố định ở
+\item[Dịch vụ suy luận AI] Đề xuất dùng một máy chủ MONAI Label \cite{monailabel}
+      ở chế độ chỉ suy luận, chạy mô hình phân đoạn xuất huyết của nhóm AI (đóng gói
+      thành MONAI bundle). Máy chủ không có datastore nghiên cứu, không huấn luyện và
+      không có tài khoản trên PACS; nó chỉ nhận volume từ plugin của cổng và trả mặt nạ.
+      MONAI Deploy với một máy chủ suy luận như NVIDIA Triton là hướng khi triển khai
+      thật. Hợp đồng đầu vào, đầu ra của khối này được cố định ở
       Mục~\ref{sec:aicontract}, nên thay đổi công cụ không ảnh hưởng các tầng khác.
 \end{description}
 
@@ -189,12 +192,18 @@ duyệt mới được đưa sang tầng suy luận.
 
 \textbf{Thành phần.}
 \begin{description}[leftmargin=3.4cm,style=nextline]
-\item[Gán nhãn] MONAI Label \cite{monailabel} làm máy chủ gán nhãn, với 3D Slicer làm
-      công cụ phía người dùng, cùng ứng dụng mà bác sĩ dùng để đọc ảnh. Công cụ đọc ảnh đã khử định danh và ghi nhãn
-      (DICOM SEG) qua DICOMweb của cổng trung gian, không đọc trực tiếp từ kho đối tượng.
-\item[Huấn luyện và registry] Khối trừu tượng: huấn luyện trên GPU, đánh giá trên tập
-      kiểm tra giữ riêng, và lưu mô hình kèm số đo, phiên bản dataset và trạng thái duyệt
-      trong một registry. Registry là điểm bàn giao duy nhất giữa nghiên cứu và suy luận.
+\item[Gán nhãn] Một máy chủ MONAI Label thứ hai (cùng ứng dụng, cùng mô hình với máy
+      chủ suy luận) làm máy chủ gán nhãn, với 3D Slicer và extension MONAILabel làm công
+      cụ phía người dùng, cùng ứng dụng mà bác sĩ dùng để đọc ảnh. Datastore của máy chủ
+      này là DICOMweb của cổng trung gian (bản đã khử định danh), không phải một thư mục
+      ảnh: máy chủ đọc ảnh và ghi nhãn (DICOM SEG) qua cổng, không đọc trực tiếp từ kho
+      đối tượng. Người gán nhãn chỉnh bản nháp của mô hình bằng công cụ tương tác (SAM,
+      scribbles) hoặc Segment Editor.
+\item[Huấn luyện và registry] Huấn luyện bằng trainer của ứng dụng MONAI Label trên GPU
+      nghiên cứu, đánh giá trên tập kiểm tra giữ riêng, và lưu mô hình dưới dạng MONAI
+      bundle kèm số đo, phiên bản dataset và trạng thái duyệt trong một registry. Registry
+      là điểm bàn giao duy nhất giữa nghiên cứu và suy luận: máy chủ suy luận chỉ nạp
+      bundle đã duyệt.
 \end{description}
 
 \textbf{Quy tắc về nhãn.} Nhãn huấn luyện không được lấy từ kết quả AI mà bác sĩ đã
@@ -305,9 +314,10 @@ Trình xem (3D Slicer) & PACS & HTTPS, qua reverse proxy & QIDO-RS, WADO-RS; STO
 Trình xem (3D Slicer) & Keycloak & HTTPS & Đăng nhập OpenID Connect qua trình duyệt hệ thống (Authorization Code + PKCE), do mô-đun ICH Triage thực hiện \\
 PACS & Cổng trung gian & DICOM, 4242 & Xuất chuỗi ảnh (C-STORE), do PACS khởi tạo \\
 Cổng trung gian & PACS (AE \texttt{AI\_RESULTS}) & DICOM, 11113 & Chỉ C-STORE kết quả AI; AE này không nhận truy vấn \\
-Cổng trung gian & Dịch vụ suy luận & API nội bộ & Giao tác vụ, trả mặt nạ (Mục~\ref{sec:aicontract}) \\
-Dịch vụ suy luận & HIS/RIS & HL7 ORU hoặc FHIR & Cờ ưu tiên \\
-Công cụ gán nhãn & Cổng trung gian & HTTPS (DICOMweb) & Đọc bản đã khử định danh, ghi nhãn SEG \\
+Cổng trung gian & Dịch vụ suy luận (MONAI Label) & HTTP nội bộ, \texttt{POST /infer} & Gửi volume NIfTI, nhận mặt nạ (Mục~\ref{sec:aicontract}) \\
+Cổng trung gian & HIS/RIS & HL7 ORU hoặc FHIR & Cờ ưu tiên, suy ra từ mặt nạ \\
+Công cụ gán nhãn (3D Slicer) & Máy chủ MONAI Label nghiên cứu & HTTPS (REST) & Lấy ca, bản nháp, lưu nhãn, huấn luyện \\
+Máy chủ MONAI Label nghiên cứu & Cổng trung gian & HTTPS (DICOMweb) & Đọc bản đã khử định danh, ghi nhãn SEG \\
 PACS, cổng & SeaweedFS & S3 qua HTTP & Tệp ảnh (bucket riêng cho mỗi bên) \\
 PACS, cổng, Keycloak & PostgreSQL & PostgreSQL, 5432, TLS & Chỉ mục, tác vụ, kết quả \\
 PACS & OpenLDAP & LDAP, 389/636 & Cấu hình \\
@@ -399,7 +409,7 @@ lại theo tuần, theo tháng.
       ứng viên vào registry. Chỉ phiên bản được bác sĩ và nhóm AI duyệt mới được đánh dấu
       hợp lệ. Trước khi bật cảnh báo cho bác sĩ, mô hình mới chạy ở chế độ ``im lặng'': có
       kết quả để so sánh nhưng không hiển thị và không gửi cờ.
-\item[3.5] Dịch vụ suy luận nạp phiên bản đã duyệt. Công cụ gán nhãn dùng mô hình hợp lệ
+\item[3.5] Máy chủ MONAI Label suy luận nạp bundle đã duyệt. Công cụ gán nhãn dùng mô hình hợp lệ
       mới nhất để sinh bản nháp cho tập huấn luyện, khép kín vòng gán nhãn theo các quy tắc
       về nhãn ở tầng nghiên cứu.
 \end{description}
@@ -471,6 +481,20 @@ các số đo, được tạo sau cờ ưu tiên.
 trình tiền xử lý, thời điểm chạy và trạng thái xác nhận. Thiếu bất kỳ trường nào thì kết
 quả không được ghi, vì khi đó không thể truy vết kết quả về đúng mô hình và đúng dữ liệu
 đã tạo ra nó.
+
+\textbf{Hiện thực đề xuất bằng MONAI.} 3D Slicer không chứa sẵn MONAI: lõi Slicer chỉ
+là trình xem, còn extension MONAILabel là client gọi REST tới một máy chủ MONAI Label
+riêng, nơi mô hình thực sự chạy. Vòng tương tác Slicer--MONAI Label (lấy ca kế tiếp,
+chạy mô hình, sửa, lưu nhãn, huấn luyện) vì vậy thuộc Luồng 3, không thay được Luồng 2,
+nơi AI phải tự chạy khi chuỗi CT đủ ảnh. Trong Luồng 2, plugin của cổng gọi
+\texttt{POST /infer/\{model\}} của máy chủ suy luận, tải volume NIfTI lên (tham số
+\texttt{file}) và nhận lại đúng tệp mặt nạ (\texttt{output=image}), nên hợp đồng ``NIfTI
+vào, mặt nạ ra'' của cổng không đổi. Mặt nạ có một nhãn cho mỗi thể xuất huyết; cổng
+dựng DICOM SEG với một segment cho mỗi thể, SR ghi thể tích từng thể, và cờ ưu tiên.
+Cả MONAI Label lẫn 3D Slicer đều không thay được PACS: datastore của MONAI Label chỉ là
+một thư mục hoặc DICOMweb của máy chủ khác, còn CSDL DICOM của Slicer là bộ đệm của một
+máy trạm; không thành phần nào nhận ảnh từ máy chụp, dựng worklist, xuất chuỗi ảnh sang
+cổng AI hay lưu trữ dài hạn.
 
 \textbf{Trạng thái hiển thị.} Trình xem phân biệt rõ bốn trạng thái: chưa chạy AI; AI
 thất bại hoặc quá hạn (``không có kết quả AI''); không phân tích được (thiếu chuỗi phù

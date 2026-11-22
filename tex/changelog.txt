@@ -1,3 +1,5 @@
 # 14/09/2026 (Vinh): Initialization
 
 # 24/09/2026 (Vinh): Prompt và thay đổi chủ yếu ở mục 8
+
+# 22/11/2026 (Huy): Hiện thực các khối AI bằng MONAI Label (suy luận, gán nhãn, huấn luyện), cập nhật bảng kết nối, Luồng 3 và hình kiến trúc

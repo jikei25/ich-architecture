@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICH Slicer + MONAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7fc;--card:#ffffff;--text:#1c1f3a;--muted:#5b6080;--border:#d9deef;--pill:#ffffff;
+--blue:#1d4ed8;--blue-s:#e6efff;--blue-h:#d3e2ff;
+--violet:#6d28d9;--violet-s:#f1ecff;--violet-h:#e2d8ff;
+--pink:#be185d;--pink-s:#fdedf5;--pink-h:#fbd5e8;
+--emerald:#047857;--emerald-s:#e5f8ef;--emerald-h:#c8f0dd;
+--amber:#b45309;--amber-s:#fff5e1;--amber-h:#fde5b3;
+--cyan:#0e7490;--cyan-s:#e3f8fc;--cyan-h:#c2eef7;
+--slate:#475569;--slate-s:#f1f3f8;--slate-h:#e0e5ef;
+--rose:#e11d48;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0e1124;--card:#171b34;--text:#eceefb;--muted:#a3a8c8;--border:#2c3257;--pill:#171b34;
+--blue:#93c5fd;--blue-s:#14213f;--blue-h:#1b3160;--violet:#c4b5fd;--violet-s:#1d1838;--violet-h:#33255f;
+--pink:#f9a8d4;--pink-s:#2a1324;--pink-h:#4a1a3a;--emerald:#6ee7b7;--emerald-s:#0f2a24;--emerald-h:#0f3b2e;
+--amber:#fcd34d;--amber-s:#2c210b;--amber-h:#42300a;--cyan:#67e8f9;--cyan-s:#0f2a33;--cyan-h:#123b46;
+--slate:#cbd5e1;--slate-s:#1a1f36;--slate-h:#2a3150;--rose:#fb7185;}}
+:root[data-theme="dark"]{--bg:#0e1124;--card:#171b34;--text:#eceefb;--muted:#a3a8c8;--border:#2c3257;--pill:#171b34;
+--blue:#93c5fd;--blue-s:#14213f;--blue-h:#1b3160;--violet:#c4b5fd;--violet-s:#1d1838;--violet-h:#33255f;
+--pink:#f9a8d4;--pink-s:#2a1324;--pink-h:#4a1a3a;--emerald:#6ee7b7;--emerald-s:#0f2a24;--emerald-h:#0f3b2e;
+--amber:#fcd34d;--amber-s:#2c210b;--amber-h:#42300a;--cyan:#67e8f9;--cyan-s:#0f2a33;--cyan-h:#123b46;
+--slate:#cbd5e1;--slate-s:#1a1f36;--slate-h:#2a3150;--rose:#fb7185;}
+
+.bg{fill:var(--card)}
+.h1{fill:var(--text);font-size:22px;font-weight:700}
+.h2{fill:var(--muted);font-size:14px}
+.lane{stroke:none}
+.f-slate{fill:var(--slate-s)}.f-blue{fill:var(--blue-s)}.f-violet{fill:var(--violet-s)}.f-pink{fill:var(--pink-s)}.f-emerald{fill:var(--emerald-s)}.f-amber{fill:var(--amber-s)}.f-cyan{fill:var(--cyan-s)}
+.h-slate{fill:var(--slate-h)}.h-blue{fill:var(--blue-h)}.h-violet{fill:var(--violet-h)}.h-pink{fill:var(--pink-h)}.h-emerald{fill:var(--emerald-h)}.h-amber{fill:var(--amber-h)}.h-cyan{fill:var(--cyan-h)}
+.t-slate{fill:var(--slate)}.t-blue{fill:var(--blue)}.t-violet{fill:var(--violet)}.t-pink{fill:var(--pink)}.t-emerald{fill:var(--emerald)}.t-amber{fill:var(--amber)}.t-cyan{fill:var(--cyan)}
+.lt{font-size:16px;font-weight:700}.ls{font-size:12.5px;font-weight:600;opacity:.85}
+.frame{fill:none;stroke:var(--border);stroke-width:1}
+.bx,.cy,.cyt{fill:var(--card);stroke-width:1.6}
+.cyt{fill:var(--card)}
+.s-slate{stroke:var(--slate)}.s-blue{stroke:var(--blue)}.s-violet{stroke:var(--violet)}.s-pink{stroke:var(--pink)}.s-emerald{stroke:var(--emerald)}.s-amber{stroke:var(--amber)}.s-cyan{stroke:var(--cyan)}
+.bt{fill:var(--text);font-size:13.5px;font-weight:700}
+.bs{fill:var(--muted);font-size:11.5px}
+.abs{stroke-width:2;stroke-dasharray:8 5}
+.af-violet{fill:var(--violet-s)}.af-pink{fill:var(--pink-s)}
+.big{font-size:16px}
+.tagbg{stroke:none}.tagt{font-size:10.5px;font-weight:700;letter-spacing:.04em}
+.grp{fill:none;stroke:var(--emerald);stroke-width:1.3;stroke-dasharray:6 4}
+.grpt{fill:var(--emerald);font-size:12px;font-weight:700}
+.a.loop{stroke:var(--violet);stroke-width:1.8;stroke-dasharray:3 4}
+.lbv{fill:var(--violet);font-size:11px;font-weight:600}
+.note{fill:var(--muted);font-size:12.5px;font-style:italic}
+.a{fill:none;stroke-linejoin:round;stroke-linecap:round}
+.a.crit{stroke:var(--rose);stroke-width:2.4}
+.a.ai{stroke:var(--violet);stroke-width:2.2}
+.a.flow{stroke:var(--muted);stroke-width:1.6}
+.a.bak{stroke:var(--amber);stroke-width:2.8}
+.a.rest{stroke:var(--cyan);stroke-width:2;stroke-dasharray:7 5}
+.a.life{stroke:var(--cyan);stroke-width:2;stroke-dasharray:2 4}
+.pill{fill:var(--pill);stroke:var(--border);stroke-width:.8;opacity:.96}
+.lb{fill:var(--text);font-size:11px;font-weight:500}
+.lbc{fill:var(--cyan);font-size:11px;font-weight:600}
+.boundary{stroke:var(--cyan);stroke-width:2.5;stroke-dasharray:12 6}
+.btag{fill:var(--cyan);font-size:12px;font-weight:700}
+.legend{fill:var(--bg);stroke:var(--border)}
+.lgh{fill:var(--text);font-size:15px;font-weight:700}
+.lgt{fill:var(--text);font-size:13px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.page{max-width:1180px;margin:0 auto;padding:32px 16px 80px}
+.hero{background:linear-gradient(135deg,#4338ca,#0e7490);color:#fff;border-radius:22px;padding:38px 36px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-90px;top:-90px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hero .eyebrow{font-size:13px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;opacity:.85;position:relative}
+.hero h1{font-size:32px;line-height:1.25;margin:10px 0 12px;position:relative}
+.hero p{font-size:17px;max-width:860px;opacity:.93;margin:0;position:relative}
+.hero a{color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;position:relative}
+.chips span{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600}
+nav.toc{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 22px;margin:24px 0}
+nav.toc b{color:var(--violet)}
+nav.toc ol{margin:8px 0 0;padding-left:22px;columns:2;column-gap:36px}
+nav.toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border)}
+nav.toc a:hover{color:var(--violet)}
+h2.sec{font-size:24px;margin:54px 0 14px;display:flex;align-items:center;gap:12px;line-height:1.3}
+h2.sec .n{flex:none;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#0e7490);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
+p{margin:8px 0}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.86em;background:var(--slate-s);border:1px solid var(--border);padding:1px 6px;border-radius:6px}
+.figure{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;margin:16px 0}
+.figscroll{overflow-x:auto;border-radius:12px}
+#arch{display:block;width:100%;min-width:1100px;height:auto}
+#arch .a[data-g]{transition:opacity .25s}
+#arch[data-focus] .a[data-g]{opacity:.1}
+#arch[data-focus="clinical"] .a[data-g="clinical"],#arch[data-focus="triage"] .a[data-g="triage"],#arch[data-focus="ai"] .a[data-g="ai"],#arch[data-focus="backup"] .a[data-g="backup"],#arch[data-focus="restore"] .a[data-g="restore"]{opacity:1}
+.focusbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 4px 12px}
+.focusbar span{font-size:14px;color:var(--muted);margin-right:4px}
+.focusbar button{font:inherit;font-size:14px;font-weight:600;padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer}
+.focusbar button[aria-pressed="true"]{background:var(--text);color:var(--card);border-color:var(--text)}
+.figcap{font-size:14px;color:var(--muted);margin:10px 4px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;border-top-width:5px}
+.card h4{margin:0 0 4px;font-size:17px}
+.card .v{font-size:13px;font-weight:700;margin-bottom:6px}
+.card p{font-size:15px;color:var(--text)}
+.c-slate{border-top-color:var(--slate)}.c-blue{border-top-color:var(--blue)}.c-violet{border-top-color:var(--violet)}.c-pink{border-top-color:var(--pink)}.c-emerald{border-top-color:var(--emerald)}.c-amber{border-top-color:var(--amber)}.c-cyan{border-top-color:var(--cyan)}
+.tc-slate{color:var(--slate)}.tc-blue{color:var(--blue)}.tc-violet{color:var(--violet)}.tc-pink{color:var(--pink)}.tc-emerald{color:var(--emerald)}.tc-amber{color:var(--amber)}.tc-cyan{color:var(--cyan)}.tc-rose{color:var(--rose)}
+.tbl{overflow-x:auto;margin:14px 0;border:1px solid var(--border);border-radius:16px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:11px 15px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--slate-s);font-weight:700;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.k{font-weight:700;white-space:nowrap}
+.pilltag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--slate-s);border:1px solid var(--border);white-space:nowrap}
+ol.flow{list-style:none;counter-reset:f;padding:0;margin:14px 0;position:relative}
+ol.flow>li{counter-increment:f;position:relative;padding:14px 18px 14px 66px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin:10px 0}
+ol.flow>li::before{content:var(--fp,"") counter(f);position:absolute;left:16px;top:14px;width:32px;height:32px;border-radius:10px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--fc)}
+ol.flow>li b.t{display:block}
+ol.flow>li .pr{display:inline-block;margin-top:4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--muted);background:var(--slate-s);border:1px solid var(--border);border-radius:8px;padding:1px 8px}
+.f-clin{--fc:var(--rose)}.f-tri{--fc:var(--violet)}.f-ai{--fc:var(--pink)}.f-bak{--fc:var(--amber)}.f-rest{--fc:var(--cyan)}
+.callout{border-left:5px solid var(--violet);background:var(--violet-s);padding:14px 18px;border-radius:0 12px 12px 0;margin:18px 0}
+.callout.amber{border-left-color:var(--amber);background:var(--amber-s)}
+.callout.cyan{border-left-color:var(--cyan);background:var(--cyan-s)}
+.callout.rose{border-left-color:var(--rose);background:var(--blue-s)}
+.callout ul{margin:6px 0 0;padding-left:20px}
+.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:14px 0}
+.timeline div{border-radius:12px;padding:12px 14px;border-top:5px solid}
+.timeline b{display:block;font-size:15px}.timeline span{font-size:13px;color:var(--muted)}
+.t1{background:var(--emerald-s);border-color:var(--emerald)!important}.t2{background:var(--amber-s);border-color:var(--amber)!important}.t3{background:var(--cyan-s);border-color:var(--cyan)!important}.t4{background:var(--slate-s);border-color:var(--slate)!important}
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
+@media (max-width:700px){.hero{padding:26px 20px}.hero h1{font-size:25px}nav.toc ol{columns:1}.timeline{grid-template-columns:1fr 1fr}ol.flow>li{padding-left:58px}}
+.stepb circle{stroke:var(--card);stroke-width:2}
+.stepb text{fill:#fff;font-size:10.5px;font-weight:700}
+.sb-clin circle{fill:var(--rose)}.sb-tri circle{fill:var(--violet)}.sb-ai circle{fill:var(--pink)}.sb-bak circle{fill:var(--amber)}.sb-rest circle{fill:var(--cyan)}
+#arch .stepb[data-g]{transition:opacity .25s}
+#arch[data-focus] .stepb[data-g]{opacity:.12}
+#arch[data-focus="clinical"] .stepb[data-g="clinical"],#arch[data-focus="triage"] .stepb[data-g="triage"],#arch[data-focus="ai"] .stepb[data-g="ai"],#arch[data-focus="backup"] .stepb[data-g="backup"],#arch[data-focus="restore"] .stepb[data-g="restore"]{opacity:1}
+.f-clin{--fp:"1."}.f-tri{--fp:"2."}.f-ai{--fp:"3."}.f-bak{--fp:"4."}
+.y{color:var(--emerald);font-weight:700}.n{color:var(--rose);font-weight:700}.p{color:var(--amber);font-weight:700}.o{color:var(--cyan);font-weight:700}
+td.win{background:var(--emerald-s)}
+th.win{background:var(--emerald-h)}
+.adr{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:16px 0}
+dl.qa{margin:14px 0}
+dl.qa dt{font-weight:700;margin-top:16px}
+dl.qa dd{margin:4px 0 0;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px}
+ol.src{font-size:14.5px;padding-left:22px}
+main a{color:var(--violet)}
+.tbl.wide table{min-width:760px;table-layout:fixed}
+.tbl.wide th:first-child{width:28%}
+.tbl td.k{white-space:normal;width:30%;min-width:140px}
+h3.dec{font-size:20px;line-height:1.35;margin:40px 0 8px;scroll-margin-top:72px;display:flex;align-items:center;gap:10px}
+.dn{flex:none;font-size:12.5px;font-weight:700;padding:3px 9px;border-radius:8px;background:var(--violet-s);color:var(--violet);border:1px solid var(--violet-h)}
+.dn.open{background:var(--cyan-s);color:var(--cyan);border-color:var(--cyan-h)}
+.idx table{min-width:860px}
+.idx td:first-child{white-space:nowrap}
+.idx a{font-weight:700;text-decoration:none}
+ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:16px 0}
+.verdict .card p{margin:6px 0 0}
+pre.code{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,Menlo,Consolas,monospace;margin:12px 0}
+pre.code .c{color:var(--muted)}
+.flowsvg{display:block;width:100%;max-width:760px;height:auto;margin:0 auto}
+.flowsvg .bxc{fill:var(--blue-s);stroke:var(--blue);stroke-width:1.2}
+.flowsvg .bxa{fill:var(--violet-s);stroke:var(--violet);stroke-width:1.2}
+.flowsvg .tt{fill:var(--text);font:700 14px Inter,system-ui,sans-serif}
+.flowsvg .ts{fill:var(--muted);font:12px Inter,system-ui,sans-serif}
+.flowsvg .ln{fill:none;stroke:var(--muted);stroke-width:1.5}
+.flowsvg .lv{fill:none;stroke:var(--violet);stroke-width:1.6}
+.flowsvg .gap{fill:none;stroke:var(--rose);stroke-width:1.6;stroke-dasharray:6 4}
+.flowsvg .gt{fill:var(--rose);font:600 12.5px Inter,system-ui,sans-serif}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin:16px 0}
+.shots figure{margin:0;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.shots img{display:block;width:100%;height:auto;cursor:zoom-in}
+.shots figcaption{font-size:14px;padding:10px 14px;color:var(--text)}
+.shots figcaption b{color:var(--violet)}
+.ok{color:var(--emerald);font-weight:700}.part{color:var(--amber);font-weight:700}.no{color:var(--rose);font-weight:700}
+td.st{white-space:nowrap}
+.flowsvg .wk{fill:none;stroke:var(--blue);stroke-width:1.4;stroke-dasharray:7 5}
+.flowsvg .wkt{fill:var(--blue);font:700 12.5px Inter,system-ui,sans-serif}
+.flowsvg .bxk{fill:var(--slate-s);stroke:var(--slate);stroke-width:1.2}
+main p code,main li code,main .callout code{overflow-wrap:anywhere}
+.flowsvg.wide{max-width:900px}
+.flowsvg .lanebx{fill:var(--bg);stroke:var(--border);stroke-width:1}
+.flowsvg .lanet{font:700 12px Inter,system-ui,sans-serif;letter-spacing:.04em}
+.flowsvg .bxr{fill:var(--pink-s);stroke:var(--pink);stroke-width:1.2}
+.flowsvg .cyl{fill:var(--pink-s);stroke:var(--pink);stroke-width:1.2}
+.flowsvg .lr{fill:none;stroke:var(--pink);stroke-width:1.6}
+.flowsvg .tsv{fill:var(--violet);font:600 12px Inter,system-ui,sans-serif}
+.flowsvg .tsr{fill:var(--pink);font:600 12px Inter,system-ui,sans-serif}
+</style>
+<link rel="stylesheet" href="assets/site.css">
+<script>try{var t=localStorage.getItem("ich-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+</head><body>
+<header class="topbar"><div class="topbar-in">
+  <a class="brand" href="index.html"><span class="logo">ICH</span><span class="brand-t">ICH AI system · architecture</span></a>
+  <nav class="scen" aria-label="Deployment scenario">
+    <a href="index.html"><b>Scenario 1</b><span>All on-premise</span></a>
+    <a href="simplified.html"><b>Simplified</b><span>Scenario 1 core</span></a>
+    <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
+    <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
+    <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
+    <a href="slicer.html"><b>3D Slicer</b><span>Proposed viewer</span></a>
+    <a href="monai.html" aria-current="page"><b>Slicer + MONAI</b><span>AI blocks</span></a>
+    <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
+  </nav>
+  <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
+</div><div class="progress"><span></span></div></header>
+<div class="page">
+<header class="hero">
+  <div class="eyebrow">Intracerebral hemorrhage AI system · Khối AI · 3D Slicer + MONAI</div>
+  <h1>3D Slicer + MONAI: ai làm gì, và kiến trúc cần đổi gì</h1>
+  <p>Sau góp ý "nên dùng 3D Slicer + MONAI", trang này trả lời ba câu hỏi: 3D Slicer có sẵn MONAI không, sơ đồ tương tác Slicer ↔ MONAI Label thực chất là luồng nào, và có còn cần PACS không. Sau đó trang đề xuất cách lắp MONAI vào các khối AI trừu tượng của kiến trúc. Các API của MONAI Label được đối chiếu với mã nguồn; cấu hình máy chủ và phần sửa <code>ai_bridge.py</code> <b>chưa chạy thử trên stack của đồ án</b>.</p>
+  <div class="chips"><span>Slicer không chứa MONAI</span><span>Khối AI = MONAI</span><span>Sơ đồ nhận được = Luồng 3 (gán nhãn)</span><span>Vẫn cần PACS</span><span>Đề xuất, chưa PoC</span></div>
+</header>
+
+<div class="layout">
+<nav class="toc"><b>Mục lục</b><ol>
+<li><a href="#verdict">Kết luận nhanh</a></li>
+<li><a href="#roles">3D Slicer và MONAI: ai làm gì</a></li>
+<li><a href="#diagram">Đọc sơ đồ Slicer ↔ MONAI Label</a></li>
+<li><a href="#proposal">Kiến trúc đề xuất</a></li>
+<li><a href="#pacs">Có còn cần PACS không</a></li>
+<li><a href="#changes">Thay đổi so với kiến trúc hiện tại</a></li>
+<li><a href="#contract">Hợp đồng cổng trung gian ↔ MONAI</a></li>
+<li><a href="#servers">Hai máy chủ MONAI Label</a></li>
+<li><a href="#risks">Rủi ro và cách giảm</a></li>
+<li><a href="#plan">Kế hoạch PoC</a></li>
+<li><a href="#refs">Tài liệu tham khảo</a></li>
+</ol></nav>
+<main>
+
+<h2 class="sec" id="verdict"><span class="n">1</span>Kết luận nhanh</h2>
+<div class="verdict">
+  <div class="card c-blue"><h4>Slicer không có sẵn MONAI</h4><p>Lõi 3D Slicer chỉ là phần mềm xem và xử lý ảnh. MONAI chỉ vào Slicer qua extension, và extension MONAILabel chỉ là <b>client</b>: mô hình chạy trên một MONAI Label Server riêng.</p></div>
+  <div class="card c-violet"><h4>Khối AI chính là MONAI</h4><p>Khối "AI inference service", "Annotation" và "Model training" (đang là khối trừu tượng) được hiện thực bằng MONAI. Cùng một mô hình <code>hemorrhage</code> chạy ở hai máy chủ MONAI Label với hai cấu hình.</p></div>
+  <div class="card c-pink"><h4>Sơ đồ nhận được là Luồng 3</h4><p>Đó là vòng gán nhãn (active learning) của MONAI Label: người dùng bấm Run thì AI mới chạy. Luồng triage lâm sàng cần AI tự chạy khi CT tới, nên sơ đồ này không thay được Luồng 2.</p></div>
+  <div class="card c-emerald"><h4>Vẫn cần PACS</h4><p>Datastore của MONAI Label là một thư mục ảnh, CSDL DICOM của Slicer là bộ đệm của một máy. Không cái nào nhận ảnh từ máy CT, dựng worklist, lưu trữ 10 năm hay phục vụ nhiều bác sĩ.</p></div>
+</div>
+<div class="callout"><b>Khuyến nghị.</b> Giữ nguyên tầng lâm sàng (PACS dcm4chee, 3D Slicer + module ICH Triage cho bác sĩ đọc) và tầng dữ liệu. Thay ba khối AI trừu tượng bằng MONAI: một <b>MONAI Label Server chỉ suy luận</b> ở tầng suy luận, được cổng Orthanc gọi tự động; một <b>MONAI Label Server nghiên cứu</b> ở tầng nghiên cứu, được 3D Slicer (extension MONAILabel) gọi khi gán nhãn và huấn luyện. Registry mô hình là điểm bàn giao duy nhất giữa hai máy chủ. Quyết định này được ghi là <a href="decisions.html#d11">D11</a>.</div>
+
+<h2 class="sec" id="roles"><span class="n">2</span>3D Slicer và MONAI: ai làm gì</h2>
+<p><a href="https://github.com/Slicer/Slicer">3D Slicer</a> là ứng dụng desktop (C++, Qt, VTK, ITK, Python nhúng). Mã nguồn lõi của nó không có MONAI hay PyTorch. <a href="https://github.com/Project-MONAI/MONAI">MONAI</a> là bộ thư viện PyTorch cho ảnh y khoa; quanh nó có MONAI Label (máy chủ gán nhãn có AI hỗ trợ), MONAI Deploy (đóng gói và chạy mô hình trong bệnh viện) và Model Zoo (các bundle mô hình). Có bốn cách ghép Slicer với MONAI:</p>
+<div class="tbl"><table>
+<tr><th>Cách dùng</th><th>Mô hình chạy ở đâu</th><th>Ai kích hoạt</th><th>Hợp với đồ án ở đâu</th></tr>
+<tr><td class="k">Slicer lõi, không extension</td><td>Không có AI</td><td>n/a</td><td>Trình xem của bác sĩ (<a href="slicer.html">D10</a>); kết quả AI tới dưới dạng SEG và SR trong PACS</td></tr>
+<tr><td class="k win">Extension MONAILabel + MONAI Label Server</td><td class="win">Trên máy chủ MONAI Label (GPU), Slicer chỉ gọi REST</td><td class="win">Người dùng bấm Next Sample, Run, Submit Label, Train</td><td class="win"><span class="y">Gán nhãn và huấn luyện</span> (Luồng 3). Máy chủ cũng nhận lệnh <code>/infer</code> từ chương trình khác, nên dùng được cho suy luận tự động</td></tr>
+<tr><td class="k">Extension MONAIAuto3DSeg</td><td>Ngay trong Slicer trên máy trạm (cài PyTorch và MONAI vào Python của Slicer)</td><td>Người dùng bấm chạy</td><td><span class="n">Không hợp</span> cho triage: mỗi máy trạm cần GPU, AI chỉ chạy khi bác sĩ đã mở ca</td></tr>
+<tr><td class="k">MONAI Deploy App SDK (MAP)</td><td>Máy chủ suy luận, đóng gói thành container chuẩn</td><td>Sự kiện DICOM (qua Informatics Gateway hoặc cổng của mình)</td><td><span class="o">Hướng production</span> cho tầng suy luận; nhiều việc hơn so với phạm vi đồ án</td></tr>
+</table></div>
+<div class="callout cyan"><b>Trả lời câu hỏi "Slicer có include MONAI luôn hay AI inference service là MONAI?"</b> AI inference service là MONAI. Slicer chỉ là client: ở máy trạm bác sĩ, nó đọc kết quả AI từ PACS; ở máy gán nhãn, nó gọi máy chủ MONAI Label qua extension MONAILabel.</div>
+
+<h2 class="sec" id="diagram"><span class="n">3</span>Đọc sơ đồ Slicer ↔ MONAI Label</h2>
+<p>Sơ đồ nhận được có 3D Slicer trên Windows là client, và MONAI Label Server (WSL2, app <code>apps/radiology</code>) là server. Từng bước làm như sau:</p>
+<div class="tbl"><table>
+<tr><th>Bước</th><th>Lời gọi</th><th>Ý nghĩa</th></tr>
+<tr><td class="k">1 · Connect</td><td><code>GET /info/</code></td><td>Server liệt kê models, strategies, trainers. Ở đây <code>trainers = {}</code>: app chưa có tác vụ huấn luyện nào</td></tr>
+<tr><td class="k">2 · Next Sample</td><td><code>POST /activelearning/random</code></td><td>Server chọn ngẫu nhiên một ảnh chưa có nhãn trong datastore (ví dụ <code>078</code>)</td></tr>
+<tr><td class="k">3</td><td><code>GET /datastore/image?image=078</code></td><td>Slicer tải volume CT (<code>.nii</code>) từ datastore</td></tr>
+<tr><td class="k">4 · Run</td><td><code>POST /infer/hemorrhage?image=078</code></td><td>Chỉ gửi ID, không tải ảnh lên. Server trả label map 6 lớp (0–5) dạng <code>.nrrd</code></td></tr>
+<tr><td class="k">5, 6 · Sửa (tuỳ chọn)</td><td><code>/infer/sam_2d</code>, <code>/infer/sam_3d</code>, <code>/infer/Histogram+GraphCut</code></td><td>Công cụ tương tác: bấm điểm (SAM) hoặc tô nét (scribbles), server trả mask cho một nhãn. Segment Editor sửa tay không gọi server</td></tr>
+<tr><td class="k">7 · Submit Label</td><td><code>PUT /datastore/label?image=078</code></td><td>Nhãn đã sửa được lưu thành bản "final" trong datastore. Không có gì chạy tiếp</td></tr>
+<tr><td class="k">8 · Train</td><td><code>POST /train/hemorrhage</code></td><td>Slicer ẩn nút Train vì server không có trainer. Gửi tay thì tác vụ báo ERROR</td></tr>
+</table></div>
+<div class="callout amber"><b>Năm điểm cần sửa trước khi đưa vào kiến trúc.</b>
+<ul>
+<li><b>Datastore là thư mục NIfTI.</b> Không có DICOM, không có ca từ máy CT, không có khử định danh hay audit. Đổi sang DICOMweb của cổng Orthanc (bản đã khử định danh), đúng như Luồng 3 đang mô tả.</li>
+<li><b>AI chỉ chạy khi có người bấm Run.</b> Triage ICH cần AI chạy ngay khi chuỗi CT đủ ảnh, trước khi bác sĩ mở ca. Phần này do cổng Orthanc gọi <code>/infer</code> tự động (mục <a href="#contract">7</a>).</li>
+<li><b>Vòng học chưa khép kín.</b> <code>trainers = {}</code> nghĩa là app chưa khai báo TrainTask cho model <code>hemorrhage</code> (hoặc server chạy với <code>skip_trainers</code>). Cần thêm trainer, hoặc huấn luyện ngoài MONAI Label rồi đưa bundle qua registry.</li>
+<li><b>Mask có 6 lớp, nhưng cổng đang coi là nhị phân.</b> <code>ai_bridge.py</code> hiện coi mọi voxel khác 0 là xuất huyết, nên sẽ gộp các thể làm một. SEG cần một segment cho mỗi nhãn 1–5 và SR ghi thể tích từng thể. Bảng nhãn cần đội AI xác nhận.</li>
+<li><b>"Submit Label" ghi đè một file.</b> Nhãn không có phiên bản, không có tập dữ liệu đóng băng. Nhãn phải lưu thành DICOM SEG qua cổng rồi sao sang bucket nghiên cứu, và dataset được đóng băng theo phiên bản như Luồng 3.</li>
+</ul></div>
+
+<h2 class="sec" id="proposal"><span class="n">4</span>Kiến trúc đề xuất</h2>
+<p>Tầng lâm sàng và tầng dữ liệu giữ nguyên. Hai máy chủ MONAI Label chạy cùng một app (cùng mô hình <code>hemorrhage</code>) nhưng khác cấu hình, mỗi máy nằm trong đúng tầng mạng của nó.</p>
+<div class="figure"><div class="figscroll">
+<svg class="flowsvg wide" viewBox="0 0 760 560" role="img" aria-labelledby="mo-t mo-d"><title id="mo-t">3D Slicer và MONAI trong kiến trúc ICH</title><desc id="mo-d">Tầng lâm sàng: máy CT gửi ảnh vào PACS dcm4chee, bác sĩ đọc bằng 3D Slicer với module ICH Triage. Tầng suy luận: PACS đẩy chuỗi ảnh sang cổng Orthanc; plugin ai_bridge gửi volume tới MONAI Label Server chỉ suy luận, nhận mask 6 lớp, dựng SEG và SR rồi gửi về PACS. Tầng nghiên cứu: MONAI Label Server nghiên cứu đọc bản đã khử định danh và ghi nhãn SEG qua DICOMweb của cổng; người gán nhãn dùng 3D Slicer với extension MONAILabel; mô hình được đăng ký vào registry, và máy chủ suy luận chỉ nạp bản đã duyệt.</desc>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="lanebx" x="10" y="16" width="740" height="132" rx="12"/><text class="lanet t-blue" x="24" y="38">LÂM SÀNG · VLAN 10–20</text>
+<rect class="lanebx" x="10" y="160" width="740" height="140" rx="12"/><text class="lanet t-violet" x="24" y="182">SUY LUẬN AI · VLAN 30</text>
+<rect class="lanebx" x="10" y="312" width="740" height="236" rx="12"/><text class="lanet t-pink" x="24" y="334">NGHIÊN CỨU AI · VLAN 40 · chỉ dữ liệu đã khử định danh</text>
+
+<rect class="bxc" x="30" y="60" width="120" height="64" rx="8"/><text class="tt" x="90" y="88" text-anchor="middle">Máy CT</text><text class="ts" x="90" y="108" text-anchor="middle">modality</text>
+<rect class="bxc" x="230" y="60" width="180" height="64" rx="8"/><text class="tt" x="320" y="88" text-anchor="middle">PACS · dcm4chee</text><text class="ts" x="320" y="108" text-anchor="middle">lưu trữ + DICOMweb</text>
+<rect class="bxc" x="520" y="60" width="210" height="64" rx="8"/><text class="tt" x="625" y="88" text-anchor="middle">3D Slicer + ICH Triage</text><text class="ts" x="625" y="108" text-anchor="middle">bác sĩ đọc, xác nhận, sửa mask</text>
+<path class="ln" d="M150 92 L226 92" marker-end="url(#ah)"/><text class="ts" x="188" y="84" text-anchor="middle">C-STORE</text>
+<path class="ln" d="M410 92 L516 92" marker-start="url(#ah)" marker-end="url(#ah)"/><text class="ts" x="463" y="84" text-anchor="middle">QIDO/WADO-RS</text>
+
+<rect class="bxa" x="230" y="206" width="180" height="72" rx="8"/><text class="tt" x="320" y="234" text-anchor="middle">Orthanc + ai_bridge</text><text class="ts" x="320" y="254" text-anchor="middle">mask → SEG, SR, cờ ưu tiên</text>
+<rect class="bxa" x="520" y="206" width="210" height="72" rx="8"/><text class="tt" x="625" y="234" text-anchor="middle">MONAI Label · suy luận</text><text class="ts" x="625" y="254" text-anchor="middle">POST /infer/hemorrhage</text>
+<path class="lv" d="M340 124 L340 202" marker-end="url(#ah)"/><text class="tsv" x="348" y="195">đẩy series 1 lần</text>
+<path class="lv" d="M300 202 L300 128" marker-end="url(#ah)"/><text class="tsv" x="292" y="195" text-anchor="end">C-STORE SEG + SR</text>
+<path class="lv" d="M410 230 L516 230" marker-end="url(#ah)"/><text class="tsv" x="463" y="222" text-anchor="middle">volume NIfTI</text>
+<path class="lv" d="M516 256 L414 256" marker-end="url(#ah)"/><text class="tsv" x="463" y="272" text-anchor="middle">mask 6 lớp</text>
+
+<rect class="bxr" x="24" y="380" width="180" height="72" rx="8"/><text class="tt" x="114" y="408" text-anchor="middle">3D Slicer (gán nhãn)</text><text class="ts" x="114" y="428" text-anchor="middle">extension MONAILabel</text>
+<rect class="bxr" x="260" y="380" width="200" height="72" rx="8"/><text class="tt" x="360" y="408" text-anchor="middle">MONAI Label · nghiên cứu</text><text class="ts" x="360" y="428" text-anchor="middle">infer, SAM, scribbles, train</text>
+<path class="cyl" d="M550 384 L550 448 A85 10 0 0 0 720 448 L720 384 A85 10 0 0 1 550 384 Z"/><ellipse class="cyl" cx="635" cy="384" rx="85" ry="10"/>
+<text class="tt" x="635" y="414" text-anchor="middle">Model registry</text><text class="ts" x="635" y="434" text-anchor="middle">MONAI bundle đã duyệt</text>
+<path class="lr" d="M204 416 L256 416" marker-start="url(#ah)" marker-end="url(#ah)"/><text class="tsr" x="230" y="408" text-anchor="middle">REST</text>
+<path class="lr" d="M380 282 L380 376" marker-start="url(#ah)" marker-end="url(#ah)"/><text class="tsr" x="388" y="350">DICOMweb: ảnh đã khử định danh, nhãn SEG</text>
+<path class="lr" d="M460 416 L546 416" marker-end="url(#ah)"/><text class="tsr" x="503" y="408" text-anchor="middle">bundle mới</text>
+<path class="lv" d="M690 374 L690 282" marker-end="url(#ah)"/><text class="tsv" x="682" y="328" text-anchor="end">chỉ nạp bản đã duyệt</text>
+<text class="ts" x="380" y="510" text-anchor="middle">Hai máy chủ MONAI Label: cùng app và mô hình hemorrhage, khác cấu hình và khác tầng mạng.</text>
+<text class="ts" x="380" y="530" text-anchor="middle">Máy suy luận không train và không có datastore nghiên cứu; máy nghiên cứu không thấy dữ liệu có định danh.</text>
+</svg></div>
+<p class="figcap">Xanh dương: lâm sàng. Tím: suy luận AI (luồng triage tự động). Hồng: nghiên cứu (vòng gán nhãn trong sơ đồ nhận được). Các thành phần khác của kiến trúc (Keycloak, HIS/RIS, SeaweedFS, PostgreSQL, sao lưu) không đổi và không vẽ lại ở đây.</p>
+</div>
+<ol class="flow">
+<li class="f-dec"><b class="t">Luồng 2 · triage tự động</b>Khi một chuỗi CT đủ ảnh, plugin <code>ai_bridge.py</code> trong Orthanc gửi volume tới máy chủ MONAI Label suy luận, nhận mask 6 lớp, dựng DICOM SEG (mỗi thể một segment) và SR (thể tích từng thể), rồi gửi về PACS bằng C-STORE. Bác sĩ thấy kết quả trong 3D Slicer mà không cần bấm Run.</li>
+<li class="f-dec"><b class="t">Luồng 3 · gán nhãn và huấn luyện</b>Đúng sơ đồ nhận được, nhưng datastore là DICOMweb của Orthanc (bản đã khử định danh). Người gán nhãn dùng 3D Slicer + extension MONAILabel: Next Sample, Run, sửa bằng SAM, scribbles hoặc Segment Editor, Submit Label. Nhãn được lưu thành SEG trên cổng rồi sao sang bucket nghiên cứu; trainer của app huấn luyện mô hình mới từ dataset đã đóng băng.</li>
+<li class="f-dec"><b class="t">Bàn giao mô hình</b>Mô hình mới được đăng ký vào registry dưới dạng MONAI bundle có phiên bản, số đo và trạng thái duyệt. Máy chủ suy luận chỉ nạp bản đã duyệt và ghi phiên bản đó vào SEG và SR.</li>
+</ol>
+
+<h2 class="sec" id="pacs"><span class="n">5</span>Có còn cần PACS không</h2>
+<p>Cả MONAI Label và 3D Slicer đều có chỗ chứa ảnh, nhưng cả hai đều không làm được việc của PACS:</p>
+<div class="tbl"><table>
+<tr><th>Việc</th><th>PACS (dcm4chee)</th><th>Datastore MONAI Label</th><th>CSDL DICOM của Slicer</th></tr>
+<tr><td class="k">Nhận ảnh từ nhiều máy CT (C-STORE)</td><td class="y">Có</td><td class="n">Không: chỉ đọc thư mục hoặc DICOMweb của server khác</td><td class="p">Có listener, nhưng cho một máy trạm</td></tr>
+<tr><td class="k">Worklist từ chỉ định HIS (MWL, luồng 1.4)</td><td class="y">Có</td><td class="n">Không</td><td class="n">Không</td></tr>
+<tr><td class="k">DICOMweb cho nhiều bác sĩ cùng lúc</td><td class="y">Có</td><td class="n">Không</td><td class="n">Không</td></tr>
+<tr><td class="k">Đẩy chuỗi ảnh sang cổng AI (luồng 2.1)</td><td class="y">Có, quy tắc xuất</td><td class="n">Không</td><td class="n">Không</td></tr>
+<tr><td class="k">Lưu trữ 10 năm, vòng đời, sao lưu</td><td class="y">Có (cùng SeaweedFS, cloud)</td><td class="n">Không</td><td class="n">Không: bộ đệm, nên xoá theo phiên</td></tr>
+<tr><td class="k">Audit IHE, phân quyền</td><td class="y">Có</td><td class="n">Không</td><td class="n">Không</td></tr>
+<tr><td class="k">Chạy cụm N+1</td><td class="y">Có</td><td class="n">Không</td><td class="n">Không</td></tr>
+</table></div>
+<div class="callout cyan"><b>Khi nào bỏ được PACS.</b> Chỉ khi phạm vi đồ án được thu hẹp thành <b>công cụ nghiên cứu và gán nhãn</b>: 3D Slicer + MONAI Label trên một bộ dữ liệu công khai (ví dụ CT-ICH PhysioNet), không có ca thật từ máy CT. Khi đó đồ án không còn là hệ thống triage trong bệnh viện. Với phạm vi hiện tại (CT gửi vào PACS, bác sĩ đọc, AI báo ca nghi xuất huyết), PACS vẫn là thành phần bắt buộc. Đây là quyết định về phạm vi, cần thống nhất với giảng viên hướng dẫn.</div>
+
+<h2 class="sec" id="changes"><span class="n">6</span>Thay đổi so với kiến trúc hiện tại</h2>
+<div class="tbl"><table>
+<tr><th>Thành phần</th><th>Hiện tại</th><th>Đề xuất</th></tr>
+<tr><td class="k">PACS, cổng Orthanc, SeaweedFS, PostgreSQL, sao lưu, Keycloak</td><td>D1–D9</td><td>Không đổi</td></tr>
+<tr><td class="k">Trình xem của bác sĩ</td><td>3D Slicer + module ICH Triage (D10, đề xuất)</td><td>Không đổi. Không cài extension MONAILabel trên máy đọc lâm sàng</td></tr>
+<tr><td class="k">Dịch vụ suy luận AI</td><td>Khối trừu tượng; ứng viên MONAI Deploy + Triton</td><td>MONAI Label Server chế độ chỉ suy luận, chạy mô hình <code>hemorrhage</code> (MONAI bundle). MONAI Deploy giữ làm hướng production</td></tr>
+<tr><td class="k">Plugin <code>ai_bridge.py</code></td><td>POST NIfTI tới <code>AI_SEGMENT_URL</code>, mask nhị phân, một segment</td><td>Gọi <code>/infer/hemorrhage</code>; mask 6 lớp thành SEG nhiều segment và thể tích từng thể</td></tr>
+<tr><td class="k">Gán nhãn</td><td>Khối trừu tượng (báo cáo đã ghi MONAI Label + 3D Slicer)</td><td>MONAI Label Server nghiên cứu, datastore = DICOMweb của Orthanc (bản khử định danh); 3D Slicer + extension MONAILabel</td></tr>
+<tr><td class="k">Huấn luyện</td><td>Khối trừu tượng</td><td>Trainer của app MONAI Label (thêm cho mô hình <code>hemorrhage</code>) trên GPU nghiên cứu, hoặc script huấn luyện của bundle</td></tr>
+<tr><td class="k">Registry mô hình</td><td>Kho mô hình có phiên bản</td><td>Kho MONAI bundle có phiên bản, số đo, phiên bản dataset và trạng thái duyệt</td></tr>
+</table></div>
+
+<h2 class="sec" id="contract"><span class="n">7</span>Hợp đồng cổng trung gian ↔ MONAI</h2>
+<p>Theo mã nguồn của MONAI Label, <code>POST /infer/{model}</code> nhận hoặc <code>image</code> (ID ảnh trong datastore), hoặc <code>file</code> (volume tải lên), kèm <code>params</code> dạng JSON. Tham số <code>output</code> chọn kiểu trả về: <code>image</code> trả đúng file mask, <code>json</code> chỉ trả tham số, <code>dicom_seg</code> trả DICOM SEG (cần datastore DICOMweb và <code>label_info</code>), còn mặc định trả multipart gồm cả hai. Trong <code>params</code>, <code>result_extension</code> chọn định dạng file mask (<code>.nii.gz</code> hoặc <code>.nrrd</code>). Vì vậy có hai cách nối cổng với MONAI:</p>
+<div class="tbl"><table>
+<tr><th>Cách</th><th>Lời gọi</th><th>Ưu</th><th>Nhược</th></tr>
+<tr><td class="k win">A · tải volume lên (dùng ngay)</td><td class="win"><code>POST /infer/hemorrhage?output=image</code>, multipart <code>file=series.nii.gz</code>, <code>params={"result_extension": ".nii.gz"}</code></td><td class="win">Giữ hợp đồng "NIfTI vào, mask ra" mà <code>ai_bridge.py</code> và <code>nifti_bridge.py</code> đã làm; máy chủ suy luận không cần datastore</td><td class="win">Mỗi lần gọi tải cả volume qua mạng (vài chục MB, trong cùng VLAN)</td></tr>
+<tr><td class="k">B · chỉ gửi ID (giống bước 4 của sơ đồ)</td><td>Máy chủ chạy với <code>--studies</code> là DICOMweb của Orthanc; cổng gọi <code>POST /infer/hemorrhage?image=&lt;SeriesInstanceUID&gt;</code></td><td>Đúng mô hình "AI đọc từ cổng qua DICOMweb" của Luồng 2</td><td>Máy chủ suy luận giữ bộ đệm ảnh có định danh; phải cấu hình datastore DICOMweb và xác thực</td></tr>
+</table></div>
+<pre class="code"><span class="c"># Phác thảo, chưa chạy: segment() mới trong ai_bridge.py theo cách A</span>
+def segment(volume):
+    response = requests.post(
+        f"{MONAI_URL}/infer/hemorrhage", params={"output": "image"},
+        files={"file": ("series.nii.gz", gzip.compress(volume.to_bytes()), "application/gzip")},
+        data={"params": json.dumps({"result_extension": ".nii.gz"})},
+        timeout=AI_TIMEOUT_SECONDS)
+    response.raise_for_status()
+    return nib.Nifti1Image.from_bytes(gzip.decompress(response.content))
+<span class="c"># mask_to_seg: một SegmentDescription cho mỗi nhãn 1–5 có voxel, thay cho một segment "hemorrhage"</span></pre>
+<div class="callout amber"><b>Cần kiểm tra khi làm PoC.</b> Mask trả về phải cùng lưới (shape, affine) với volume gửi đi; <code>ai_bridge.py</code> đã từ chối mask lệch lưới. Nếu app tự resample hoặc đổi hướng trục thì phải sửa phần hậu xử lý của app, không sửa ở cổng.</div>
+
+<h2 class="sec" id="servers"><span class="n">8</span>Hai máy chủ MONAI Label</h2>
+<div class="tbl"><table>
+<tr><th></th><th>Máy chủ suy luận</th><th>Máy chủ nghiên cứu</th></tr>
+<tr><td class="k">Tầng mạng</td><td>VLAN 30 (suy luận AI)</td><td>VLAN 40 (nghiên cứu AI)</td></tr>
+<tr><td class="k">Ai gọi</td><td>Chỉ <code>ai_bridge.py</code> của cổng Orthanc</td><td>3D Slicer + extension MONAILabel của người gán nhãn</td></tr>
+<tr><td class="k">Dữ liệu</td><td>Volume có định danh, chỉ trong lúc suy luận</td><td>Chỉ bản đã khử định danh</td></tr>
+<tr><td class="k">Datastore (<code>--studies</code>)</td><td>Thư mục tạm rỗng (cách A)</td><td>DICOMweb của Orthanc, bản khử định danh</td></tr>
+<tr><td class="k">Models</td><td><code>hemorrhage</code></td><td><code>hemorrhage</code> và các công cụ tương tác (SAM, scribbles)</td></tr>
+<tr><td class="k">Trainers, active learning</td><td>Tắt</td><td>Bật (thêm trainer cho <code>hemorrhage</code>)</td></tr>
+<tr><td class="k">Phiên bản mô hình</td><td>Bản đã duyệt trong registry</td><td>Bản mới nhất để sinh bản nháp (theo quy tắc nhãn của Luồng 3)</td></tr>
+</table></div>
+<pre class="code"><span class="c"># Phác thảo, chưa chạy. Tên app và các khoá --conf phụ thuộc app của đội AI</span>
+<span class="c"># Máy chủ suy luận (VLAN 30)</span>
+monailabel start_server --app apps/radiology --studies /srv/monai/empty \
+  --conf models hemorrhage --conf skip_trainers true --conf skip_strategies true --port 8000
+<span class="c"># Máy chủ nghiên cứu (VLAN 40)</span>
+monailabel start_server --app apps/radiology --studies http://gateway:8042/dicom-web \
+  --conf models hemorrhage,sam_2d --port 8000</pre>
+<p>Trong đồ án, hai máy chủ có thể chạy trên cùng một máy WSL2 có GPU, miễn là ghi rõ trong báo cáo rằng khi triển khai thật chúng nằm ở hai VLAN và tầng suy luận có GPU riêng.</p>
+
+<h2 class="sec" id="risks"><span class="n">9</span>Rủi ro và cách giảm</h2>
+<div class="tbl"><table>
+<tr><th>Rủi ro</th><th>Vì sao quan trọng</th><th>Cách giảm</th></tr>
+<tr><td class="k">MONAI Label không được thiết kế để phục vụ production</td><td>Không có hàng đợi, batch, HA hay số đo kiểu máy chủ suy luận</td><td>Hàng đợi và thử lại nằm ở <code>ai_bridge.py</code> (đã có); một tác vụ mỗi GPU; trạng thái "AI tạm ngừng" khi máy chủ không trả lời. Hướng production là MONAI Deploy hoặc Triton với cùng bundle</td></tr>
+<tr><td class="k">Mask 6 lớp bị gộp làm một</td><td>Mất thông tin thể xuất huyết và thể tích từng thể</td><td>Sửa <code>mask_to_seg</code> và SR; đội AI cung cấp bảng nhãn 1–5</td></tr>
+<tr><td class="k">Nhãn huấn luyện lấy từ kết quả AI đã chấp nhận</td><td>Mô hình học lại chính đầu ra của nó</td><td>Giữ quy tắc nhãn của Luồng 3: tập kiểm định và kiểm tra gán nhãn mù với AI; mô hình đang huấn luyện không sinh nháp cho chính nó</td></tr>
+<tr><td class="k">Máy chủ nghiên cứu chạm dữ liệu có định danh</td><td>Phá vỡ nguyên tắc tách lâm sàng và nghiên cứu</td><td>Datastore chỉ trỏ tới bản đã khử định danh trên cổng; tường lửa VLAN 40 không có đường tới PACS</td></tr>
+<tr><td class="k">Mạng giữa Windows, WSL2 và Docker</td><td>Slicer trên Windows gọi được <code>localhost</code> của WSL2, nhưng container Orthanc thì không</td><td>Dùng địa chỉ IP của máy chủ WSL2 hoặc chạy MONAI Label trong cùng mạng Docker với cổng</td></tr>
+</table></div>
+
+<h2 class="sec" id="plan"><span class="n">10</span>Kế hoạch PoC</h2>
+<div class="tbl"><table>
+<tr><th>#</th><th>Việc</th><th>Đạt khi</th></tr>
+<tr><td>1</td><td>Chạy máy chủ MONAI Label chỉ suy luận với mô hình <code>hemorrhage</code>; gửi một CT NIfTI bằng <code>curl -F file=@ct.nii.gz</code></td><td>Nhận mask <code>.nii.gz</code> cùng shape và affine; ghi thời gian suy luận</td></tr>
+<tr><td>2</td><td>Đổi <code>segment()</code> của <code>ai_bridge.py</code> sang cách A, sửa <code>mask_to_seg</code> thành nhiều segment</td><td>Một CT đẩy từ PACS sinh SEG có các segment theo thể, hiện đúng chỗ trong 3D Slicer</td></tr>
+<tr><td>3</td><td>Chạy máy chủ nghiên cứu với datastore là DICOMweb của Orthanc</td><td>Next Sample, Run, Submit Label trong Slicer chạy được; nhãn xuất hiện trên cổng dạng SEG</td></tr>
+<tr><td>4</td><td>Thêm trainer cho <code>hemorrhage</code></td><td><code>/info/</code> liệt kê trainer, nút Train hiện, <code>POST /train/hemorrhage</code> chạy xong và sinh mô hình mới</td></tr>
+<tr><td>5</td><td>Đưa mô hình mới qua registry (thủ công: chép bundle kèm phiên bản), máy chủ suy luận nạp lại</td><td>SEG mới mang phiên bản mô hình mới; mô hình cũ vẫn chạy nếu bản mới chưa được duyệt</td></tr>
+</table></div>
+
+<h2 class="sec" id="refs"><span class="n">11</span>Tài liệu tham khảo</h2>
+<ol class="src">
+<li><a href="https://github.com/Slicer/Slicer">3D Slicer: mã nguồn</a></li>
+<li><a href="https://github.com/Project-MONAI/MONAILabel">MONAI Label: mã nguồn, app radiology, plugin 3D Slicer</a></li>
+<li><a href="https://docs.monai.io/projects/label/en/latest/">MONAI Label: tài liệu</a></li>
+<li><a href="https://github.com/Project-MONAI/MONAILabel/blob/main/monailabel/endpoints/infer.py">MONAI Label: endpoint <code>/infer</code> (tham số <code>image</code>, <code>file</code>, <code>params</code>, <code>output</code>)</a></li>
+<li><a href="https://github.com/Project-MONAI/MONAILabel/blob/main/monailabel/transform/writer.py">MONAI Label: Writer (<code>result_extension</code>)</a></li>
+<li><a href="https://github.com/lassoan/SlicerMONAIAuto3DSeg">SlicerMONAIAuto3DSeg: chạy mô hình MONAI ngay trong Slicer</a></li>
+<li><a href="https://github.com/Project-MONAI/monai-deploy-app-sdk">MONAI Deploy App SDK</a> · <a href="https://github.com/Project-MONAI/model-zoo">MONAI Model Zoo (bundle)</a></li>
+<li><a href="slicer.html">Đánh giá 3D Slicer làm trình xem (D10)</a> · <a href="decisions.html#d11">D11: khối AI bằng MONAI</a> · <a href="index.html#flow-ai">Luồng 3</a></li>
+</ol>
+
+</main>
+</div>
+
+<footer>Intracerebral hemorrhage AI system · 3D Slicer + MONAI · <a href="slicer.html">3D Slicer</a> · <a href="decisions.html#d11">Decisions D11</a>. API của MONAI Label đối chiếu với mã nguồn; cấu hình máy chủ và phần sửa cổng chưa chạy thử trên stack của đồ án.</footer>
+</div>
+<script src="assets/site.js"></script>
+</body></html>
