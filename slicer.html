@@ -402,7 +402,7 @@ timer.start()</pre>
 <h2 class="sec" id="proposal"><span class="n">9</span>Proposed architecture</h2>
 <p>The clinical and data layers stay as they are. Two MONAI Label servers run the same app (the same <code>hemorrhage</code> model) with different settings, each in its own network layer.</p>
 <div class="figure"><div class="figscroll">
-<svg class="flowsvg wide" viewBox="0 0 760 560" role="img" aria-labelledby="mo-t mo-d"><title id="mo-t">3D Slicer and MONAI in the ICH architecture</title><desc id="mo-d">Clinical layer: the CT scanner sends studies to the dcm4chee PACS, and the radiologist reads in 3D Slicer with the ICH Triage module. Inference layer: the PACS pushes series to the Orthanc gateway; the ai_bridge plugin sends the volume to the infer-only MONAI Label server, receives a 6-class mask, builds SEG and SR and sends them to the PACS. Research layer: the research MONAI Label server reads de-identified studies and writes SEG labels over the gateway's DICOMweb; annotators use 3D Slicer with the MONAILabel extension; models are registered in the registry, and the inference server loads only approved ones.</desc>
+<svg class="flowsvg wide" viewBox="0 0 760 560" role="img" aria-labelledby="mo-t mo-d"><title id="mo-t">3D Slicer and MONAI in the ICH architecture</title><desc id="mo-d">Clinical layer: the CT scanner sends studies to the dcm4chee PACS, and the radiologist reads in 3D Slicer with the ICH Triage module. Inference layer: the PACS pushes series to the Orthanc gateway; the AI worker (the ai_bridge plugin in staging) sends the volume to the infer-only MONAI Label server, receives a 6-class mask, builds SEG and SR and sends them to the PACS. Research layer: the research MONAI Label server reads de-identified studies and writes SEG labels over the gateway's DICOMweb; annotators use 3D Slicer with the MONAILabel extension; models are registered in the registry, and the inference server loads only approved ones.</desc>
 <defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <rect class="lanebx" x="10" y="16" width="740" height="132" rx="12"/><text class="lanet t-blue" x="24" y="38">CLINICAL · VLAN 10–20</text>
 <rect class="lanebx" x="10" y="160" width="740" height="140" rx="12"/><text class="lanet t-violet" x="24" y="182">AI INFERENCE · VLAN 30</text>
@@ -414,7 +414,7 @@ timer.start()</pre>
 <path class="ln" d="M150 92 L226 92" marker-end="url(#ah2)"/><text class="ts" x="188" y="84" text-anchor="middle">C-STORE</text>
 <path class="ln" d="M410 92 L516 92" marker-start="url(#ah2)" marker-end="url(#ah2)"/><text class="ts" x="463" y="84" text-anchor="middle">QIDO/WADO-RS</text>
 
-<rect class="bxa" x="230" y="206" width="180" height="72" rx="8"/><text class="tt" x="320" y="234" text-anchor="middle">Orthanc + ai_bridge</text><text class="ts" x="320" y="254" text-anchor="middle">mask → SEG, SR, priority</text>
+<rect class="bxa" x="230" y="206" width="180" height="72" rx="8"/><text class="tt" x="320" y="234" text-anchor="middle">Orthanc + AI worker</text><text class="ts" x="320" y="254" text-anchor="middle">mask → SEG, SR, priority</text>
 <rect class="bxa" x="520" y="206" width="210" height="72" rx="8"/><text class="tt" x="625" y="234" text-anchor="middle">MONAI Label · inference</text><text class="ts" x="625" y="254" text-anchor="middle">POST /infer/hemorrhage</text>
 <path class="lv" d="M340 124 L340 202" marker-end="url(#ah2)"/><text class="tsv" x="348" y="195">push series once</text>
 <path class="lv" d="M300 202 L300 128" marker-end="url(#ah2)"/><text class="tsv" x="292" y="195" text-anchor="end">C-STORE SEG + SR</text>
@@ -435,7 +435,7 @@ timer.start()</pre>
 <p class="figcap">Blue: clinical. Violet: AI inference (the automatic triage flow). Pink: research (the annotation loop of the received diagram). The rest of the architecture (Keycloak, HIS/RIS, SeaweedFS, PostgreSQL, backup) is unchanged and not redrawn here.</p>
 </div>
 <ol class="flow">
-<li class="f-dec"><b class="t">Flow 2 · automatic triage</b>When a CT series is complete, the <code>ai_bridge.py</code> plugin in Orthanc sends the volume to the inference MONAI Label server, receives the 6-class mask, builds a DICOM SEG (one segment per subtype) and an SR (the volume of each), and sends them to the PACS over C-STORE. The doctor sees the result in 3D Slicer without clicking Run.</li>
+<li class="f-dec"><b class="t">Flow 2 · automatic triage</b>When a CT series is complete, the AI worker (in staging it runs as the <code>ai_bridge.py</code> plugin inside Orthanc) sends the volume to the inference MONAI Label server, receives the 6-class mask, builds a DICOM SEG (one segment per subtype) and an SR (the volume of each), and sends them to the PACS over C-STORE. The doctor sees the result in 3D Slicer without clicking Run.</li>
 <li class="f-dec"><b class="t">Flow 3 · annotation and training</b>The received diagram, except that the datastore is the Orthanc DICOMweb (de-identified copies). Annotators use 3D Slicer + the MONAILabel extension: Next Sample, Run, correct with SAM, scribbles or Segment Editor, Submit Label. Labels are saved as SEG on the gateway and copied to the research bucket; the app's trainer trains a new model on a frozen dataset.</li>
 <li class="f-dec"><b class="t">Model handoff</b>A new model is registered in the registry as a MONAI bundle with its version, metrics and approval status. The inference server loads only an approved bundle and writes its version into every SEG and SR.</li>
 </ol>
@@ -453,9 +453,9 @@ timer.start()</pre>
 <tr><td class="k">Runs as an N+1 cluster</td><td class="y">Yes</td><td class="n">No</td><td class="n">No</td></tr>
 </table></div>
 <div class="callout cyan"><b>When the PACS could go.</b> Only if the project were narrowed to a <b>research and annotation tool</b>: 3D Slicer + MONAI Label on a public dataset (for example CT-ICH from PhysioNet), with no real studies from scanners. The project would then no longer be a triage system in a hospital. With the current scope (CTs go to the PACS, doctors read, the AI flags suspected hemorrhage), the PACS is required. This is a scope decision to agree with the advisor.</div>
-<div class="callout"><b>Why the Orthanc gateway stays between the PACS and MONAI.</b>
+<div class="callout"><b>Why the Orthanc gateway stays between the PACS and MONAI.</b> The points below cover the gateway and the AI worker next to it; in staging it runs as the <code>ai_bridge.py</code> plugin inside Orthanc.
 <ul>
-<li><b>It triggers the AI.</b> MONAI Label runs only when something calls <code>/infer</code>. Orthanc receives the series the PACS pushes, waits until the series is complete, then <code>ai_bridge.py</code> calls MONAI.</li>
+<li><b>It triggers the AI.</b> MONAI Label runs only when something calls <code>/infer</code>. Orthanc receives the series the PACS pushes and raises an event when the series is complete; the AI worker then calls MONAI.</li>
 <li><b>It converts formats.</b> DICOM to NIfTI for MONAI, and the NIfTI mask to DICOM SEG, SR and the priority flag for the PACS and Slicer.</li>
 <li><b>The AI has no PACS account.</b> Results reach the PACS through Orthanc, by C-STORE to an AE that only accepts stores.</li>
 <li><b>It is the only de-identification point.</b> The research MONAI Label server reads only de-identified copies on Orthanc and never reads the PACS.</li>
@@ -467,7 +467,7 @@ timer.start()</pre>
 <tr><th>Component</th><th>Current</th><th>Proposed</th></tr>
 <tr><td class="k">PACS, Orthanc gateway, SeaweedFS, PostgreSQL, backup, Keycloak</td><td>D1–D9</td><td>Unchanged</td></tr>
 <tr><td class="k">Radiologist viewer</td><td>3D Slicer + ICH Triage module (D10, proposed)</td><td>Unchanged. The MONAILabel extension is not installed on clinical reading workstations</td></tr>
-<tr><td class="k">AI inference service</td><td>Abstract block; candidate MONAI Deploy + Triton</td><td>MONAI Label server in infer-only mode running the <code>hemorrhage</code> model (a MONAI bundle). MONAI Deploy stays as the production path</td></tr>
+<tr><td class="k">AI inference service</td><td>Abstract block; candidate MONAI Deploy + Triton</td><td>An AI worker (our code; in staging it runs as the <code>ai_bridge.py</code> plugin inside Orthanc) plus a MONAI Label server in infer-only mode running the <code>hemorrhage</code> model (a MONAI bundle). MONAI Deploy stays as the production path</td></tr>
 <tr><td class="k"><code>ai_bridge.py</code> plugin</td><td>POSTs NIfTI to <code>AI_SEGMENT_URL</code>; binary mask, one segment</td><td>Calls <code>/infer/hemorrhage</code>; the 6-class mask becomes a multi-segment SEG with the volume of each subtype</td></tr>
 <tr><td class="k">Annotation</td><td>Abstract block (the report already names MONAI Label + 3D Slicer)</td><td>Research MONAI Label server whose datastore is the Orthanc DICOMweb (de-identified); 3D Slicer + MONAILabel extension</td></tr>
 <tr><td class="k">Training</td><td>Abstract block</td><td>The MONAI Label app's trainer (added for the <code>hemorrhage</code> model) on research GPUs, or the bundle's training script</td></tr>
@@ -497,7 +497,7 @@ def segment(volume):
 <div class="tbl"><table>
 <tr><th></th><th>Inference server</th><th>Research server</th></tr>
 <tr><td class="k">Network layer</td><td>VLAN 30 (AI inference)</td><td>VLAN 40 (AI research)</td></tr>
-<tr><td class="k">Called by</td><td>Only <code>ai_bridge.py</code> on the Orthanc gateway</td><td>Annotators' 3D Slicer + MONAILabel extension</td></tr>
+<tr><td class="k">Called by</td><td>Only the AI worker (<code>ai_bridge.py</code> in staging)</td><td>Annotators' 3D Slicer + MONAILabel extension</td></tr>
 <tr><td class="k">Data</td><td>Identified volumes, only during inference</td><td>De-identified copies only</td></tr>
 <tr><td class="k">Datastore (<code>--studies</code>)</td><td>An empty temporary folder (option A)</td><td>Orthanc DICOMweb, de-identified copies</td></tr>
 <tr><td class="k">Models</td><td><code>hemorrhage</code></td><td><code>hemorrhage</code> and the interactive tools (SAM, scribbles)</td></tr>

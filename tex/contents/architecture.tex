@@ -82,7 +82,7 @@ tiếp độ sẵn sàng của tầng lâm sàng.
 liền đậm màu đen: luồng lâm sàng; nét màu xanh: luồng suy luận AI; nét xám: luồng
 dữ liệu nội bộ và nghiên cứu; nét đứt: sao lưu và khôi phục. Số trong vòng tròn có
 dạng \emph{luồng.bước}, ví dụ 2.3 là bước 3 của Luồng 2 (Mục~\ref{sec:flow}).
-Khung nét đứt là khối trừu tượng chưa chốt công cụ.}
+Khung nét đứt là các khối AI, đề xuất hiện thực bằng MONAI và chờ PoC xác nhận.}
 \label{fig:arch-s1}
 \end{sidewaysfigure}
 
@@ -160,11 +160,14 @@ P1).
 \item[Bộ điều phối tác vụ] Nhận sự kiện ``ca chụp đã đủ ảnh'' từ cổng, tạo một tác vụ
       suy luận cho mỗi ca, gán hạn chót và độ ưu tiên (ca cấp cứu trước), và loại bỏ tác
       vụ trùng khi nhiều nút cổng cùng phát sự kiện cho một ca (khoá theo Study Instance
-      UID). Thành phần này là mã nguồn riêng của đề tài.
+      UID). Bộ điều phối đọc chuỗi ảnh từ cổng, chuyển thành một volume NIfTI, gửi tới
+      máy chủ MONAI Label suy luận, rồi dựng DICOM SEG, SR và cờ ưu tiên từ mặt nạ trả
+      về. Thành phần này là mã nguồn riêng của đề tài; trong bản staging, nó chạy dưới
+      dạng plugin \texttt{ai\_bridge.py} bên trong Orthanc.
 \item[Dịch vụ suy luận AI] Đề xuất dùng một máy chủ MONAI Label \cite{monailabel}
       ở chế độ chỉ suy luận, chạy mô hình phân đoạn xuất huyết của nhóm AI (đóng gói
       thành MONAI bundle). Máy chủ không có datastore nghiên cứu, không huấn luyện và
-      không có tài khoản trên PACS; nó chỉ nhận volume từ plugin của cổng và trả mặt nạ.
+      không có tài khoản trên PACS; nó chỉ nhận volume từ bộ điều phối tác vụ và trả mặt nạ.
       MONAI Deploy với một máy chủ suy luận như NVIDIA Triton là hướng khi triển khai
       thật. Hợp đồng đầu vào, đầu ra của khối này được cố định ở
       Mục~\ref{sec:aicontract}, nên thay đổi công cụ không ảnh hưởng các tầng khác.
@@ -314,8 +317,9 @@ Trình xem (3D Slicer) & PACS & HTTPS, qua reverse proxy & QIDO-RS, WADO-RS; STO
 Trình xem (3D Slicer) & Keycloak & HTTPS & Đăng nhập OpenID Connect qua trình duyệt hệ thống (Authorization Code + PKCE), do mô-đun ICH Triage thực hiện \\
 PACS & Cổng trung gian & DICOM, 4242 & Xuất chuỗi ảnh (C-STORE), do PACS khởi tạo \\
 Cổng trung gian & PACS (AE \texttt{AI\_RESULTS}) & DICOM, 11113 & Chỉ C-STORE kết quả AI; AE này không nhận truy vấn \\
-Cổng trung gian & Dịch vụ suy luận (MONAI Label) & HTTP nội bộ, \texttt{POST /infer} & Gửi volume NIfTI, nhận mặt nạ (Mục~\ref{sec:aicontract}) \\
-Cổng trung gian & HIS/RIS & HL7 ORU hoặc FHIR & Cờ ưu tiên, suy ra từ mặt nạ \\
+Bộ điều phối tác vụ & Cổng trung gian & HTTP nội bộ (DICOMweb) & Nhận sự kiện ca đủ ảnh, đọc chuỗi ảnh; ghi SEG, SR (STOW-RS) \\
+Bộ điều phối tác vụ & MONAI Label (chỉ suy luận) & HTTP nội bộ, \texttt{POST /infer} & Gửi volume NIfTI, nhận mặt nạ (Mục~\ref{sec:aicontract}) \\
+Bộ điều phối tác vụ & HIS/RIS & HL7 ORU hoặc FHIR & Cờ ưu tiên, suy ra từ mặt nạ \\
 Công cụ gán nhãn (3D Slicer) & Máy chủ MONAI Label nghiên cứu & HTTPS (REST) & Lấy ca, bản nháp, lưu nhãn, huấn luyện \\
 Máy chủ MONAI Label nghiên cứu & Cổng trung gian & HTTPS (DICOMweb) & Đọc bản đã khử định danh, ghi nhãn SEG \\
 PACS, cổng & SeaweedFS & S3 qua HTTP & Tệp ảnh (bucket riêng cho mỗi bên) \\
@@ -396,8 +400,8 @@ ngân sách độ trễ của AI (Bảng~\ref{tab:latency}).
 lại theo tuần, theo tháng.
 \begin{description}[leftmargin=1.2cm,style=nextline]
 \item[3.1] Với các ca được chọn cho nghiên cứu, cổng trung gian tạo bản đã khử định
-      danh (Mục~\ref{sec:archdeid}) và đánh dấu bản đó để chỉ công cụ gán nhãn được thấy.
-      Công cụ gán nhãn đọc bản này qua DICOMweb; người gán nhãn không bao giờ thấy danh
+      danh (Mục~\ref{sec:archdeid}) và đánh dấu bản đó để chỉ máy chủ MONAI Label nghiên cứu được thấy.
+      Máy chủ này đọc bản đó qua DICOMweb và phục vụ 3D Slicer của người gán nhãn; người gán nhãn không bao giờ thấy danh
       tính bệnh nhân và không có đường nào tới PACS.
 \item[3.2] Nhãn được lưu ngược về cổng dưới dạng DICOM SEG. Cổng sao chép ngay mỗi nhãn
       sang bucket \texttt{research} trên SeaweedFS, nên nhãn, vốn là công sức không tạo
@@ -409,7 +413,7 @@ lại theo tuần, theo tháng.
       ứng viên vào registry. Chỉ phiên bản được bác sĩ và nhóm AI duyệt mới được đánh dấu
       hợp lệ. Trước khi bật cảnh báo cho bác sĩ, mô hình mới chạy ở chế độ ``im lặng'': có
       kết quả để so sánh nhưng không hiển thị và không gửi cờ.
-\item[3.5] Máy chủ MONAI Label suy luận nạp bundle đã duyệt. Công cụ gán nhãn dùng mô hình hợp lệ
+\item[3.5] Máy chủ MONAI Label suy luận nạp bundle đã duyệt. Máy chủ MONAI Label nghiên cứu dùng mô hình hợp lệ
       mới nhất để sinh bản nháp cho tập huấn luyện, khép kín vòng gán nhãn theo các quy tắc
       về nhãn ở tầng nghiên cứu.
 \end{description}
@@ -464,8 +468,9 @@ hiện trên một máy, không tải, nên chỉ cho thấy bậc độ lớn.}
 \subsection{Hợp đồng dữ liệu của tầng AI}
 \label{sec:aicontract}
 
-Dịch vụ suy luận là khối trừu tượng, nên giao diện của nó được cố định trước để mọi
-công cụ hiện thực sau này đều lắp vào được mà không đổi các tầng khác.
+Giao diện của dịch vụ suy luận được cố định trước và không phụ thuộc công cụ hiện
+thực: MONAI Label (đề xuất) hay một công cụ khác sau này đều lắp vào được mà không đổi
+các tầng khác.
 
 \textbf{Đầu vào.} Mô hình chỉ làm việc với chuỗi CT sọ não không tiêm thuốc cản quang,
 lát mỏng, mặt phẳng trục. Nếu ca chụp không có chuỗi như vậy, ca được gắn trạng thái
@@ -486,10 +491,10 @@ quả không được ghi, vì khi đó không thể truy vết kết quả về
 là trình xem, còn extension MONAILabel là client gọi REST tới một máy chủ MONAI Label
 riêng, nơi mô hình thực sự chạy. Vòng tương tác Slicer--MONAI Label (lấy ca kế tiếp,
 chạy mô hình, sửa, lưu nhãn, huấn luyện) vì vậy thuộc Luồng 3, không thay được Luồng 2,
-nơi AI phải tự chạy khi chuỗi CT đủ ảnh. Trong Luồng 2, plugin của cổng gọi
+nơi AI phải tự chạy khi chuỗi CT đủ ảnh. Trong Luồng 2, bộ điều phối tác vụ (trong bản staging là plugin của cổng) gọi
 \texttt{POST /infer/\{model\}} của máy chủ suy luận, tải volume NIfTI lên (tham số
 \texttt{file}) và nhận lại đúng tệp mặt nạ (\texttt{output=image}), nên hợp đồng ``NIfTI
-vào, mặt nạ ra'' của cổng không đổi. Mặt nạ có một nhãn cho mỗi thể xuất huyết; cổng
+vào, mặt nạ ra'' hiện có không đổi. Mặt nạ có một nhãn cho mỗi thể xuất huyết; bộ điều phối
 dựng DICOM SEG với một segment cho mỗi thể, SR ghi thể tích từng thể, và cờ ưu tiên.
 Cả MONAI Label lẫn 3D Slicer đều không thay được PACS: datastore của MONAI Label chỉ là
 một thư mục hoặc DICOMweb của máy chủ khác, còn CSDL DICOM của Slicer là bộ đệm của một
@@ -804,7 +809,7 @@ các giá trị này phải được đặt tường minh cho ca cấp cứu. Th
 danh, nên việc chặn truy cập dựa vào tách cổng mạng và cần bổ sung DICOM TLS. Thứ tư,
 Orthanc không có sẵn bước ``khử định danh, kiểm tra, rồi giữ hoặc từ chối'', nên bước này
 là mã nguồn riêng, khoảng 110 dòng Python, và vì bản đã khử định danh nằm cùng Orthanc
-với bản gốc, công cụ gán nhãn cần một quy tắc phân quyền chỉ cho thấy các bản đã đánh
+với bản gốc, máy chủ MONAI Label nghiên cứu cần một quy tắc phân quyền chỉ cho thấy các bản đã đánh
 dấu.
 
 % ---------------------------------------------------------------------------
