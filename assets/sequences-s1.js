@@ -40,7 +40,8 @@ window.SEQ.s1 = [
       { t: "msg", from: "pacs", to: "ct", style: "crit", ret: true, label: "C-STORE success" },
       { t: "end" },
 
-      { t: "par", label: "radiologist reads" },
+      { t: "sep", label: "Radiologist reads · in parallel with the AI" },
+      { t: "note", over: ["rad", "pacs"], text: "Runs at the same time as the AI triage phase. The radiologist never waits for the AI." },
       { t: "msg", from: "rad", to: "viewer", style: "ui", label: "open the viewer" },
       { t: "msg", from: "viewer", to: "kc", style: "ui", label: "OIDC login (system browser)", detail: "Single sign-on with multi-factor authentication, through the system browser with PKCE. Slicer has no built-in OIDC, so the ICH module runs this flow. The viewer never sees the password." },
       { t: "msg", from: "kc", to: "viewer", style: "ui", ret: true, label: "tokens after MFA" },
@@ -49,7 +50,8 @@ window.SEQ.s1 = [
       { t: "msg", from: "rad", to: "viewer", style: "ui", label: "open the new study" },
       { t: "msg", from: "viewer", to: "pacs", style: "crit", label: "WADO-RS series", detail: "Slicer downloads and shows each series that has already arrived; the ICH module fetches series that arrive later, so reading starts before the transfer ends." },
       { t: "msg", from: "pacs", to: "viewer", style: "crit", ret: true, label: "images, while series still arrive" },
-      { t: "else", label: "AI triage · best-effort" },
+      { t: "sep", label: "AI triage · best-effort, in parallel" },
+      { t: "note", over: ["pacs", "ai"], text: "Runs at the same time as the radiologist's reading. If any part of it is down, reading goes on in normal order." },
       { t: "msg", from: "pacs", to: "gw", style: "ai", label: "C-STORE export of selected series (push, retried)", detail: "An export rule in dcm4chee picks the series the AI needs (and prior studies of the same patient if required) and pushes them once. If Orthanc is down, dcm4chee queues the task and retries; the clinical flow is not affected." },
       { t: "msg", from: "gw", to: "gw", style: "ai", label: "store working copy; de-identified copy if picked for research", detail: "Orthanc keeps the index in PostgreSQL and the files in SeaweedFS. It raises a stable-study event once no new instance has arrived for the StableAge interval (default 60 s), and that event creates the AI job. Set StableAge explicitly for emergency cases; it adds to the export scheduler delay of dcm4chee." },
       { t: "msg", from: "gw", to: "ai", style: "ai", label: "POST /infer/hemorrhage · NIfTI volume", detail: "The ai_bridge plugin in Orthanc turns the stable CT series into one NIfTI volume and uploads it to the infer-only MONAI Label server. The gateway keeps the working copy, so retries and re-runs never load the PACS. The MONAI server holds no PACS credentials and keeps no copy of the images." },
@@ -59,7 +61,6 @@ window.SEQ.s1 = [
       { t: "msg", from: "gw", to: "pacs", style: "ai", label: "C-STORE SEG + SR", detail: "Only the gateway talks to the PACS. The MONAI server holds no PACS credentials at all, not even for writing results." },
       { t: "msg", from: "gw", to: "his", style: "ai", label: "priority flag · HL7 ORU / FHIR" },
       { t: "msg", from: "gw", to: "pg", style: "flow", label: "result metadata (AI results DB)" },
-      { t: "end" },
 
       { t: "sep", label: "What the radiologist sees" },
       { t: "alt", label: "AI result ready" },

@@ -80,7 +80,7 @@
     for (i = 0; i < n; i++) { xs.push(x); x += need[i]; }
     var W = Math.ceil(xs[n - 1] + tail);
 
-    var y = 20, rows = [], frames = [], stack = [], path = [], num = 0;
+    var y = 20, rows = [], frames = [], stack = [], path = [], num = 0, base = d.numBase || 0;
     function ext(lo, hi) { stack.forEach(function (f) { f.lo = Math.min(f.lo, lo); f.hi = Math.max(f.hi, hi); }); }
 
     d.steps.forEach(function (s) {
@@ -88,7 +88,7 @@
       if (s.t === "msg") {
         num++;
         var ia = idx[s.from], ib = idx[s.to], a = xs[ia], b = xs[ib];
-        r = { t: "msg", n: num, s: s, y0: y, path: path.slice() };
+        r = { t: "msg", n: num, disp: num + base, s: s, y0: y, path: path.slice() };
         if (ia === ib) {
           var room = (ia === n - 1 ? tail : need[ia]) - 62;
           lines = wrap(s.label, Math.max(170, room));
@@ -258,7 +258,7 @@
         r.lines.forEach(function (l, k) {
           mk("text", { x: x + 48, y: r.y0 + 6 + G.line / 2 + k * G.line, "dominant-baseline": "central", "class": "sq-lbl" }, gm, l);
         });
-        num(gm, x, top, r.n);
+        num(gm, x, top, r.disp);
         r.focusY = r.y0; r.focusX = x + 60;
       } else {
         var dir = r.x2 > r.x1 ? 1 : -1, lo = Math.min(r.x1, r.x2), hi = Math.max(r.x1, r.x2), mid = (r.x1 + r.x2) / 2;
@@ -267,7 +267,7 @@
         r.lines.forEach(function (l, k) {
           mk("text", { x: mid, y: r.y0 + G.line / 2 + 2 + k * G.line, "text-anchor": "middle", "dominant-baseline": "central", "class": "sq-lbl" }, gm, l);
         });
-        num(gm, r.x1, r.ay, r.n);
+        num(gm, r.x1, r.ay, r.disp);
         r.focusY = r.y0; r.focusX = mid;
       }
       nodes[r.n] = gm;
@@ -277,6 +277,35 @@
   function num(g, x, y, n) {
     mk("circle", { cx: x, cy: y, r: 9.5, "class": "sq-num" }, g);
     mk("text", { x: x, y: y + 0.5, "text-anchor": "middle", "dominant-baseline": "central", "class": "sq-numt" }, g, n);
+  }
+
+  /* ---------- phases ---------- */
+  /* The top-level "sep" dividers split a diagram into phases. A phase view draws
+     only that phase's steps and only the participants they involve, so it stays
+     narrow and short; step numbers keep their place in the whole diagram. */
+  function phases(d) {
+    var out = [], cur = null, msgs = 0;
+    d.steps.forEach(function (s, k) {
+      if (s.t === "sep") {
+        if (cur) cur.end = k;
+        else if (k > 0) { cur = { label: "Start", start: 0, base: 0, end: k }; out.push(cur); }
+        cur = { label: s.label, start: k, base: msgs }; out.push(cur);
+      } else if (s.t === "msg") msgs++;
+    });
+    if (cur) cur.end = d.steps.length;
+    out.forEach(function (p, i) { p.count = (i + 1 < out.length ? out[i + 1].base : msgs) - p.base; });
+    return out.filter(function (p) { return p.count > 0; });
+  }
+  function phaseView(d, p) {
+    var steps = d.steps.slice(p.start, p.end), used = {};
+    steps.forEach(function (s) {
+      if (s.t === "msg") { used[s.from] = 1; used[s.to] = 1; }
+      else if (s.t === "note") [].concat(s.over).forEach(function (id) { used[id] = 1; });
+    });
+    return {
+      id: d.id, title: d.title, groups: d.groups, numBase: p.base, steps: steps,
+      participants: d.participants.filter(function (q) { return used[q.id]; })
+    };
   }
 
   /* ---------- widget ---------- */
@@ -297,6 +326,8 @@
       });
     }
     this.summary = h("p", "sq-summary", root);
+    this.phaseBar = h("div", "sq-phases", root);
+    this.phaseBar.setAttribute("role", "group"); this.phaseBar.setAttribute("aria-label", "Phase");
     var bar = h("div", "sq-toolbar", root);
     var nav = h("div", "sq-nav", bar);
     this.bPrev = btn(nav, "←", "Previous step (←)", function () { self.step(-1); });
@@ -305,9 +336,9 @@
     this.bAll = btn(nav, "Show all", "Show every step (Esc)", function () { self.stop(); self.setActive(0); });
     this.count = h("span", "sq-count", nav);
     var zm = h("div", "sq-zoom", bar);
-    btn(zm, "−", "Zoom out", function () { self.setZoom(self.zoom / 1.2); });
-    this.bZoom = btn(zm, "100%", "Fit to width", function () { self.setZoom(self.fit()); });
-    btn(zm, "+", "Zoom in", function () { self.setZoom(self.zoom * 1.2); });
+    btn(zm, "−", "Zoom out", function () { self.userZoom = true; self.setZoom(self.zoom / 1.2); });
+    this.bZoom = btn(zm, "100%", "Fit to width", function () { self.userZoom = false; self.setZoom(self.fit()); });
+    btn(zm, "+", "Zoom in", function () { self.userZoom = true; self.setZoom(self.zoom * 1.2); });
     this.bMax = btn(zm, "⤢ Expand", "Expand to full screen", function () { self.toggleMax(); });
     this.detail = h("div", "sq-detail", root); this.detail.setAttribute("aria-live", "polite");
     this.vp = h("div", "sq-viewport", root);
@@ -343,11 +374,20 @@
     b.addEventListener("click", fn); return b;
   }
 
-  Widget.prototype.show = function (i) {
-    var d = this.list[i], self = this;
-    this.stop(); this.cur = i; this.active = 0;
+  /* ph: 0 = whole diagram, k = phase k. Omitted: the first phase of a new tab,
+     or the current phase when redrawing the same tab. */
+  Widget.prototype.show = function (i, ph) {
+    var full = this.list[i], self = this;
+    this.stop();
+    if (ph == null) ph = i === this.cur && this.phase != null ? this.phase : 1;
+    this.cur = i; this.active = 0;
     if (this.tabs) this.tabs.forEach(function (b, k) { b.setAttribute("aria-selected", k === i ? "true" : "false"); });
-    this.summary.innerHTML = d.summary || "";
+    this.summary.innerHTML = full.summary || "";
+    var P = this.phases = phases(full);
+    if (P.length < 2) ph = 0;
+    this.phase = ph = Math.max(0, Math.min(P.length, ph));
+    var d = ph ? phaseView(full, P[ph - 1]) : full;
+    this.drawPhases(full);
     var L = layout(d), R = runs(d, L);
     var hd = drawHead(d, L, R), bd = drawBody(d, L, R);
     this.L = L; this.d = d; this.nodes = bd.nodes; this.headH = hd.H;
@@ -364,15 +404,15 @@
     lg.push('<span><span class="sq-uikey">UI</span>User interface</span>');
     this.legend.innerHTML = lg.join("");
 
-    var P = {}; d.participants.forEach(function (p) { P[p.id] = p.name; });
-    this.listSum.textContent = "All " + L.count + " steps as text";
+    var names = {}; d.participants.forEach(function (p) { names[p.id] = p.name; });
+    this.listSum.textContent = ph ? "The " + L.count + " steps of this phase as text" : "All " + L.count + " steps as text";
     this.ol.innerHTML = "";
     this.items = [];
     L.rows.forEach(function (r) {
       if (r.t === "sep") { h("li", "sq-li-sep", self.ol, esc(r.label)); return; }
       if (r.t !== "msg") return;
       var li = h("li", "sq-li sqs-" + (STYLES[r.s.style] ? r.s.style : "flow"), self.ol,
-        '<button type="button"><span class="sq-li-n">' + r.n + '</span><span class="sq-li-txt"><span class="sq-li-who">' + esc(P[r.s.from]) + " → " + esc(P[r.s.to]) +
+        '<button type="button"><span class="sq-li-n">' + r.disp + '</span><span class="sq-li-txt"><span class="sq-li-who">' + esc(names[r.s.from]) + " → " + esc(names[r.s.to]) +
         "</span><b>" + esc(r.s.label) + "</b>" + (r.s.detail ? "<span>" + esc(r.s.detail) + "</span>" : "") + "</span></button>");
       li.querySelector("button").addEventListener("click", function () {
         self.stop(); self.setActive(r.n);
@@ -382,10 +422,37 @@
       self.items[r.n] = li;
     });
     this.rows = L.rows.filter(function (r) { return r.t === "msg"; });
-    var keep = this.zoom;
+    var keep = this.userZoom ? this.zoom : null;
     this.zoom = null;
     this.setZoom(keep || this.defaultZoom());
+    this.vp.scrollTop = 0; this.vp.scrollLeft = 0;
     this.setActive(0);
+  };
+
+  Widget.prototype.drawPhases = function (d) {
+    var self = this, P = this.phases, total = P.reduce(function (s, p) { return s + p.count; }, 0);
+    this.phaseBar.innerHTML = "";
+    this.phaseBar.hidden = P.length < 2;
+    if (P.length < 2) return;
+    h("span", "sq-ph-l", this.phaseBar, "Phase");
+    function add(k, label, count) {
+      var b = h("button", "sq-ph", self.phaseBar,
+        (k ? '<span class="sq-ph-k">' + k + "</span>" : "") + "<b>" + esc(label) + '</b><span class="sq-ph-c">' + count + "</span>");
+      b.type = "button";
+      b.setAttribute("aria-pressed", k === self.phase ? "true" : "false");
+      b.title = (k ? "Show only this phase: " : "Show the whole diagram: ") + count + " steps";
+      b.addEventListener("click", function () { self.show(self.cur, k); });
+    }
+    P.forEach(function (p, k) { add(k + 1, p.label, p.count); });
+    add(0, "All", total);
+  };
+  /* move to the first (dir > 0) or last (dir < 0) step of the next or previous phase */
+  Widget.prototype.turnPhase = function (dir) {
+    var next = this.phase + dir;
+    if (!this.phase || next < 1 || next > this.phases.length) return false;
+    this.show(this.cur, next);
+    this.setActive(dir > 0 ? 1 : this.L.count);
+    return true;
   };
 
   Widget.prototype.fit = function () { return Math.min(1, (this.vp.clientWidth - 2) / this.L.W); };
@@ -412,16 +479,19 @@
       p.classList.toggle("on", !!r && (id === r.s.from || id === r.s.to));
     });
     this.headSvg.classList.toggle("has-active", !!r);
-    this.count.textContent = n ? "Step " + n + " / " + total : total + " steps";
-    this.bPrev.disabled = n <= 1 && n !== 0 ? true : false;
-    this.bNext.disabled = n >= total;
+    var inPhase = this.phase ? " in this phase" : "";
+    this.count.textContent = n ? "Step " + r.disp + (this.phase ? " · " + n + " / " + total + inPhase : " / " + total) : total + " steps" + inPhase;
+    var firstPhase = !this.phase || this.phase === 1, lastPhase = !this.phase || this.phase === this.phases.length;
+    this.bPrev.disabled = n === 1 && firstPhase;
+    this.bNext.disabled = n >= total && lastPhase;
     if (!r) {
-      this.detail.innerHTML = '<span class="sq-hint">Click a numbered arrow, or press <kbd>→</kbd> to walk through the sequence one step at a time. Hover a participant to see only its messages.</span>';
+      this.detail.innerHTML = '<span class="sq-hint">Click a numbered arrow, or press <kbd>→</kbd> to walk through the sequence one step at a time' +
+        (this.phase ? "; it carries on into the next phase" : "") + ". Hover a participant to see only its messages.</span>";
       return;
     }
     var P = {}; this.d.participants.forEach(function (p) { P[p.id] = p.name; });
     var ctx = r.path.length ? '<span class="sq-ctx">' + r.path.map(esc).join(" › ") + "</span>" : "";
-    this.detail.innerHTML = '<span class="sq-dn sqs-' + (STYLES[r.s.style] ? r.s.style : "flow") + '">' + n + '</span><div><div class="sq-dwho">' + esc(P[r.s.from]) + " → " + esc(P[r.s.to]) + ctx +
+    this.detail.innerHTML = '<span class="sq-dn sqs-' + (STYLES[r.s.style] ? r.s.style : "flow") + '">' + r.disp + '</span><div><div class="sq-dwho">' + esc(P[r.s.from]) + " → " + esc(P[r.s.to]) + ctx +
       '</div><b>' + esc(r.s.label) + "</b>" + (r.s.detail ? '<p>' + esc(r.s.detail) + "</p>" : "") + "</div>";
     // bring the active arrow into view inside the diagram viewport
     var z = this.zoom, vp = this.vp, hh = this.headH * z;
@@ -438,6 +508,7 @@
   Widget.prototype.step = function (dlt) {
     var n = this.active + dlt;
     if (this.active === 0 && dlt < 0) n = this.L.count;
+    if ((n > this.L.count || (n < 1 && this.active !== 0)) && this.turnPhase(dlt)) return;
     this.setActive(Math.max(1, Math.min(this.L.count, n)));
   };
   Widget.prototype.hover = function (id) {
@@ -449,13 +520,19 @@
   Widget.prototype.togglePlay = function () {
     if (this.timer) { this.stop(); return; }
     var self = this;
-    if (this.active >= this.L.count) this.setActive(0);
-    this.bPlay.textContent = "❚❚ Pause";
+    if (this.active >= this.L.count && !(this.phase && this.phase < this.phases.length)) this.setActive(0);
     var tick = function () {
-      if (self.active >= self.L.count) { self.stop(); return; }
+      if (self.active >= self.L.count) {
+        var running = self.timer;
+        self.timer = null;
+        if (!self.turnPhase(1)) { self.stop(); return; }
+        self.timer = running; self.bPlay.textContent = "❚❚ Pause";
+        return;
+      }
       self.setActive(self.active + 1);
     };
     tick();
+    this.bPlay.textContent = "❚❚ Pause";
     this.timer = setInterval(tick, 2600);
   };
   Widget.prototype.stop = function () {
@@ -483,7 +560,7 @@
     });
     // text widths depend on the web font; redraw once it has loaded
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () {
-      widgets.forEach(function (w) { var a = w.active; w.show(w.cur); if (a) w.setActive(a); });
+      widgets.forEach(function (w) { var a = w.active; w.show(w.cur, w.phase); if (a) w.setActive(a); });
     });
     window.ICHSeq = { open: function (tab) {
       var w = widgets[0]; if (!w) return;
