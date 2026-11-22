@@ -196,7 +196,6 @@ h3.subh{font-size:18px;margin:26px 0 8px}
     <a href="simplified.html"><b>Simplified</b><span>Scenario 1 core</span></a>
     <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
     <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
-    <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
         <a href="slicer.html" aria-current="page"><b>Slicer + MONAI</b><span>Viewer + AI</span></a>
     <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
@@ -206,7 +205,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <header class="hero">
   <div class="eyebrow">Intracerebral hemorrhage AI system · Radiologist viewer (D10) and AI blocks (D11)</div>
   <h1>3D Slicer + MONAI: the radiologist viewer and the AI blocks</h1>
-  <p>The project advisor recommended <a href="https://github.com/Slicer/Slicer">3D Slicer</a> instead of building our own viewer, and 3D Slicer with MONAI for the AI side. Part A checks Slicer 5.12 against the D10 requirements and against the <a href="viewer.html">OHIF PoC</a>. Part B answers whether Slicer already includes MONAI, reads the Slicer ↔ MONAI Label interaction diagram we received, explains why the PACS and Orthanc are still needed, and proposes how MONAI fills the AI blocks. The findings come from official documentation and source code; <b>nothing here has been run on the project stack yet</b>.</p>
+  <p>The project advisor recommended <a href="https://github.com/Slicer/Slicer">3D Slicer</a> instead of building our own viewer, and 3D Slicer with MONAI for the AI side. Part A checks Slicer 5.12 against the D10 requirements and against OHIF. Part B answers whether Slicer already includes MONAI, reads the Slicer ↔ MONAI Label interaction diagram we received, explains why the PACS and Orthanc are still needed, and proposes how MONAI fills the AI blocks. The findings come from official documentation and source code; <b>nothing here has been run on the project stack yet</b>.</p>
   <div class="chips"><span>Viewer: Slicer + ICH Triage module</span><span>Slicer does not include MONAI</span><span>AI blocks: MONAI Label</span><span>PACS and Orthanc stay</span><span>Not yet proven by a PoC</span></div>
 </header>
 
@@ -218,7 +217,6 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <li><a href="#req">Against the D10 requirements</a></li>
 <li><a href="#placement">Where Slicer sits in the architecture</a></li>
 <li><a href="#module">What we build: the ICH Triage module</a></li>
-<li><a href="#reuse">What we reuse from the OHIF PoC</a></li>
 <li><a href="#diagram">Reading the Slicer ↔ MONAI Label diagram</a></li>
 <li><a href="#proposal">Proposed architecture</a></li>
 <li><a href="#pacs">Do we still need the PACS and Orthanc?</a></li>
@@ -239,7 +237,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
   <div class="card c-emerald"><h4>Correct and save the mask</h4><div class="v tc-emerald">Built in · its strongest point</div><p>Segment Editor (paint, erase, HU threshold, islands, smoothing) and Segment Statistics (volume). Exports a new SEG and sends it to the PACS over STOW-RS or C-STORE.</p></div>
   <div class="card c-pink"><h4>Priority, alerts, SSO</h4><div class="v" style="color:var(--rose)">Not built in · we build it</div><p>Same as OHIF. The difference: our part is a <b>Python scripted module</b> running inside Slicer, with no rebuild of the application as an OHIF extension needs.</p></div>
 </div>
-<div class="callout"><b>Recommendation: feasible; run a PoC, then decide.</b> Use 3D Slicer as the radiologist's reading workstation, with an "ICH Triage" Python module that calls the same <b>AI results service</b> as the PoC (<code>poc/viewer/py/triage_api.py</code>). The team does not write a viewer, and our part is in Python, the language of the AI team and of MONAI Label. Two costs come with it: <b>Slicer is installed on every workstation</b> (no zero-footprint as with OHIF), and, like OHIF, Slicer is <b>not approved for clinical diagnosis</b>. The architecture does not change: AI results are still standard SEG and SR in the PACS.</div>
+<div class="callout"><b>Recommendation: feasible; run a PoC, then decide.</b> Use 3D Slicer as the radiologist's reading workstation, with an "ICH Triage" Python module that talks to the <b>AI results service</b>. The team does not write a viewer, and our part is in Python, the language of the AI team and of MONAI Label. Two costs come with it: <b>Slicer is installed on every workstation</b> (no zero-footprint as with OHIF), and, like OHIF, Slicer is <b>not approved for clinical diagnosis</b>. The architecture does not change: AI results are still standard SEG and SR in the PACS.</div>
 <h3 class="subh">AI blocks (D11)</h3>
 <div class="verdict">
   <div class="card c-blue"><h4>Slicer does not include MONAI</h4><p>The Slicer core only views and processes images. MONAI reaches Slicer only through extensions, and the MONAILabel extension is only a <b>client</b>: the model runs on a separate MONAI Label server.</p></div>
@@ -265,11 +263,11 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <h2 class="sec" id="what"><span class="n">3</span>What 3D Slicer is, and how it differs from OHIF</h2>
 <p>3D Slicer is an open-source platform for viewing and analysing medical images, written in C++ (VTK, ITK, CTK, Qt) with embedded Python. It runs as a desktop application on Windows, macOS and Linux. The current stable release is <b>5.12</b> (announced by Kitware on 15 July 2026), under a BSD-style licence with no restriction on commercial use. Slicer is extended with extensions or Python <b>scripted modules</b>. A scripted module can reach the whole scene, the Qt user interface and Python libraries such as <code>requests</code>, <code>pydicom</code> and <code>dicomweb_client</code>. Slicer is also the main MONAI Label client, so it already appears in the <a href="decisions.html#d2">annotation</a> block of the architecture. The Slicer core does not contain MONAI: the MONAILabel extension is only a client, and the model runs on the MONAI Label server (see <a href="#roles">section 2</a>).</p>
 <div class="tbl"><table>
-<tr><th>Aspect</th><th>OHIF (tried in a PoC)</th><th>3D Slicer (proposed)</th></tr>
+<tr><th>Aspect</th><th>OHIF</th><th>3D Slicer (proposed)</th></tr>
 <tr><td class="k">Application type</td><td>Static web app (React), opened in a browser</td><td>Desktop application (Qt), installed on the workstation</td></tr>
 <tr><td class="k">How images are fetched</td><td>Frame by frame over WADO-RS, slices appear progressively</td><td>Whole series downloaded into a local DICOM database, then loaded as a volume</td></tr>
 <tr><td class="k">Extending it</td><td>JavaScript extension + mode; OHIF must be rebuilt</td><td>Python scripted module: copy a folder, add the module path, no build</td></tr>
-<tr><td class="k">SEG / SR</td><td>SEG: yes. Volumetric SR: viewport error</td><td>SEG, Parametric Map, SR TID 1500 in the core (5.12)</td></tr>
+<tr><td class="k">SEG / SR</td><td>SEG: yes. Volumetric SR: not shown</td><td>SEG, Parametric Map, SR TID 1500 in the core (5.12)</td></tr>
 <tr><td class="k">Correcting the mask</td><td>Basic brush</td><td>Full Segment Editor, volume statistics</td></tr>
 <tr><td class="k">Display</td><td>2D slices, MPR, basic volume rendering</td><td>2D slices, MPR, volume rendering, measurements, registration</td></tr>
 <tr><td class="k">Login</td><td>OIDC by configuration</td><td>No OIDC; only user/password or a token passed in</td></tr>
@@ -278,21 +276,21 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 </table></div>
 
 <h2 class="sec" id="req"><span class="n">4</span>Against the D10 requirements</h2>
-<p>The requirements come from <a href="decisions.html#d10">D10</a> and the table on the <a href="viewer.html#ohif">Viewer PoC page</a>. The Slicer column is assessed from the documentation and has not been run. The OHIF column is what the PoC showed.</p>
+<p>The requirements come from <a href="decisions.html#d10">D10</a>. The Slicer column is assessed from the documentation and has not been run.</p>
 <div class="tbl"><table>
-<tr><th>Requirement</th><th>Source</th><th>3D Slicer</th><th>How it is met</th><th>OHIF (PoC)</th></tr>
-<tr><td>Reads over QIDO-RS / WADO-RS</td><td>1.3</td><td class="st"><span class="ok">Built in</span></td><td><code>DICOMUtils.importFromDICOMWeb</code> or the DICOMwebBrowser extension; DIMSE C-GET also works</td><td class="st"><span class="ok">Pass</span></td></tr>
-<tr><td>Opens a study while later series are still arriving</td><td>1.3</td><td class="st"><span class="part">Partly</span></td><td>Downloads the series already in the PACS; the module queries again for later series. No progressive slices: the doctor waits for a series to finish downloading (to be measured on the LAN)</td><td class="st"><span class="part">Partly</span></td></tr>
-<tr><td>Shows the AI mask (SEG)</td><td>1.5, 2.4</td><td class="st"><span class="ok">Built in</span></td><td>SEG loads as a segmentation node; each segment can be toggled</td><td class="st"><span class="ok">Pass</span></td></tr>
-<tr><td>Overlay off by default</td><td>P4</td><td class="st"><span class="part">We build it, easy</span></td><td>Slicer shows segmentations on load; the module hides them right after loading</td><td class="st"><span class="ok">Pass</span></td></tr>
-<tr><td>Shows the SR report (volume)</td><td>2.4</td><td class="st"><span class="part">Likely</span></td><td>TID 1500 is in the 5.12 core; to be tried with the SR from <code>ai_worker.py</code>. If it cannot be read, the module panel shows the volume as the OHIF PoC does</td><td class="st"><span class="no">No</span></td></tr>
-<tr><td>4 AI states, never shown like a negative study</td><td>AI contract</td><td class="st"><span class="no">We build it</span></td><td>Module panel reads <code>/triage/api/studies/{uid}</code></td><td class="st"><span class="no">We build it</span></td></tr>
-<tr><td>Confirm / reject the AI result</td><td>1.5</td><td class="st"><span class="no">We build it</span></td><td>Buttons in the module call <code>POST /review</code></td><td class="st"><span class="no">We build it</span></td></tr>
-<tr><td>Correct and save the mask</td><td>1.5</td><td class="st"><span class="ok">Built in, stronger</span></td><td>Segment Editor; export DICOM SEG; send over STOW-RS or C-STORE from the DICOM module</td><td class="st"><span class="part">Has tools</span></td></tr>
-<tr><td>Mask arriving after the study is open</td><td>2.4</td><td class="st"><span class="part">We build it, easier</span></td><td>The module listens for events, downloads the new SEG series and adds it to the scene without reopening the study</td><td class="st"><span class="part">Must reload</span></td></tr>
-<tr><td>Study priority, real-time alerts</td><td>1.5, 2.5</td><td class="st"><span class="no">We build it</span></td><td>The module reads the SSE stream <code>/triage/api/events</code> and shows the priority list and alerts in the Slicer window</td><td class="st"><span class="no">We build it</span></td></tr>
-<tr><td>SSO login (OIDC, Keycloak)</td><td>D9</td><td class="st"><span class="no">We build it</span></td><td>Slicer does not handle OIDC. The module runs Authorization Code + PKCE through the system browser and adds the token to every request</td><td class="st"><span class="part">Not tried</span></td></tr>
-<tr><td>Allowed for primary diagnosis</td><td>Regulatory</td><td class="st"><span class="no">No</span></td><td>No FDA/CE clearance; research use only</td><td class="st"><span class="no">No</span></td></tr>
+<tr><th>Requirement</th><th>Source</th><th>3D Slicer</th><th>How it is met</th></tr>
+<tr><td>Reads over QIDO-RS / WADO-RS</td><td>1.3</td><td class="st"><span class="ok">Built in</span></td><td><code>DICOMUtils.importFromDICOMWeb</code> or the DICOMwebBrowser extension; DIMSE C-GET also works</td></tr>
+<tr><td>Opens a study while later series are still arriving</td><td>1.3</td><td class="st"><span class="part">Partly</span></td><td>Downloads the series already in the PACS; the module queries again for later series. No progressive slices: the doctor waits for a series to finish downloading (to be measured on the LAN)</td></tr>
+<tr><td>Shows the AI mask (SEG)</td><td>1.5, 2.4</td><td class="st"><span class="ok">Built in</span></td><td>SEG loads as a segmentation node; each segment can be toggled</td></tr>
+<tr><td>Overlay off by default</td><td>P4</td><td class="st"><span class="part">We build it, easy</span></td><td>Slicer shows segmentations on load; the module hides them right after loading</td></tr>
+<tr><td>Shows the SR report (volume)</td><td>2.4</td><td class="st"><span class="part">Likely</span></td><td>TID 1500 is in the 5.12 core; to be tried with the SR the AI worker produces. If it cannot be read, the module panel shows the volume itself</td></tr>
+<tr><td>4 AI states, never shown like a negative study</td><td>AI contract</td><td class="st"><span class="no">We build it</span></td><td>The module panel reads the AI state from the AI results service</td></tr>
+<tr><td>Confirm / reject the AI result</td><td>1.5</td><td class="st"><span class="no">We build it</span></td><td>Buttons in the module send the decision to the AI results service</td></tr>
+<tr><td>Correct and save the mask</td><td>1.5</td><td class="st"><span class="ok">Built in, stronger</span></td><td>Segment Editor; export DICOM SEG; send over STOW-RS or C-STORE from the DICOM module</td></tr>
+<tr><td>Mask arriving after the study is open</td><td>2.4</td><td class="st"><span class="part">We build it, easier</span></td><td>The module listens for events, downloads the new SEG series and adds it to the scene without reopening the study</td></tr>
+<tr><td>Study priority, real-time alerts</td><td>1.5, 2.5</td><td class="st"><span class="no">We build it</span></td><td>The module listens to the AI results service's event stream and shows the priority list and alerts in the Slicer window</td></tr>
+<tr><td>SSO login (OIDC, Keycloak)</td><td>D9</td><td class="st"><span class="no">We build it</span></td><td>Slicer does not handle OIDC. The module runs Authorization Code + PKCE through the system browser and adds the token to every request</td></tr>
+<tr><td>Allowed for primary diagnosis</td><td>Regulatory</td><td class="st"><span class="no">No</span></td><td>No FDA/CE clearance; research use only</td></tr>
 </table></div>
 <p>In short, Slicer is <b>better than OHIF for images and masks</b> (SR, mask correction, late masks) and <b>equal to OHIF for priority and alerts</b>: both need the AI results service plus a user-interface layer we build. Slicer is <b>weaker than OHIF for deployment and login</b>: it is installed on each workstation, shows no progressive slices and has no built-in OIDC.</p>
 
@@ -308,77 +306,38 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <path class="lv" d="M160 235 L160 149" marker-end="url(#ah)"/>
 <text class="ts" x="170" y="184">open study by UID</text><text class="ts" x="170" y="202">load SEG, hide overlay</text>
 <rect class="bxc" x="460" y="60" width="200" height="60" rx="8"/><text class="tt" x="560" y="86" text-anchor="middle">PACS (dcm4chee)</text><text class="ts" x="560" y="106" text-anchor="middle">DICOMweb</text>
-<rect class="bxa" x="460" y="210" width="200" height="80" rx="8"/><text class="tt" x="560" y="244" text-anchor="middle">AI results service</text><text class="ts" x="560" y="264" text-anchor="middle">triage API + SSE</text>
+<rect class="bxa" x="460" y="210" width="200" height="80" rx="8"/><text class="tt" x="560" y="244" text-anchor="middle">AI results service</text><text class="ts" x="560" y="264" text-anchor="middle">REST + event stream</text>
 <rect class="bxk" x="460" y="330" width="200" height="50" rx="8"/><text class="tt" x="560" y="360" text-anchor="middle">Keycloak (OIDC)</text>
 <path class="ln" d="M275 100 L456 100" marker-start="url(#ah)" marker-end="url(#ah)"/>
 <text class="ts" x="368" y="90" text-anchor="middle">QIDO-RS, WADO-RS</text><text class="ts" x="368" y="118" text-anchor="middle">STOW-RS: corrected SEG</text>
 <path class="lv" d="M275 250 L456 250" marker-end="url(#ah)"/>
 <text class="ts" x="368" y="242" text-anchor="middle">REST: studies, review</text>
 <path class="lv" d="M456 280 L279 280" marker-end="url(#ah)"/>
-<text class="ts" x="368" y="298" text-anchor="middle">SSE: result, ai_status</text>
+<text class="ts" x="368" y="298" text-anchor="middle">events: result, AI status</text>
 <path class="ln" d="M200 305 L200 355 L456 355" marker-end="url(#ah)"/>
 <text class="ts" x="380" y="347" text-anchor="middle">OIDC + PKCE</text>
 <path class="ln" d="M560 210 L560 124" marker-end="url(#ah)"/>
 <text class="ts" x="570" y="172">QIDO-RS</text>
 </svg>
-<p class="figcap">Grey: clinical and login flows. Violet: AI results flow. Violet boxes are what the team builds or already has from the PoC.</p>
+<p class="figcap">Grey: clinical and login flows. Violet: AI results flow. Violet boxes are what the team builds.</p>
 </div>
-<p>There is a second way in, when the doctor picks a study from a web list (the PoC priority list or the RIS worklist). Slicer registers the URL scheme <code>slicer://viewer/?studyUID=…&amp;dicomweb_endpoint=…&amp;access_token=…</code> (registered automatically on Windows at install), so an "Open in Slicer" button on a web page opens that study straight in Slicer. This keeps the PoC list page and needs only the AI panel in Slicer.</p>
+<p>There is a second way in, when the doctor picks a study from a web list (a web priority list or the RIS worklist). Slicer registers the URL scheme <code>slicer://viewer/?studyUID=…&amp;dicomweb_endpoint=…&amp;access_token=…</code> (registered automatically on Windows at install), so an "Open in Slicer" button on a web page opens that study straight in Slicer. A web list can then stay, and Slicer only needs the AI panel.</p>
 
 <h2 class="sec" id="module"><span class="n">6</span>What we build: the ICH Triage module</h2>
-<p>The module does what <code>ohif-ai.js</code> and the priority list page do in the OHIF PoC, but inside Slicer. The server side stays the same.</p>
+<p>The module gives the radiologist the priority list and the AI panel inside Slicer. It talks to the PACS over DICOMweb and to the AI results service, whose API is designed in <a href="https://github.com/LoveTechwCat/ich-triage">ich-triage</a>.</p>
 <ol class="flow">
-<li class="f-dec"><b class="t">Priority list</b>Calls <code>GET /triage/api/studies</code> and shows a Qt table. The order (unconfirmed positive studies first, P4) is still decided by the server; the module only displays it.</li>
-<li class="f-dec"><b class="t">Real-time alerts</b>A background thread reads the SSE stream <code>/triage/api/events</code> and puts events on a queue. A <code>qt.QTimer</code> on the UI thread takes them off, highlights the row in red and shows an alert. The Qt UI is updated only from the main thread.</li>
+<li class="f-dec"><b class="t">Priority list</b>Fetches the study list with AI state and shows a Qt table. The order (unconfirmed positive studies first, P4) is still decided by the server; the module only displays it.</li>
+<li class="f-dec"><b class="t">Real-time alerts</b>A background thread reads the AI results service's event stream and puts events on a queue. A <code>qt.QTimer</code> on the UI thread takes them off, highlights the row in red and shows an alert. The Qt UI is updated only from the main thread.</li>
 <li class="f-dec"><b class="t">Open a study</b><code>DICOMUtils.importFromDICOMWeb(dicomWebEndpoint, studyInstanceUID)</code>, then load the series. The AI segmentation is hidden right after loading, following the "off by default" rule.</li>
-<li class="f-dec"><b class="t">AI panel</b>Shows the 4 states (not run, running, done and awaiting confirmation, no result), the volume and the model version. Confirm / Reject buttons call <code>POST /triage/api/studies/{uid}/review</code>.</li>
-<li class="f-dec"><b class="t">Late mask</b>When SSE reports a <code>result</code> for the open study, the module queries the new SEG series and adds it to the scene. The doctor does not reopen the study, unlike with OHIF.</li>
+<li class="f-dec"><b class="t">AI panel</b>Shows the 4 states (not run, running, done and awaiting confirmation, no result), the volume and the model version. Confirm / Reject buttons send the decision to the AI results service.</li>
+<li class="f-dec"><b class="t">Late mask</b>When the event stream reports a result for the open study, the module queries the new SEG series and adds it to the scene. The doctor does not reopen the study, unlike with OHIF.</li>
 <li class="f-dec"><b class="t">Correct and save the mask</b>Opens Segment Editor on the AI mask, saves it as a <b>new SEG series</b> (the AI mask is not overwritten) and sends it over STOW-RS through the DICOM module.</li>
-<li class="f-dec"><b class="t">Login</b>Runs OIDC Authorization Code + PKCE through the system browser, receives the token on a loopback port and adds it to the <code>Authorization</code> header of <code>dicomweb_client</code> and the triage API. The PoC can skip this step, as the OHIF PoC did.</li>
+<li class="f-dec"><b class="t">Login</b>Runs OIDC Authorization Code + PKCE through the system browser, receives the token on a loopback port and adds it to the <code>Authorization</code> header of <code>dicomweb_client</code> and the AI results service. The first PoC can skip this step.</li>
 </ol>
-<pre class="code"><span class="c"># Sketch, not run. Core of the ICH Triage module</span>
-import json, queue, threading, requests, qt, slicer
-from DICOMLib import DICOMUtils
-
-PACS   = "http://localhost:8000/dcm4chee-arc/aets/DCM4CHEE/rs"
-TRIAGE = "http://localhost:8000/triage/api"
-events = queue.Queue()
-
-def listen():                                  <span class="c"># background thread: network only</span>
-    with requests.get(TRIAGE + "/events", stream=True) as r:
-        for line in r.iter_lines(decode_unicode=True):
-            if line and line.startswith("data:"):
-                events.put(json.loads(line[5:]))
-
-def open_study(uid):
-    DICOMUtils.importFromDICOMWeb(dicomWebEndpoint=PACS, studyInstanceUID=uid)
-    DICOMUtils.loadSeriesByUID(slicer.dicomDatabase.seriesForStudy(uid))
-    for seg in slicer.util.getNodesByClass("vtkMRMLSegmentationNode"):
-        seg.GetDisplayNode().SetVisibility(False)  <span class="c"># overlay off by default</span>
-
-def review(uid, decision):                     <span class="c"># "CONFIRMED" | "REJECTED"</span>
-    requests.post(f"{TRIAGE}/studies/{uid}/review", json={"decision": decision})
-
-threading.Thread(target=listen, daemon=True).start()
-timer = qt.QTimer(); timer.setInterval(500)
-timer.connect("timeout()", lambda: on_events(events))  <span class="c"># on_events: highlight rows, update the panel</span>
-timer.start()</pre>
-
-<h2 class="sec" id="reuse"><span class="n">7</span>What we reuse from the OHIF PoC</h2>
-<p>Almost the whole server side carries over. Only the user interface that runs inside OHIF is replaced.</p>
-<div class="tbl"><table>
-<tr><th>PoC component</th><th>With Slicer</th><th>Notes</th></tr>
-<tr><td class="k">dcm4chee, PostgreSQL, OpenLDAP</td><td><span class="ok">Unchanged</span></td><td>Slicer uses the same DICOMweb root <code>/dcm4chee-arc/aets/DCM4CHEE/rs</code></td></tr>
-<tr><td class="k"><code>his.py</code>, <code>scanner.py</code>, <code>ai_worker.py</code></td><td><span class="ok">Unchanged</span></td><td>Flows 1.4 and 1.1 and the simulated AI do not know which viewer is used</td></tr>
-<tr><td class="k"><code>triage_api.py</code> (AI results service)</td><td><span class="ok">Unchanged</span></td><td>The module calls the same REST and SSE endpoints the OHIF panel calls</td></tr>
-<tr><td class="k">nginx proxy</td><td><span class="part">Slimmed</span></td><td>No more script injection into OHIF. Slicer is not a browser, so no same-origin rule; the proxy keeps only TLS and token checks</td></tr>
-<tr><td class="k">Priority list page (<code>static/</code>)</td><td><span class="part">Optional</span></td><td>Keep it as a web worklist and change "Open in OHIF" to a <code>slicer://</code> link, or drop it if the list lives in the module</td></tr>
-<tr><td class="k"><code>ohif-ai.js</code>, <code>ohif</code> container</td><td><span class="no">Replaced</span></td><td>Replaced by the ICH Triage module. OHIF can stay for quick web viewing outside the main reading flow</td></tr>
-</table></div>
 
 <div class="partbar" id="part-ai"><span>Part B</span>MONAI for the AI blocks (D11)</div>
 
-<h2 class="sec" id="diagram"><span class="n">8</span>Reading the Slicer ↔ MONAI Label diagram</h2>
+<h2 class="sec" id="diagram"><span class="n">7</span>Reading the Slicer ↔ MONAI Label diagram</h2>
 <p>In the diagram we received, 3D Slicer on Windows is the client and the MONAI Label server (WSL2, app <code>apps/radiology</code>) is the server. Step by step:</p>
 <div class="tbl"><table>
 <tr><th>Step</th><th>Call</th><th>What it means</th></tr>
@@ -393,13 +352,13 @@ timer.start()</pre>
 <div class="callout amber"><b>Five things to fix before it fits the architecture.</b>
 <ul>
 <li><b>The datastore is a folder of NIfTI files.</b> No DICOM, no studies from the scanners, no de-identification, no audit. Switch it to the Orthanc gateway's DICOMweb (de-identified copies), as Flow 3 already describes.</li>
-<li><b>The AI runs only when someone clicks Run.</b> ICH triage needs the AI to run as soon as a CT series is complete, before the doctor opens the study. The Orthanc gateway calls <code>/infer</code> automatically for this (section <a href="#contract">12</a>).</li>
+<li><b>The AI runs only when someone clicks Run.</b> ICH triage needs the AI to run as soon as a CT series is complete, before the doctor opens the study. The Orthanc gateway calls <code>/infer</code> automatically for this (section <a href="#contract">11</a>).</li>
 <li><b>The learning loop is not closed.</b> <code>trainers = {}</code> means the app declares no TrainTask for the <code>hemorrhage</code> model (or the server runs with <code>skip_trainers</code>). Add a trainer, or train outside MONAI Label and hand the bundle over through the registry.</li>
 <li><b>The mask has 6 classes, but the gateway treats it as binary.</b> <code>ai_bridge.py</code> treats every non-zero voxel as hemorrhage, so it would merge the subtypes into one. The SEG needs one segment per label 1–5 and the SR the volume of each. The AI team must confirm the label table.</li>
 <li><b>"Submit Label" overwrites one file.</b> Labels have no versions and there is no frozen dataset. Labels must be saved as DICOM SEG through the gateway and copied to the research bucket, and datasets frozen by version as in Flow 3.</li>
 </ul></div>
 
-<h2 class="sec" id="proposal"><span class="n">9</span>Proposed architecture</h2>
+<h2 class="sec" id="proposal"><span class="n">8</span>Proposed architecture</h2>
 <p>The clinical and data layers stay as they are. Two MONAI Label servers run the same app (the same <code>hemorrhage</code> model) with different settings, each in its own network layer.</p>
 <div class="figure"><div class="figscroll">
 <svg class="flowsvg wide" viewBox="0 0 760 560" role="img" aria-labelledby="mo-t mo-d"><title id="mo-t">3D Slicer and MONAI in the ICH architecture</title><desc id="mo-d">Clinical layer: the CT scanner sends studies to the dcm4chee PACS, and the radiologist reads in 3D Slicer with the ICH Triage module. Inference layer: the PACS pushes series to the Orthanc gateway; the AI worker (the ai_bridge plugin in staging) sends the volume to the infer-only MONAI Label server, receives a 6-class mask, builds SEG and SR and sends them to the PACS. Research layer: the research MONAI Label server reads de-identified studies and writes SEG labels over the gateway's DICOMweb; annotators use 3D Slicer with the MONAILabel extension; models are registered in the registry, and the inference server loads only approved ones.</desc>
@@ -440,7 +399,7 @@ timer.start()</pre>
 <li class="f-dec"><b class="t">Model handoff</b>A new model is registered in the registry as a MONAI bundle with its version, metrics and approval status. The inference server loads only an approved bundle and writes its version into every SEG and SR.</li>
 </ol>
 
-<h2 class="sec" id="pacs"><span class="n">10</span>Do we still need the PACS and Orthanc?</h2>
+<h2 class="sec" id="pacs"><span class="n">9</span>Do we still need the PACS and Orthanc?</h2>
 <p>MONAI Label and 3D Slicer both keep images somewhere, but neither can do the PACS's job:</p>
 <div class="tbl"><table>
 <tr><th>Job</th><th>PACS (dcm4chee)</th><th>MONAI Label datastore</th><th>Slicer DICOM database</th></tr>
@@ -462,7 +421,7 @@ timer.start()</pre>
 <li><b>It keeps a working copy away from the PACS.</b> Preprocessing, retries and re-runs after a model change put no load on the PACS doctors are using.</li>
 </ul></div>
 
-<h2 class="sec" id="changes"><span class="n">11</span>Changes to the current architecture</h2>
+<h2 class="sec" id="changes"><span class="n">10</span>Changes to the current architecture</h2>
 <div class="tbl"><table>
 <tr><th>Component</th><th>Current</th><th>Proposed</th></tr>
 <tr><td class="k">PACS, Orthanc gateway, SeaweedFS, PostgreSQL, backup, Keycloak</td><td>D1–D9</td><td>Unchanged</td></tr>
@@ -474,7 +433,7 @@ timer.start()</pre>
 <tr><td class="k">Model registry</td><td>Versioned model store</td><td>Store of MONAI bundles with version, metrics, dataset version and approval status</td></tr>
 </table></div>
 
-<h2 class="sec" id="contract"><span class="n">12</span>Gateway ↔ MONAI contract</h2>
+<h2 class="sec" id="contract"><span class="n">11</span>Gateway ↔ MONAI contract</h2>
 <p>In the MONAI Label source, <code>POST /infer/{model}</code> takes either <code>image</code> (an image ID in the datastore) or <code>file</code> (an uploaded volume), plus <code>params</code> as JSON. The <code>output</code> parameter picks what comes back: <code>image</code> returns only the mask file, <code>json</code> only the parameters, <code>dicom_seg</code> a DICOM SEG (needs a DICOMweb datastore and <code>label_info</code>), and the default a multipart response with both. In <code>params</code>, <code>result_extension</code> chooses the mask file format (<code>.nii.gz</code> or <code>.nrrd</code>). So there are two ways to connect the gateway to MONAI:</p>
 <div class="tbl"><table>
 <tr><th>Option</th><th>Call</th><th>Pros</th><th>Cons</th></tr>
@@ -493,7 +452,7 @@ def segment(volume):
 <span class="c"># mask_to_seg: one SegmentDescription per label 1–5 present, instead of a single "hemorrhage" segment</span></pre>
 <div class="callout amber"><b>To check in the PoC.</b> The returned mask must be on the same grid (shape, affine) as the volume sent; <code>ai_bridge.py</code> already rejects a mask on a different grid. If the app resamples or reorients, fix the app's post-processing, not the gateway.</div>
 
-<h2 class="sec" id="servers"><span class="n">13</span>The two MONAI Label servers</h2>
+<h2 class="sec" id="servers"><span class="n">12</span>The two MONAI Label servers</h2>
 <div class="tbl"><table>
 <tr><th></th><th>Inference server</th><th>Research server</th></tr>
 <tr><td class="k">Network layer</td><td>VLAN 30 (AI inference)</td><td>VLAN 40 (AI research)</td></tr>
@@ -513,14 +472,14 @@ monailabel start_server --app apps/radiology --studies http://gateway:8042/dicom
   --conf models hemorrhage,sam_2d --port 8000</pre>
 <p>For the project, both servers can run on one WSL2 machine with a GPU, as long as the report states that in a real deployment they sit in two VLANs and the inference layer has its own GPU.</p>
 
-<h2 class="sec" id="risks"><span class="n">14</span>Risks and mitigations</h2>
+<h2 class="sec" id="risks"><span class="n">13</span>Risks and mitigations</h2>
 <h3 class="subh">Viewer</h3>
 <div class="tbl"><table>
 <tr><th>Risk</th><th>Why it matters</th><th>Mitigation</th></tr>
 <tr><td class="k">Installed on every workstation</td><td>The Slicer installer is a few hundred MB, over 1 GB once installed with extensions and modules. IT must update every machine</td><td>Package a fixed Slicer build with the module included (or a Slicer custom application). The project needs only one or two demo machines</td></tr>
 <tr><td class="k">No progressive slices</td><td>Flow 1.3 wants the doctor reading as soon as images arrive; Slicer waits for a series to finish downloading</td><td>Measure the download time of a head CT over the LAN; fetch the thin axial series first and the others in the background</td></tr>
 <tr><td class="k">Identified images on the workstation disk</td><td>Slicer's local DICOM database keeps copies of the images, against data minimisation (Decree 356/2025)</td><td>Encrypt workstation disks, use a per-session temporary database and clear the cache when the study closes or on a schedule</td></tr>
-<tr><td class="k">No built-in OIDC</td><td>D9 requires SSO + MFA for every clinical tool</td><td>PKCE in the module (section 6). The PoC skips login, as the OHIF PoC did</td></tr>
+<tr><td class="k">No built-in OIDC</td><td>D9 requires SSO + MFA for every clinical tool</td><td>PKCE in the module (section 6). The first PoC can skip login</td></tr>
 <tr><td class="k">Busy user interface</td><td>Slicer is a research tool; radiologists are used to leaner PACS viewers</td><td>The module can hide toolbars and the module list from Python, leaving only the reading layout</td></tr>
 <tr><td class="k">Not allowed for diagnosis</td><td>The Slicer documentation says it is not approved for clinical use</td><td>Same as OHIF: the project is research. A real deployment uses the hospital's certified viewer; AI results are standard SEG/SR, so nothing changes</td></tr>
 </table></div>
@@ -534,19 +493,19 @@ monailabel start_server --app apps/radiology --studies http://gateway:8042/dicom
 <tr><td class="k">Networking between Windows, WSL2 and Docker</td><td>Slicer on Windows reaches WSL2 on <code>localhost</code>, but the Orthanc container does not</td><td>Use the WSL2 host's IP address, or run MONAI Label on the same Docker network as the gateway</td></tr>
 </table></div>
 
-<h2 class="sec" id="plan"><span class="n">15</span>PoC plan</h2>
+<h2 class="sec" id="plan"><span class="n">14</span>PoC plan</h2>
 <h3 class="subh">Viewer: settle D10</h3>
-<p>Reuse the <code>poc/viewer</code> stack (PACS, simulated AI, triage service) and replace only the viewer side. Each step has a clear pass criterion, for a direct comparison with the OHIF PoC.</p>
+<p>Run against the staging stack or the ich-triage local stack. Each step has a clear pass criterion.</p>
 <div class="tbl"><table>
 <tr><th>#</th><th>Task</th><th>Passes when</th></tr>
-<tr><td class="k">1</td><td>Install Slicer 5.12, point it at <code>http://localhost:8000/dcm4chee-arc/aets/DCM4CHEE/rs</code>, open a study over DICOMweb</td><td>The synthetic head CT displays correctly; time from click to image recorded</td></tr>
-<tr><td class="k">2</td><td>Load the SEG + SR produced by <code>ai_worker.py</code> (highdicom)</td><td>The mask sits on the 72 HU blob; we know whether the SR TID 1500 loads</td></tr>
-<tr><td class="k">3</td><td>Minimal ICH Triage module: list, SSE, AI panel, confirm/reject</td><td>Steps 1 to 8 of the <a href="viewer.html#run">demo script</a> work in Slicer</td></tr>
-<tr><td class="k">4</td><td>Late mask (<code>scenarios.sh case dung</code>)</td><td>The SEG appears in the open study without reopening it</td></tr>
+<tr><td class="k">1</td><td>Install Slicer 5.12, point it at the PACS DICOMweb root (<code>/dcm4chee-arc/aets/DCM4CHEE/rs</code>), open a study over DICOMweb</td><td>A head CT displays correctly; time from click to image recorded</td></tr>
+<tr><td class="k">2</td><td>Load the SEG + SR produced by the AI worker</td><td>The mask sits on the lesion; we know whether the SR TID 1500 loads</td></tr>
+<tr><td class="k">3</td><td>Minimal ICH Triage module: list, SSE, AI panel, confirm/reject</td><td>A new study appears, is flagged, opens, and can be confirmed or rejected in Slicer</td></tr>
+<tr><td class="k">4</td><td>Late mask: open a study before its AI result arrives</td><td>The SEG appears in the open study without reopening it</td></tr>
 <tr><td class="k">5</td><td>Correct the mask in Segment Editor, save over STOW-RS</td><td>dcm4chee has one more SEG series; the original AI mask is still there</td></tr>
-<tr><td class="k">6</td><td>AI down / back up (<code>ai-down</code>, <code>ai-up</code>)</td><td>The module shows "AI paused", never like a negative study</td></tr>
+<tr><td class="k">6</td><td>Stop the AI, then start it again</td><td>The module shows "AI paused", never like a negative study</td></tr>
 </table></div>
-<div class="callout amber"><b>Decision after the PoC.</b> If steps 1 to 5 pass, settle D10 as 3D Slicer for reading workstations and keep OHIF as the web option. If opening a study (step 1) is much slower than OHIF, or the hospital does not allow software on reading workstations, go back to OHIF + extension as on the <a href="viewer.html">Viewer PoC</a> page.</div>
+<div class="callout amber"><b>Decision after the PoC.</b> If steps 1 to 5 pass, settle D10 as 3D Slicer for reading workstations and keep OHIF as the web option. If opening a study (step 1) is much slower than OHIF, or the hospital does not allow software on reading workstations, fall back to OHIF with an extension.</div>
 <h3 class="subh">AI blocks: settle D11</h3>
 <div class="tbl"><table>
 <tr><th>#</th><th>Task</th><th>Passes when</th></tr>
@@ -557,7 +516,7 @@ monailabel start_server --app apps/radiology --studies http://gateway:8042/dicom
 <tr><td>5</td><td>Hand the new model over through the registry (by hand: copy the bundle with its version) and reload the inference server</td><td>New SEGs carry the new model version; the old model keeps running while the new one is not approved</td></tr>
 </table></div>
 
-<h2 class="sec" id="refs"><span class="n">16</span>References</h2>
+<h2 class="sec" id="refs"><span class="n">15</span>References</h2>
 <ol class="src">
 <li><a href="https://github.com/Slicer/Slicer">3D Slicer: source code</a> · <a href="https://slicer.readthedocs.io/en/latest/user_guide/about.html">licence and regulatory statement</a></li>
 <li><a href="https://www.kitware.com/announcing-3d-slicer-5-12/">Kitware: Announcing 3D Slicer 5.12</a> (SEG, Parametric Map, SR TID 1500 in the core) · <a href="https://discourse.slicer.org/t/slicer-5-12-summary-highlights-and-changelog/47540">5.12 changelog</a></li>
@@ -570,13 +529,13 @@ monailabel start_server --app apps/radiology --studies http://gateway:8042/dicom
 <li><a href="https://github.com/Project-MONAI/MONAILabel/blob/main/monailabel/transform/writer.py">MONAI Label: Writer (<code>result_extension</code>)</a></li>
 <li><a href="https://github.com/lassoan/SlicerMONAIAuto3DSeg">SlicerMONAIAuto3DSeg: running MONAI models inside Slicer</a></li>
 <li><a href="https://github.com/Project-MONAI/monai-deploy-app-sdk">MONAI Deploy App SDK</a> · <a href="https://github.com/Project-MONAI/model-zoo">MONAI Model Zoo (bundles)</a></li>
-<li><a href="viewer.html">Viewer PoC: OHIF + AI triage</a> · <a href="decisions.html#d10">D10</a> · <a href="decisions.html#d11">D11</a> · <a href="index.html#flow-ai">Flow 3</a></li>
+<li><a href="decisions.html#d10">D10</a> · <a href="decisions.html#d11">D11</a> · <a href="index.html#flow-ai">Flow 3</a></li>
 </ol>
 
 </main>
 </div>
 
-<footer>Intracerebral hemorrhage AI system · 3D Slicer + MONAI · <a href="viewer.html">Viewer PoC</a> · <a href="decisions.html#d10">Decisions D10</a> · <a href="decisions.html#d11">D11</a>. Findings on Slicer are based on the Slicer 5.12 documentation; the MONAI Label API was checked against its source. The server settings and gateway changes have not been run on the project stack.</footer>
+<footer>Intracerebral hemorrhage AI system · 3D Slicer + MONAI · <a href="decisions.html#d10">Decisions D10</a> · <a href="decisions.html#d11">D11</a>. Findings on Slicer are based on the Slicer 5.12 documentation; the MONAI Label API was checked against its source. The server settings and gateway changes have not been run on the project stack.</footer>
 </div>
 <script src="assets/site.js"></script>
 </body></html>

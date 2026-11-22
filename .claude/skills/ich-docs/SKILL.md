@@ -1,6 +1,6 @@
 ---
 name: ich-docs
-description: Luật làm việc trong repo ich-architecture, nơi team ghi tài liệu, kiến trúc, ý tưởng và quyết định của đồ án hệ thống AI phát hiện xuất huyết não (ICH). Repo gồm các trang web kiến trúc (index, simplified, scenario2, decisions, slicer, viewer, dcm4chee), sơ đồ SVG, sơ đồ tuần tự, và báo cáo LaTeX trong tex/. Phần hiện thực (code, cấu hình triển khai, PoC chạy được) nằm ở repo project riêng. Dùng skill này trước khi thêm hay sửa BẤT KỲ thứ gì trong repo, kể cả khi user chỉ nói "cập nhật architecture", "sửa diagram", "thêm ý tưởng", "đề xuất dùng X", "thêm quyết định", "ghi kết quả PoC", "viết vào báo cáo", "thêm trang", "update doc", hoặc muốn thêm code, script, Dockerfile, PoC vào repo này. Skill giúp đưa ý tưởng mới vào đúng chỗ, giữ tài liệu ngắn và viết như người thật viết, và giữ các trang, sơ đồ, báo cáo khớp nhau.
+description: Luật làm việc trong repo ich-architecture, nơi team ghi tài liệu, kiến trúc, ý tưởng và quyết định của đồ án hệ thống AI phát hiện xuất huyết não (ICH). Repo gồm các trang web kiến trúc (index, simplified, scenario2, decisions, slicer, dcm4chee), sơ đồ SVG, sơ đồ tuần tự, và báo cáo LaTeX trong tex/. Phần hiện thực (code, cấu hình triển khai, PoC chạy được) nằm ở repo project riêng. Dùng skill này trước khi thêm hay sửa BẤT KỲ thứ gì trong repo, kể cả khi user chỉ nói "cập nhật architecture", "sửa diagram", "thêm ý tưởng", "đề xuất dùng X", "thêm quyết định", "ghi kết quả PoC", "viết vào báo cáo", "thêm trang", "update doc", hoặc muốn thêm code, script, Dockerfile, PoC vào repo này. Skill giúp đưa ý tưởng mới vào đúng chỗ, giữ tài liệu ngắn và viết như người thật viết, và giữ các trang, sơ đồ, báo cáo khớp nhau.
 ---
 
 # ich-docs: repo tài liệu của đồ án ICH
@@ -16,9 +16,9 @@ Tài liệu hiện đã dài và có giọng "AI viết". Vì vậy cứ thêm n
 ## Code ở đâu
 
 - **Không thêm code mới vào repo này.** Script, Dockerfile, plugin, service, notebook hay PoC mới đều thuộc repo project. Riêng JS và CSS của chính trang tài liệu (`assets/`) vẫn sửa ở đây. Nếu user nhờ viết code trong repo này, nói rõ code nên nằm ở repo project và hỏi họ muốn tạo repo đó hay đặt tạm ở đâu, rồi mới làm. Trong tài liệu chỉ ghi link tới code, kèm một câu nói nó làm gì.
-- **Code cũ giữ nguyên:** `deploy/staging/` và `poc/viewer/` ở yên chỗ cũ cho tới khi team chuyển sang repo project. Sửa lỗi nhỏ trong đó được, nếu user yêu cầu rõ ràng. Không thêm tính năng mới, không thêm thư mục code mới.
+- **Code cũ giữ nguyên:** `deploy/staging/` ở yên chỗ cũ cho tới khi team chuyển sang repo project. Sửa lỗi nhỏ trong đó được, nếu user yêu cầu rõ ràng. Không thêm tính năng mới, không thêm thư mục code mới.
 - **Đoạn code minh hoạ trong tài liệu:** được dùng khi giúp người đọc hiểu một giao diện. Giữ ngắn (khoảng 15 dòng trở xuống) và ghi rõ "Sketch, not run" (trang web) hoặc "Phác thảo, chưa chạy" (báo cáo).
-- Repo project: <https://github.com/LoveTechwCat/ich-triage>, viết hoàn toàn bằng tiếng Anh. Mỗi thành phần có một thư mục (`services/gateway`, `services/ai-worker`, `services/monai-app`, `services/triage-api`, `services/slicer-ich-triage`, `deploy/staging`, `deploy/local`, `tools`), và README của thư mục đó ghi mục đích, giao diện và trạng thái. Khi code cũ trong `deploy/` hoặc `poc/` được chuyển sang đó, xoá ở đây và sửa các link trỏ tới nó.
+- Repo project: <https://github.com/LoveTechwCat/ich-triage>, viết hoàn toàn bằng tiếng Anh. Mỗi thành phần có một thư mục (`services/gateway`, `services/ai-worker`, `services/monai-app`, `services/triage-api`, `services/slicer-ich-triage`, `deploy/staging`, `deploy/local`, `tools`), và README của thư mục đó ghi mục đích, giao diện và trạng thái. Khi code cũ trong `deploy/` được chuyển sang đó, xoá ở đây và sửa các link trỏ tới nó.
 
 ## Bản đồ repo
 
@@ -28,12 +28,12 @@ Tài liệu hiện đã dài và có giọng "AI viết". Vì vậy cứ thêm n
 | `simplified.html`, `scenario2.html` | Kịch bản 1 rút gọn; kịch bản 2 (GPU ở cơ sở 2) | English |
 | `decisions.html` | Bảng quyết định D1–D11, mỗi quyết định một mục `#dN`, câu hỏi reviewer, follow-ups, nguồn | English |
 | `slicer.html` | "Slicer + MONAI": phần A trình xem (D10), phần B khối AI (D11) | English |
-| `viewer.html`, `dcm4chee.html` | Kết quả PoC OHIF; tìm hiểu sâu dcm4chee. Ghi lại thứ đã làm, không phải kiến trúc hiện tại | English |
+| `dcm4chee.html` | Tìm hiểu sâu dcm4chee. Ghi lại thứ đã làm, không phải kiến trúc hiện tại | English |
 | `assets/site.css`, `site.js` | CSS và JS dùng chung (thanh trên, mục lục, zoom sơ đồ, theme) | |
 | `assets/sequence.js` | Bộ vẽ sơ đồ tuần tự (tab, giai đoạn theo `sep`, đi từng bước) | |
 | `assets/sequences-s1.js`, `-s2.js` | Dữ liệu sơ đồ tuần tự của từng kịch bản | English |
 | `tex/` | Báo cáo: `main.tex`, `contents/*.tex`, hình `figures/arch/*.tex` (TikZ), `refs.bib`, `changelog.txt` | Tiếng Việt |
-| `deploy/`, `poc/` | Code cũ (xem mục "Code ở đâu") | |
+| `deploy/` | Code cũ (xem mục "Code ở đâu") | |
 
 Kiến trúc hiện tại, để mọi chỗ mô tả giống nhau:
 - **Lâm sàng:** máy CT → PACS dcm4chee → 3D Slicer + module ICH Triage (D10, đề xuất).
@@ -46,7 +46,7 @@ Kiến trúc hiện tại, để mọi chỗ mô tả giống nhau:
 Một ý tưởng thường đi qua ba bước. Ghi nó ở đúng chỗ của bước đó:
 
 1. **Mới là ý tưởng hoặc đề xuất** (ví dụ "dùng 3D Slicer + MONAI"): thêm hoặc cập nhật một quyết định `Dn` trong `decisions.html`, trạng thái "proposed" (dùng class `dn open`), có bảng phương án, lý do và cái giá phải trả. Nếu cần đánh giá dài (so với yêu cầu, rủi ro, kế hoạch PoC), viết thành một trang riêng như `slicer.html` và link từ `Dn`. Trước khi tạo trang mới, hỏi user xem có muốn gộp vào trang đã có không.
-2. **Đang thử bằng PoC:** code PoC nằm ở repo project. Ở đây chỉ ghi mục tiêu, tiêu chí đạt và kết quả (bảng đạt/không đạt, ảnh chụp), kèm link tới commit hoặc PR bên repo project, giống cách `viewer.html` ghi lại PoC OHIF.
+2. **Đang thử bằng PoC:** code PoC nằm ở repo project. Ở đây chỉ ghi mục tiêu, tiêu chí đạt và kết quả (bảng đạt/không đạt, ảnh chụp), kèm link tới commit hoặc PR bên repo project.
 3. **Đã chốt:** cập nhật kiến trúc ở mọi nơi theo danh sách "Giữ các nơi khớp nhau" bên dưới, đổi trạng thái `Dn`, và bỏ các câu "chưa chốt" hay "TBD" còn sót.
 
 Khi user đưa tài liệu hay sơ đồ từ bên ngoài (ví dụ sơ đồ tương tác Slicer ↔ MONAI Label), trước hết xác định nó thuộc luồng nào của kiến trúc. Sau đó ghi điểm khớp và điểm lệch với thiết kế hiện tại, thay vì chép lại nguyên văn.
@@ -77,7 +77,7 @@ Một thành phần thường xuất hiện ở 6–8 chỗ. Khi đổi tên s�
 5. `slicer.html`, nếu thay đổi chạm tới trình xem hoặc khối AI.
 6. Báo cáo: `tex/contents/architecture.tex` (thành phần, bảng kết nối, các luồng, hợp đồng AI), `solutions.tex`, `figures/arch/*.tex`. Ghi một dòng vào `tex/changelog.txt`.
 
-Dùng grep tìm tên cũ trên toàn repo trước khi báo xong. Ví dụ: `grep -rn -i "ohif\|tbd\|to be decided" --include=*.html --include=*.js --include=*.tex .`. Những chỗ nói về phương án đã so sánh hoặc PoC đã làm (như OHIF trong D10 hay `viewer.html`) thì giữ nguyên.
+Dùng grep tìm tên cũ trên toàn repo trước khi báo xong. Ví dụ: `grep -rn -i "ohif\|tbd\|to be decided" --include=*.html --include=*.js --include=*.tex .`. Những chỗ nói về phương án đã so sánh hoặc PoC đã làm (như OHIF trong D10) thì giữ nguyên.
 
 ## Ghi chú kỹ thuật
 

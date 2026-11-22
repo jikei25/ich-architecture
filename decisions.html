@@ -161,7 +161,6 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
     <a href="simplified.html"><b>Simplified</b><span>Scenario 1 core</span></a>
     <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
     <a href="decisions.html" aria-current="page"><b>Decisions</b><span>Why these products</span></a>
-    <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
     <a href="slicer.html"><b>Slicer + MONAI</b><span>Viewer + AI</span></a>
     <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
@@ -202,7 +201,7 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 <tr><td><a href="#d7">D7</a></td><td>Database backup</td><td>pgBackRest</td><td>pg_dump, Barman, WAL-G</td><td>Point-in-time recovery, encryption, S3 repository, dedicated repo host over TLS</td></tr>
 <tr><td><a href="#d8">D8</a></td><td>File copy to cloud</td><td>rclone copy</td><td>SeaweedFS remote sync, provider CLIs</td><td>Provider-neutral, never deletes at the destination, checksums and bandwidth limits</td></tr>
 <tr><td><a href="#d9">D9</a></td><td>Identity</td><td><span class="o">Keycloak (stand-in)</span></td><td>The hospital's existing identity system</td><td>Represents "an on-premise OIDC provider with MFA"; will integrate with what the hospital has</td></tr>
-<tr><td><a href="#d10">D10</a></td><td>Radiologist viewer</td><td><span class="o">3D Slicer (proposed)</span></td><td>OHIF (tried in a PoC), Weasis, the hospital's certified viewer</td><td>Advisor's recommendation: reads the PACS, SEG and SR, and edits masks out of the box; the missing parts are one Python module. To be confirmed by a PoC</td></tr>
+<tr><td><a href="#d10">D10</a></td><td>Radiologist viewer</td><td><span class="o">3D Slicer (proposed)</span></td><td>OHIF, Weasis, the hospital's certified viewer</td><td>Advisor's recommendation: reads the PACS, SEG and SR, and edits masks out of the box; the missing parts are one Python module. To be confirmed by a PoC</td></tr>
 <tr><td><a href="#d11">D11</a></td><td>AI inference, annotation, training</td><td><span class="o">MONAI (proposed)</span></td><td>MONAI Deploy App SDK + Triton, MONAIAuto3DSeg inside Slicer, a custom FastAPI service</td><td>One MONAI Label app with the hemorrhage model, run as an infer-only server for the gateway and a research server for 3D Slicer annotation and training. To be confirmed by a PoC</td></tr>
 </table></div>
 
@@ -395,8 +394,7 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 <tr><td class="k">The hospital's existing certified viewer</td><td>Already approved and familiar to radiologists</td><td>Must read from the PACS and display SEG; confirm-or-correct may need a separate tool</td></tr>
 </table></div>
 <div class="callout"><b>The architecture does not depend on this choice.</b> AI results are stored in the PACS as standard SEG and SR, so any viewer that reads DICOMweb and displays SEG shows them. Choosing the viewer changes no other component.</div>
-<div class="callout"><b>OHIF has been tried.</b> A proof of concept (dcm4chee 5.35.2 + OHIF 3.13.14) shows OHIF reading the PACS over DICOMweb and displaying the AI mask (SEG) with no code changes. It does not display the volumetric SR, does not pick up a mask that arrives after the study is opened, and has no notion of priority or alerts; those come from a small AI results service and an OHIF panel. See <a href="viewer.html">Viewer PoC</a>.</div>
-<div class="callout"><b>Why 3D Slicer is proposed.</b> Every server-side piece of the OHIF PoC stays the same: the PACS, the simulated AI and the AI results service. Only the panel injected into OHIF is replaced, by an "ICH Triage" Python module inside Slicer. That module lists studies by priority, listens to the same Server-Sent Events, shows the AI state, confirms or rejects, loads a late mask without reopening the study, and saves a corrected mask as a new SEG over STOW-RS. The assessment, risks and a six-step PoC plan are on <a href="slicer.html">3D Slicer</a>. If the PoC is too slow to open a study, or the hospital does not allow software on reading workstations, fall back to OHIF with an extension.</div>
+<div class="callout"><b>Why 3D Slicer is proposed.</b> Slicer reads the PACS and shows SEG and SR as they are, and its Segment Editor is the strongest tool here for correcting the mask. What it lacks (priority list, alerts, confirm or reject, OIDC login) comes from one "ICH Triage" Python module that talks to the AI results service. The assessment, risks and a six-step PoC plan are on <a href="slicer.html">Slicer + MONAI</a>. If the PoC is too slow to open a study, or the hospital does not allow software on reading workstations, fall back to OHIF with an extension.</div>
 
 <h2 class="sec" id="aiblocks"><span class="n">6</span>AI blocks</h2>
 <p>The AI inference, annotation and training blocks were abstract: the architecture fixed their inputs and outputs, not the tools. Feedback on the design asked to use 3D Slicer with MONAI, so this section records how MONAI fills those blocks.</p>
