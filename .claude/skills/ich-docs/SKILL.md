@@ -9,7 +9,7 @@ description: Luật làm việc trong repo ich-architecture, nơi team ghi tài 
 
 `ich-architecture` là nơi team **thiết kế** đồ án: tài liệu, kiến trúc, ý tưởng, đề xuất, các quyết định và kết quả rút ra từ PoC. Nội dung nằm trong trang web tĩnh (GitHub Pages, có `.nojekyll`) và báo cáo LaTeX. Team sẽ tiếp tục cập nhật repo này khi kiến trúc thay đổi hoặc có ý tưởng mới. Người đọc là giảng viên hướng dẫn, reviewer và chính team.
 
-Phần **hiện thực** (code, cấu hình triển khai, PoC chạy được) thuộc về **một repo project riêng (chưa tạo)**. Khi có link, ghi vào mục "Code ở đâu" bên dưới. Hai repo chia việc như sau: ở đây ghi *làm gì và vì sao*, còn repo project chứa *code làm việc đó*.
+Phần **hiện thực** (code, cấu hình triển khai, PoC chạy được) thuộc về repo project **[LoveTechwCat/ich-triage](https://github.com/LoveTechwCat/ich-triage)** (xem mục "Code ở đâu" bên dưới). Hai repo chia việc như sau: ở đây ghi *làm gì và vì sao*, còn repo project chứa *code làm việc đó*.
 
 Tài liệu hiện đã dài và có giọng "AI viết". Vì vậy cứ thêm nội dung mới khi cần, nhưng mỗi lần sửa phải làm tài liệu **đúng hơn và gọn hơn**, không phình thêm những chỗ lặp.
 
@@ -18,7 +18,7 @@ Tài liệu hiện đã dài và có giọng "AI viết". Vì vậy cứ thêm n
 - **Không thêm code mới vào repo này.** Script, Dockerfile, plugin, service, notebook hay PoC mới đều thuộc repo project. Riêng JS và CSS của chính trang tài liệu (`assets/`) vẫn sửa ở đây. Nếu user nhờ viết code trong repo này, nói rõ code nên nằm ở repo project và hỏi họ muốn tạo repo đó hay đặt tạm ở đâu, rồi mới làm. Trong tài liệu chỉ ghi link tới code, kèm một câu nói nó làm gì.
 - **Code cũ giữ nguyên:** `deploy/staging/` và `poc/viewer/` ở yên chỗ cũ cho tới khi team chuyển sang repo project. Sửa lỗi nhỏ trong đó được, nếu user yêu cầu rõ ràng. Không thêm tính năng mới, không thêm thư mục code mới.
 - **Đoạn code minh hoạ trong tài liệu:** được dùng khi giúp người đọc hiểu một giao diện. Giữ ngắn (khoảng 15 dòng trở xuống) và ghi rõ "Sketch, not run" (trang web) hoặc "Phác thảo, chưa chạy" (báo cáo).
-- Repo project (chưa tạo): _(điền link khi có)_.
+- Repo project: <https://github.com/LoveTechwCat/ich-triage>, viết hoàn toàn bằng tiếng Anh. Mỗi thành phần có một thư mục (`services/gateway`, `services/ai-worker`, `services/monai-app`, `services/triage-api`, `services/slicer-ich-triage`, `deploy/staging`, `deploy/local`, `tools`), và README của thư mục đó ghi mục đích, giao diện và trạng thái. Khi code cũ trong `deploy/` hoặc `poc/` được chuyển sang đó, xoá ở đây và sửa các link trỏ tới nó.
 
 ## Bản đồ repo
 
