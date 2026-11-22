@@ -1,19 +1,21 @@
 ---
 name: ich-docs
-description: Luật làm việc trong repo ich-architecture, repo TÀI LIỆU của đồ án hệ thống AI phát hiện xuất huyết não (ICH). Gồm trang web kiến trúc (index, simplified, scenario2, decisions, slicer, viewer, dcm4chee), sơ đồ SVG và sơ đồ tuần tự, và báo cáo LaTeX trong tex/. Dùng skill này trước khi thêm hay sửa BẤT KỲ thứ gì trong repo, kể cả khi user chỉ nói "cập nhật architecture", "sửa diagram", "thêm quyết định", "viết vào báo cáo", "thêm trang", "update doc", hoặc muốn thêm code, script, Dockerfile, PoC vào repo này (code phải sang repo project riêng). Skill giữ tài liệu ngắn, viết như người thật viết, và nhất quán giữa các trang, sơ đồ và báo cáo.
+description: Luật làm việc trong repo ich-architecture, nơi team ghi tài liệu, kiến trúc, ý tưởng và quyết định của đồ án hệ thống AI phát hiện xuất huyết não (ICH). Repo gồm các trang web kiến trúc (index, simplified, scenario2, decisions, slicer, viewer, dcm4chee), sơ đồ SVG, sơ đồ tuần tự, và báo cáo LaTeX trong tex/. Phần hiện thực (code, cấu hình triển khai, PoC chạy được) nằm ở repo project riêng. Dùng skill này trước khi thêm hay sửa BẤT KỲ thứ gì trong repo, kể cả khi user chỉ nói "cập nhật architecture", "sửa diagram", "thêm ý tưởng", "đề xuất dùng X", "thêm quyết định", "ghi kết quả PoC", "viết vào báo cáo", "thêm trang", "update doc", hoặc muốn thêm code, script, Dockerfile, PoC vào repo này. Skill giúp đưa ý tưởng mới vào đúng chỗ, giữ tài liệu ngắn và viết như người thật viết, và giữ các trang, sơ đồ, báo cáo khớp nhau.
 ---
 
 # ich-docs: repo tài liệu của đồ án ICH
 
 ## Repo này để làm gì
 
-`ich-architecture` là nơi team ghi lại **kiến trúc và các quyết định** của đồ án: trang web tĩnh (GitHub Pages, có `.nojekyll`) và báo cáo LaTeX. Người đọc là giảng viên hướng dẫn, reviewer và chính team. Code chạy thật của hệ thống thuộc về **một repo project riêng (chưa tạo)**. Khi có link, ghi vào mục "Code ở đâu" bên dưới.
+`ich-architecture` là nơi team **thiết kế** đồ án: tài liệu, kiến trúc, ý tưởng, đề xuất, các quyết định và kết quả rút ra từ PoC. Nội dung nằm trong trang web tĩnh (GitHub Pages, có `.nojekyll`) và báo cáo LaTeX. Team sẽ tiếp tục cập nhật repo này khi kiến trúc thay đổi hoặc có ý tưởng mới. Người đọc là giảng viên hướng dẫn, reviewer và chính team.
 
-Tài liệu đã dài và có giọng "AI viết". Vì vậy mục tiêu của mỗi lần sửa là làm tài liệu **đúng hơn và gọn hơn**, không phải dài thêm.
+Phần **hiện thực** (code, cấu hình triển khai, PoC chạy được) thuộc về **một repo project riêng (chưa tạo)**. Khi có link, ghi vào mục "Code ở đâu" bên dưới. Hai repo chia việc như sau: ở đây ghi *làm gì và vì sao*, còn repo project chứa *code làm việc đó*.
+
+Tài liệu hiện đã dài và có giọng "AI viết". Vì vậy cứ thêm nội dung mới khi cần, nhưng mỗi lần sửa phải làm tài liệu **đúng hơn và gọn hơn**, không phình thêm những chỗ lặp.
 
 ## Code ở đâu
 
-- **Không thêm code mới vào repo này.** Script, Dockerfile, plugin, service, notebook hay PoC mới đều thuộc repo project. Nếu user nhờ viết code trong repo này, nói rõ code nên nằm ở repo project và hỏi họ muốn tạo repo đó hay đặt tạm ở đâu, rồi mới làm. Trong tài liệu chỉ ghi link tới code, kèm một câu nói nó làm gì.
+- **Không thêm code mới vào repo này.** Script, Dockerfile, plugin, service, notebook hay PoC mới đều thuộc repo project. Riêng JS và CSS của chính trang tài liệu (`assets/`) vẫn sửa ở đây. Nếu user nhờ viết code trong repo này, nói rõ code nên nằm ở repo project và hỏi họ muốn tạo repo đó hay đặt tạm ở đâu, rồi mới làm. Trong tài liệu chỉ ghi link tới code, kèm một câu nói nó làm gì.
 - **Code cũ giữ nguyên:** `deploy/staging/` và `poc/viewer/` ở yên chỗ cũ cho tới khi team chuyển sang repo project. Sửa lỗi nhỏ trong đó được, nếu user yêu cầu rõ ràng. Không thêm tính năng mới, không thêm thư mục code mới.
 - **Đoạn code minh hoạ trong tài liệu:** được dùng khi giúp người đọc hiểu một giao diện. Giữ ngắn (khoảng 15 dòng trở xuống) và ghi rõ "Sketch, not run" (trang web) hoặc "Phác thảo, chưa chạy" (báo cáo).
 - Repo project (chưa tạo): _(điền link khi có)_.
@@ -39,11 +41,21 @@ Kiến trúc hiện tại, để mọi chỗ mô tả giống nhau:
 - **Nghiên cứu:** 3D Slicer (extension MONAILabel) + máy chủ MONAI Label nghiên cứu, đọc bản đã khử định danh qua DICOMweb của Orthanc. Registry lưu MONAI bundle.
 - **Dữ liệu:** SeaweedFS, PostgreSQL, OpenLDAP, sao lưu bằng pgBackRest/rclone lên cloud.
 
+## Đưa ý tưởng hoặc thay đổi kiến trúc vào repo
+
+Một ý tưởng thường đi qua ba bước. Ghi nó ở đúng chỗ của bước đó:
+
+1. **Mới là ý tưởng hoặc đề xuất** (ví dụ "dùng 3D Slicer + MONAI"): thêm hoặc cập nhật một quyết định `Dn` trong `decisions.html`, trạng thái "proposed" (dùng class `dn open`), có bảng phương án, lý do và cái giá phải trả. Nếu cần đánh giá dài (so với yêu cầu, rủi ro, kế hoạch PoC), viết thành một trang riêng như `slicer.html` và link từ `Dn`. Trước khi tạo trang mới, hỏi user xem có muốn gộp vào trang đã có không.
+2. **Đang thử bằng PoC:** code PoC nằm ở repo project. Ở đây chỉ ghi mục tiêu, tiêu chí đạt và kết quả (bảng đạt/không đạt, ảnh chụp), kèm link tới commit hoặc PR bên repo project, giống cách `viewer.html` ghi lại PoC OHIF.
+3. **Đã chốt:** cập nhật kiến trúc ở mọi nơi theo danh sách "Giữ các nơi khớp nhau" bên dưới, đổi trạng thái `Dn`, và bỏ các câu "chưa chốt" hay "TBD" còn sót.
+
+Khi user đưa tài liệu hay sơ đồ từ bên ngoài (ví dụ sơ đồ tương tác Slicer ↔ MONAI Label), trước hết xác định nó thuộc luồng nào của kiến trúc. Sau đó ghi điểm khớp và điểm lệch với thiết kế hiện tại, thay vì chép lại nguyên văn.
+
 ## Viết ngắn, viết như người
 
 Người đọc lướt để tìm một câu trả lời. Văn dài và rập khuôn làm họ bỏ qua cả phần quan trọng. Khi viết hoặc sửa:
 
-- **Sửa chỗ đã có trước khi thêm mới.** Nếu ý đã có ở một trang hay một mục, sửa ở đó. Không thêm callout, mục hay trang mới để nói lại điều đã nói. Chỉ tạo trang mới khi user yêu cầu.
+- **Sửa chỗ đã có trước khi thêm mới.** Nếu ý đã có ở một trang hay một mục, sửa ở đó. Không thêm callout, mục hay trang mới chỉ để nói lại điều đã nói. Nội dung mới thật sự (ý tưởng, quyết định, kết quả PoC) thì cứ thêm, theo mục "Đưa ý tưởng hoặc thay đổi kiến trúc vào repo".
 - **Câu trả lời đi trước.** Câu đầu của mỗi mục trả lời thẳng câu hỏi của mục đó. Bỏ câu dẫn ("Trong phần này chúng ta sẽ…", "This section describes…") và đoạn tóm tắt lặp lại ở cuối.
 - **Một quyết định (Dn)** gồm: bối cảnh, lựa chọn, vì sao, cái giá phải trả, và khi nào thì xem lại. Vài đoạn ngắn cộng một bảng phương án là đủ.
 - **Bảng** chỉ dùng khi so ít nhất hai phương án theo ít nhất hai tiêu chí. Danh sách chỉ dùng khi các ý thật sự song song. Còn lại viết thành câu.
