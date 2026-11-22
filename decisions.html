@@ -162,8 +162,7 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
     <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
     <a href="decisions.html" aria-current="page"><b>Decisions</b><span>Why these products</span></a>
     <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
-    <a href="slicer.html"><b>3D Slicer</b><span>Proposed viewer</span></a>
-    <a href="monai.html"><b>MONAI</b><span>AI blocks</span></a>
+    <a href="slicer.html"><b>Slicer + MONAI</b><span>Viewer + AI</span></a>
     <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
   <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
@@ -417,7 +416,7 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 <li class="f-dec"><b class="t">Registry as the only handoff</b>Models move as versioned MONAI bundles with metrics, dataset version and approval status. The infer-only server loads only an approved bundle and writes its version into every SEG and SR.</li>
 </ol>
 <div class="callout"><b>The PACS stays.</b> The MONAI Label datastore is a folder or another server's DICOMweb, and the DICOM database of 3D Slicer is one workstation's cache. Neither receives studies from the scanners, builds a worklist, exports series to the gateway, keeps images for 10 years or serves many radiologists. Dropping the PACS would only make sense if the project were narrowed to an annotation and research tool on a public dataset.</div>
-<div class="callout"><b>Details.</b> The reading of the received diagram, the gateway contract, the two server configurations, risks and a five-step PoC plan are on <a href="monai.html">Slicer + MONAI</a>.</div>
+<div class="callout"><b>Details.</b> The reading of the received diagram, the gateway contract, the two server configurations, risks and a five-step PoC plan are on <a href="slicer.html#part-ai">Slicer + MONAI</a>.</div>
 
 <h2 class="sec" id="qa"><span class="n">7</span>Questions reviewers ask</h2>
 <dl class="qa">

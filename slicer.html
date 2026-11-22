@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ICH 3D Slicer Viewer</title>
+<title>ICH Slicer and MONAI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f6f7fc;--card:#ffffff;--text:#1c1f3a;--muted:#5b6080;--border:#d9deef;--pill:#ffffff;
@@ -174,6 +174,17 @@ td.st{white-space:nowrap}
 .flowsvg .wkt{fill:var(--blue);font:700 12.5px Inter,system-ui,sans-serif}
 .flowsvg .bxk{fill:var(--slate-s);stroke:var(--slate);stroke-width:1.2}
 main p code,main li code,main .callout code{overflow-wrap:anywhere}
+.flowsvg.wide{max-width:900px}
+.flowsvg .lanebx{fill:var(--bg);stroke:var(--border);stroke-width:1}
+.flowsvg .lanet{font:700 12px Inter,system-ui,sans-serif;letter-spacing:.04em}
+.flowsvg .bxr{fill:var(--pink-s);stroke:var(--pink);stroke-width:1.2}
+.flowsvg .cyl{fill:var(--pink-s);stroke:var(--pink);stroke-width:1.2}
+.flowsvg .lr{fill:none;stroke:var(--pink);stroke-width:1.6}
+.flowsvg .tsv{fill:var(--violet);font:600 12px Inter,system-ui,sans-serif}
+.flowsvg .tsr{fill:var(--pink);font:600 12px Inter,system-ui,sans-serif}
+.partbar{display:flex;align-items:center;gap:12px;margin:64px 0 -18px;padding:12px 18px;border-radius:14px;background:var(--violet-s);border:1px solid var(--violet-h);color:var(--violet);font-size:17px;font-weight:700;scroll-margin-top:72px}
+.partbar span{flex:none;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:var(--violet);color:var(--card)}
+h3.subh{font-size:18px;margin:26px 0 8px}
 </style>
 <link rel="stylesheet" href="assets/site.css">
 <script>try{var t=localStorage.getItem("ich-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
@@ -186,35 +197,42 @@ main p code,main li code,main .callout code{overflow-wrap:anywhere}
     <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
     <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
     <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
-    <a href="slicer.html" aria-current="page"><b>3D Slicer</b><span>Proposed viewer</span></a>
-    <a href="monai.html"><b>MONAI</b><span>AI blocks</span></a>
+        <a href="slicer.html" aria-current="page"><b>Slicer + MONAI</b><span>Viewer + AI</span></a>
     <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
   <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
 </div><div class="progress"><span></span></div></header>
 <div class="page">
 <header class="hero">
-  <div class="eyebrow">Intracerebral hemorrhage AI system · Trình xem (D10) · đánh giá 3D Slicer</div>
-  <h1>Dùng 3D Slicer làm trình xem cho bác sĩ: có khả thi không?</h1>
-  <p>Giảng viên hướng dẫn đề xuất dùng <a href="https://github.com/Slicer/Slicer">3D Slicer</a> thay vì tự phát triển phần trình xem. Trang này đối chiếu Slicer 5.12 với các yêu cầu của D10 và với <a href="viewer.html">PoC OHIF</a>: phần nào có sẵn, phần nào phải viết thêm, phần nào giữ nguyên từ PoC, và kế hoạch PoC để chốt. Các kết luận về Slicer lấy từ tài liệu chính thức; <b>chưa chạy thử trên stack của đồ án</b>.</p>
-  <div class="chips"><span>Khả thi · cần một module Python</span><span>Đọc PACS, SEG, SR, sửa mask: có sẵn</span><span>Ưu tiên, thông báo, đăng nhập: tự làm</span><span>Cài trên từng máy trạm</span><span>Chưa kiểm chứng bằng PoC</span></div>
+  <div class="eyebrow">Intracerebral hemorrhage AI system · Trình xem (D10) và khối AI (D11)</div>
+  <h1>3D Slicer + MONAI: trình xem cho bác sĩ và các khối AI</h1>
+  <p>Giảng viên hướng dẫn đề xuất dùng <a href="https://github.com/Slicer/Slicer">3D Slicer</a> thay vì tự phát triển trình xem, và dùng 3D Slicer cùng MONAI cho phần AI. Phần A đối chiếu Slicer 5.12 với các yêu cầu của D10 và với <a href="viewer.html">PoC OHIF</a>. Phần B trả lời Slicer có sẵn MONAI không, đọc sơ đồ tương tác Slicer ↔ MONAI Label, giải thích vì sao vẫn cần PACS và Orthanc, và đề xuất cách lắp MONAI vào các khối AI. Các kết luận lấy từ tài liệu và mã nguồn chính thức; <b>chưa chạy thử trên stack của đồ án</b>.</p>
+  <div class="chips"><span>Trình xem: Slicer + module ICH Triage</span><span>Slicer không chứa MONAI</span><span>Khối AI: MONAI Label</span><span>Vẫn cần PACS và Orthanc</span><span>Chưa kiểm chứng bằng PoC</span></div>
 </header>
 
 <div class="layout">
 <nav class="toc"><b>Mục lục</b><ol>
 <li><a href="#verdict">Kết luận nhanh</a></li>
+<li><a href="#roles">3D Slicer và MONAI: ai làm gì</a></li>
 <li><a href="#what">3D Slicer là gì, khác OHIF ở đâu</a></li>
 <li><a href="#req">Đối chiếu yêu cầu D10</a></li>
 <li><a href="#placement">Slicer nằm ở đâu trong kiến trúc</a></li>
 <li><a href="#module">Phần tự làm: module ICH Triage</a></li>
 <li><a href="#reuse">Dùng lại gì từ PoC OHIF</a></li>
+<li><a href="#diagram">Đọc sơ đồ Slicer ↔ MONAI Label</a></li>
+<li><a href="#proposal">Kiến trúc đề xuất</a></li>
+<li><a href="#pacs">Có còn cần PACS và Orthanc không</a></li>
+<li><a href="#changes">Thay đổi so với kiến trúc hiện tại</a></li>
+<li><a href="#contract">Hợp đồng cổng trung gian ↔ MONAI</a></li>
+<li><a href="#servers">Hai máy chủ MONAI Label</a></li>
 <li><a href="#risks">Rủi ro và cách giảm</a></li>
-<li><a href="#plan">Kế hoạch PoC để chốt D10</a></li>
+<li><a href="#plan">Kế hoạch PoC</a></li>
 <li><a href="#refs">Tài liệu tham khảo</a></li>
 </ol></nav>
 <main>
 
 <h2 class="sec" id="verdict"><span class="n">1</span>Kết luận nhanh</h2>
+<h3 class="subh">Trình xem (D10)</h3>
 <div class="verdict">
   <div class="card c-emerald"><h4>Đọc ảnh từ PACS</h4><div class="v tc-emerald">Có sẵn · theo tài liệu</div><p>Slicer kèm sẵn <code>dicomweb-client</code> (QIDO-RS, WADO-RS, STOW-RS) và hỗ trợ DIMSE C-FIND, C-MOVE, C-GET, C-STORE. Đọc dcm4chee không cần sửa PACS.</p></div>
   <div class="card c-emerald"><h4>Mask SEG + báo cáo SR</h4><div class="v tc-emerald">Có sẵn · hơn OHIF</div><p>Từ 5.12, SEG, Parametric Map và SR TID 1500 nằm trong lõi Slicer. SR thể tích là chỗ OHIF không hiển thị được; cần thử với SR do highdicom sinh ra.</p></div>
@@ -222,9 +240,30 @@ main p code,main li code,main .callout code{overflow-wrap:anywhere}
   <div class="card c-pink"><h4>Ưu tiên, thông báo, SSO</h4><div class="v" style="color:var(--rose)">Không có sẵn · tự làm</div><p>Giống OHIF. Khác biệt: phần tự làm là một <b>scripted module Python</b> chạy trong Slicer, không phải build lại ứng dụng như extension OHIF.</p></div>
 </div>
 <div class="callout"><b>Khuyến nghị: khả thi, nên làm PoC rồi chốt.</b> Dùng 3D Slicer làm máy trạm đọc của bác sĩ, kèm một module Python "ICH Triage" gọi lại đúng <b>dịch vụ kết quả AI</b> đã có trong PoC (<code>poc/viewer/py/triage_api.py</code>). Nhóm không phải tự viết viewer, và phần tự làm viết bằng Python, cùng ngôn ngữ với đội AI và với MONAI Label. Đổi lại phải chấp nhận hai điều: <b>cài Slicer trên từng máy trạm</b> (mất ưu điểm "zero-footprint" của OHIF), và Slicer cũng <b>không được phép dùng cho chẩn đoán lâm sàng</b>, giống OHIF. Kiến trúc không đổi: kết quả AI vẫn là SEG và SR chuẩn trong PACS.</div>
+<h3 class="subh">Khối AI (D11)</h3>
+<div class="verdict">
+  <div class="card c-blue"><h4>Slicer không có sẵn MONAI</h4><p>Lõi 3D Slicer chỉ là phần mềm xem và xử lý ảnh. MONAI chỉ vào Slicer qua extension, và extension MONAILabel chỉ là <b>client</b>: mô hình chạy trên một MONAI Label Server riêng.</p></div>
+  <div class="card c-violet"><h4>Khối AI chính là MONAI</h4><p>Khối "AI inference service", "Annotation" và "Model training" (đang là khối trừu tượng) được hiện thực bằng MONAI. Cùng một mô hình <code>hemorrhage</code> chạy ở hai máy chủ MONAI Label với hai cấu hình.</p></div>
+  <div class="card c-pink"><h4>Sơ đồ nhận được là Luồng 3</h4><p>Đó là vòng gán nhãn (active learning) của MONAI Label: người dùng bấm Run thì AI mới chạy. Luồng triage lâm sàng cần AI tự chạy khi CT tới, nên sơ đồ này không thay được Luồng 2.</p></div>
+  <div class="card c-emerald"><h4>Vẫn cần PACS</h4><p>Datastore của MONAI Label là một thư mục ảnh, CSDL DICOM của Slicer là bộ đệm của một máy. Không cái nào nhận ảnh từ máy CT, dựng worklist, lưu trữ 10 năm hay phục vụ nhiều bác sĩ.</p></div>
+</div>
+<div class="callout"><b>Khuyến nghị.</b> Giữ nguyên tầng lâm sàng (PACS dcm4chee, 3D Slicer + module ICH Triage cho bác sĩ đọc) và tầng dữ liệu. Thay ba khối AI trừu tượng bằng MONAI: một <b>MONAI Label Server chỉ suy luận</b> ở tầng suy luận, được cổng Orthanc gọi tự động; một <b>MONAI Label Server nghiên cứu</b> ở tầng nghiên cứu, được 3D Slicer (extension MONAILabel) gọi khi gán nhãn và huấn luyện. Registry mô hình là điểm bàn giao duy nhất giữa hai máy chủ. Quyết định này được ghi là <a href="decisions.html#d11">D11</a>.</div>
 
-<h2 class="sec" id="what"><span class="n">2</span>3D Slicer là gì, khác OHIF ở đâu</h2>
-<p>3D Slicer là nền tảng mã nguồn mở để hiển thị và phân tích ảnh y khoa, viết bằng C++ (VTK, ITK, CTK, Qt) và có Python nhúng. Nó chạy như một ứng dụng desktop trên Windows, macOS và Linux. Bản ổn định hiện tại là <b>5.12</b> (Kitware công bố ngày 15/07/2026), với giấy phép kiểu BSD và không hạn chế dùng thương mại. Có thể mở rộng Slicer bằng extension hoặc <b>scripted module</b> Python. Một scripted module truy cập được toàn bộ scene, giao diện Qt và các thư viện Python như <code>requests</code>, <code>pydicom</code>, <code>dicomweb_client</code>. Slicer cũng là client chính của MONAI Label, nên trong kiến trúc nó đã có mặt ở khối <a href="decisions.html#d2">gán nhãn</a>. Lõi Slicer không chứa MONAI: extension MONAILabel chỉ là client, mô hình chạy trên máy chủ MONAI Label (xem <a href="monai.html">Slicer + MONAI</a>).</p>
+<h2 class="sec" id="roles"><span class="n">2</span>3D Slicer và MONAI: ai làm gì</h2>
+<p><a href="https://github.com/Slicer/Slicer">3D Slicer</a> là ứng dụng desktop (C++, Qt, VTK, ITK, Python nhúng). Mã nguồn lõi của nó không có MONAI hay PyTorch. <a href="https://github.com/Project-MONAI/MONAI">MONAI</a> là bộ thư viện PyTorch cho ảnh y khoa; quanh nó có MONAI Label (máy chủ gán nhãn có AI hỗ trợ), MONAI Deploy (đóng gói và chạy mô hình trong bệnh viện) và Model Zoo (các bundle mô hình). Có bốn cách ghép Slicer với MONAI:</p>
+<div class="tbl"><table>
+<tr><th>Cách dùng</th><th>Mô hình chạy ở đâu</th><th>Ai kích hoạt</th><th>Hợp với đồ án ở đâu</th></tr>
+<tr><td class="k">Slicer lõi, không extension</td><td>Không có AI</td><td>n/a</td><td>Trình xem của bác sĩ (<a href="slicer.html">D10</a>); kết quả AI tới dưới dạng SEG và SR trong PACS</td></tr>
+<tr><td class="k win">Extension MONAILabel + MONAI Label Server</td><td class="win">Trên máy chủ MONAI Label (GPU), Slicer chỉ gọi REST</td><td class="win">Người dùng bấm Next Sample, Run, Submit Label, Train</td><td class="win"><span class="y">Gán nhãn và huấn luyện</span> (Luồng 3). Máy chủ cũng nhận lệnh <code>/infer</code> từ chương trình khác, nên dùng được cho suy luận tự động</td></tr>
+<tr><td class="k">Extension MONAIAuto3DSeg</td><td>Ngay trong Slicer trên máy trạm (cài PyTorch và MONAI vào Python của Slicer)</td><td>Người dùng bấm chạy</td><td><span class="n">Không hợp</span> cho triage: mỗi máy trạm cần GPU, AI chỉ chạy khi bác sĩ đã mở ca</td></tr>
+<tr><td class="k">MONAI Deploy App SDK (MAP)</td><td>Máy chủ suy luận, đóng gói thành container chuẩn</td><td>Sự kiện DICOM (qua Informatics Gateway hoặc cổng của mình)</td><td><span class="o">Hướng production</span> cho tầng suy luận; nhiều việc hơn so với phạm vi đồ án</td></tr>
+</table></div>
+<div class="callout cyan"><b>Trả lời câu hỏi "Slicer có include MONAI luôn hay AI inference service là MONAI?"</b> AI inference service là MONAI. Slicer chỉ là client: ở máy trạm bác sĩ, nó đọc kết quả AI từ PACS; ở máy gán nhãn, nó gọi máy chủ MONAI Label qua extension MONAILabel.</div>
+
+<div class="partbar" id="part-viewer"><span>Phần A</span>3D Slicer làm trình xem cho bác sĩ (D10)</div>
+
+<h2 class="sec" id="what"><span class="n">3</span>3D Slicer là gì, khác OHIF ở đâu</h2>
+<p>3D Slicer là nền tảng mã nguồn mở để hiển thị và phân tích ảnh y khoa, viết bằng C++ (VTK, ITK, CTK, Qt) và có Python nhúng. Nó chạy như một ứng dụng desktop trên Windows, macOS và Linux. Bản ổn định hiện tại là <b>5.12</b> (Kitware công bố ngày 15/07/2026), với giấy phép kiểu BSD và không hạn chế dùng thương mại. Có thể mở rộng Slicer bằng extension hoặc <b>scripted module</b> Python. Một scripted module truy cập được toàn bộ scene, giao diện Qt và các thư viện Python như <code>requests</code>, <code>pydicom</code>, <code>dicomweb_client</code>. Slicer cũng là client chính của MONAI Label, nên trong kiến trúc nó đã có mặt ở khối <a href="decisions.html#d2">gán nhãn</a>. Lõi Slicer không chứa MONAI: extension MONAILabel chỉ là client, mô hình chạy trên máy chủ MONAI Label (xem <a href="#roles">mục 2</a>).</p>
 <div class="tbl"><table>
 <tr><th>Khía cạnh</th><th>OHIF (đã làm PoC)</th><th>3D Slicer (đề xuất)</th></tr>
 <tr><td class="k">Loại ứng dụng</td><td>Web app tĩnh (React), mở bằng trình duyệt</td><td>Ứng dụng desktop (Qt), cài trên máy trạm</td></tr>
@@ -238,7 +277,7 @@ main p code,main li code,main .callout code{overflow-wrap:anywhere}
 <tr><td class="k">Giấy phép</td><td>MIT</td><td>BSD-style (giấy phép Slicer)</td></tr>
 </table></div>
 
-<h2 class="sec" id="req"><span class="n">3</span>Đối chiếu yêu cầu D10</h2>
+<h2 class="sec" id="req"><span class="n">4</span>Đối chiếu yêu cầu D10</h2>
 <p>Các yêu cầu lấy từ <a href="decisions.html#d10">D10</a> và bảng của <a href="viewer.html#ohif">trang Viewer PoC</a>. Cột Slicer đánh giá theo tài liệu, chưa chạy thử. Cột OHIF là kết quả đã kiểm chứng bằng PoC.</p>
 <div class="tbl"><table>
 <tr><th>Yêu cầu</th><th>Nguồn</th><th>3D Slicer</th><th>Cách đáp ứng</th><th>OHIF (PoC)</th></tr>
@@ -257,7 +296,7 @@ main p code,main li code,main .callout code{overflow-wrap:anywhere}
 </table></div>
 <p>Tóm lại, Slicer <b>tốt hơn OHIF ở phần ảnh và mask</b> (SR, sửa mask, mask về muộn) và <b>ngang OHIF ở phần ưu tiên và thông báo</b>: cả hai đều cần dịch vụ kết quả AI cộng một lớp giao diện tự làm. Slicer <b>kém OHIF ở triển khai và đăng nhập</b>: phải cài trên máy trạm, không hiện dần ảnh, không có OIDC sẵn.</p>
 
-<h2 class="sec" id="placement"><span class="n">4</span>Slicer nằm ở đâu trong kiến trúc</h2>
+<h2 class="sec" id="placement"><span class="n">5</span>Slicer nằm ở đâu trong kiến trúc</h2>
 <p>Slicer thay khối trình xem của bác sĩ ở lớp Clinical (trên sơ đồ kiến trúc nay ghi thẳng "3D Slicer") và nói chuyện với đúng những thứ OHIF nói chuyện: PACS qua DICOMweb, dịch vụ kết quả AI qua HTTP, và nhà cung cấp định danh. Không thành phần nào khác thay đổi.</p>
 <div class="callout cyan"><b>Slicer chỉ thay trình xem, không thay PACS.</b> Slicer có một CSDL DICOM và một DICOM listener (C-STORE SCP), nhưng đó là bộ nhớ đệm riêng của một máy trạm, không phải kho lưu trữ. Nó không nhận chỉ định HL7 để dựng Modality Worklist (luồng 1.4), không có quy tắc xuất kèm ca cũ sang cổng AI (luồng 2.1), không chạy thành cụm N+1, không có vòng đời lưu trữ, lưu giữ 10 năm, audit IHE, và không phục vụ DICOMweb cho nhiều người dùng. Những việc đó vẫn là của dcm4chee (<a href="decisions.html#d1">D1</a>). Máy chụp vẫn gửi thẳng vào PACS, và Slicer chỉ lấy về từng ca khi bác sĩ mở.</div>
 <div class="figure">
@@ -286,7 +325,7 @@ main p code,main li code,main .callout code{overflow-wrap:anywhere}
 </div>
 <p>Còn một cách vào thứ hai, nếu bác sĩ chọn ca ở một danh sách web (danh sách ưu tiên của PoC hoặc worklist RIS). Slicer đăng ký URL scheme <code>slicer://viewer/?studyUID=…&amp;dicomweb_endpoint=…&amp;access_token=…</code> (tự đăng ký trên Windows khi cài), nên nút "Mở trong Slicer" trên trang web mở thẳng ca đó trong Slicer. Cách này giữ trang danh sách của PoC và chỉ cần panel AI trong Slicer.</p>
 
-<h2 class="sec" id="module"><span class="n">5</span>Phần tự làm: module ICH Triage</h2>
+<h2 class="sec" id="module"><span class="n">6</span>Phần tự làm: module ICH Triage</h2>
 <p>Module này làm đúng việc của <code>ohif-ai.js</code> và trang danh sách ưu tiên trong PoC OHIF, nhưng chạy bên trong Slicer. Dịch vụ phía server giữ nguyên.</p>
 <ol class="flow">
 <li class="f-dec"><b class="t">Danh sách ca ưu tiên</b>Gọi <code>GET /triage/api/studies</code> và hiện bảng Qt. Thứ tự sắp xếp (chỉ ca dương tính chưa xác nhận lên đầu, P4) vẫn do server quyết định, module chỉ hiển thị.</li>
@@ -325,7 +364,7 @@ timer = qt.QTimer(); timer.setInterval(500)
 timer.connect("timeout()", lambda: on_events(events))  <span class="c"># on_events: tô dòng, cập nhật panel</span>
 timer.start()</pre>
 
-<h2 class="sec" id="reuse"><span class="n">6</span>Dùng lại gì từ PoC OHIF</h2>
+<h2 class="sec" id="reuse"><span class="n">7</span>Dùng lại gì từ PoC OHIF</h2>
 <p>Gần như toàn bộ phía server dùng lại được. Chỉ phần giao diện chạy trong OHIF bị thay.</p>
 <div class="tbl"><table>
 <tr><th>Thành phần PoC</th><th>Với Slicer</th><th>Ghi chú</th></tr>
@@ -337,7 +376,145 @@ timer.start()</pre>
 <tr><td class="k"><code>ohif-ai.js</code>, container <code>ohif</code></td><td><span class="no">Thay</span></td><td>Thay bằng module ICH Triage. Có thể giữ OHIF để xem nhanh trên web, ngoài luồng đọc chính</td></tr>
 </table></div>
 
-<h2 class="sec" id="risks"><span class="n">7</span>Rủi ro và cách giảm</h2>
+<div class="partbar" id="part-ai"><span>Phần B</span>MONAI cho các khối AI (D11)</div>
+
+<h2 class="sec" id="diagram"><span class="n">8</span>Đọc sơ đồ Slicer ↔ MONAI Label</h2>
+<p>Sơ đồ nhận được có 3D Slicer trên Windows là client, và MONAI Label Server (WSL2, app <code>apps/radiology</code>) là server. Từng bước làm như sau:</p>
+<div class="tbl"><table>
+<tr><th>Bước</th><th>Lời gọi</th><th>Ý nghĩa</th></tr>
+<tr><td class="k">1 · Connect</td><td><code>GET /info/</code></td><td>Server liệt kê models, strategies, trainers. Ở đây <code>trainers = {}</code>: app chưa có tác vụ huấn luyện nào</td></tr>
+<tr><td class="k">2 · Next Sample</td><td><code>POST /activelearning/random</code></td><td>Server chọn ngẫu nhiên một ảnh chưa có nhãn trong datastore (ví dụ <code>078</code>)</td></tr>
+<tr><td class="k">3</td><td><code>GET /datastore/image?image=078</code></td><td>Slicer tải volume CT (<code>.nii</code>) từ datastore</td></tr>
+<tr><td class="k">4 · Run</td><td><code>POST /infer/hemorrhage?image=078</code></td><td>Chỉ gửi ID, không tải ảnh lên. Server trả label map 6 lớp (0–5) dạng <code>.nrrd</code></td></tr>
+<tr><td class="k">5, 6 · Sửa (tuỳ chọn)</td><td><code>/infer/sam_2d</code>, <code>/infer/sam_3d</code>, <code>/infer/Histogram+GraphCut</code></td><td>Công cụ tương tác: bấm điểm (SAM) hoặc tô nét (scribbles), server trả mask cho một nhãn. Segment Editor sửa tay không gọi server</td></tr>
+<tr><td class="k">7 · Submit Label</td><td><code>PUT /datastore/label?image=078</code></td><td>Nhãn đã sửa được lưu thành bản "final" trong datastore. Không có gì chạy tiếp</td></tr>
+<tr><td class="k">8 · Train</td><td><code>POST /train/hemorrhage</code></td><td>Slicer ẩn nút Train vì server không có trainer. Gửi tay thì tác vụ báo ERROR</td></tr>
+</table></div>
+<div class="callout amber"><b>Năm điểm cần sửa trước khi đưa vào kiến trúc.</b>
+<ul>
+<li><b>Datastore là thư mục NIfTI.</b> Không có DICOM, không có ca từ máy CT, không có khử định danh hay audit. Đổi sang DICOMweb của cổng Orthanc (bản đã khử định danh), đúng như Luồng 3 đang mô tả.</li>
+<li><b>AI chỉ chạy khi có người bấm Run.</b> Triage ICH cần AI chạy ngay khi chuỗi CT đủ ảnh, trước khi bác sĩ mở ca. Phần này do cổng Orthanc gọi <code>/infer</code> tự động (mục <a href="#contract">12</a>).</li>
+<li><b>Vòng học chưa khép kín.</b> <code>trainers = {}</code> nghĩa là app chưa khai báo TrainTask cho model <code>hemorrhage</code> (hoặc server chạy với <code>skip_trainers</code>). Cần thêm trainer, hoặc huấn luyện ngoài MONAI Label rồi đưa bundle qua registry.</li>
+<li><b>Mask có 6 lớp, nhưng cổng đang coi là nhị phân.</b> <code>ai_bridge.py</code> hiện coi mọi voxel khác 0 là xuất huyết, nên sẽ gộp các thể làm một. SEG cần một segment cho mỗi nhãn 1–5 và SR ghi thể tích từng thể. Bảng nhãn cần đội AI xác nhận.</li>
+<li><b>"Submit Label" ghi đè một file.</b> Nhãn không có phiên bản, không có tập dữ liệu đóng băng. Nhãn phải lưu thành DICOM SEG qua cổng rồi sao sang bucket nghiên cứu, và dataset được đóng băng theo phiên bản như Luồng 3.</li>
+</ul></div>
+
+<h2 class="sec" id="proposal"><span class="n">9</span>Kiến trúc đề xuất</h2>
+<p>Tầng lâm sàng và tầng dữ liệu giữ nguyên. Hai máy chủ MONAI Label chạy cùng một app (cùng mô hình <code>hemorrhage</code>) nhưng khác cấu hình, mỗi máy nằm trong đúng tầng mạng của nó.</p>
+<div class="figure"><div class="figscroll">
+<svg class="flowsvg wide" viewBox="0 0 760 560" role="img" aria-labelledby="mo-t mo-d"><title id="mo-t">3D Slicer và MONAI trong kiến trúc ICH</title><desc id="mo-d">Tầng lâm sàng: máy CT gửi ảnh vào PACS dcm4chee, bác sĩ đọc bằng 3D Slicer với module ICH Triage. Tầng suy luận: PACS đẩy chuỗi ảnh sang cổng Orthanc; plugin ai_bridge gửi volume tới MONAI Label Server chỉ suy luận, nhận mask 6 lớp, dựng SEG và SR rồi gửi về PACS. Tầng nghiên cứu: MONAI Label Server nghiên cứu đọc bản đã khử định danh và ghi nhãn SEG qua DICOMweb của cổng; người gán nhãn dùng 3D Slicer với extension MONAILabel; mô hình được đăng ký vào registry, và máy chủ suy luận chỉ nạp bản đã duyệt.</desc>
+<defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="lanebx" x="10" y="16" width="740" height="132" rx="12"/><text class="lanet t-blue" x="24" y="38">LÂM SÀNG · VLAN 10–20</text>
+<rect class="lanebx" x="10" y="160" width="740" height="140" rx="12"/><text class="lanet t-violet" x="24" y="182">SUY LUẬN AI · VLAN 30</text>
+<rect class="lanebx" x="10" y="312" width="740" height="236" rx="12"/><text class="lanet t-pink" x="24" y="334">NGHIÊN CỨU AI · VLAN 40 · chỉ dữ liệu đã khử định danh</text>
+
+<rect class="bxc" x="30" y="60" width="120" height="64" rx="8"/><text class="tt" x="90" y="88" text-anchor="middle">Máy CT</text><text class="ts" x="90" y="108" text-anchor="middle">modality</text>
+<rect class="bxc" x="230" y="60" width="180" height="64" rx="8"/><text class="tt" x="320" y="88" text-anchor="middle">PACS · dcm4chee</text><text class="ts" x="320" y="108" text-anchor="middle">lưu trữ + DICOMweb</text>
+<rect class="bxc" x="520" y="60" width="210" height="64" rx="8"/><text class="tt" x="625" y="88" text-anchor="middle">3D Slicer + ICH Triage</text><text class="ts" x="625" y="108" text-anchor="middle">bác sĩ đọc, xác nhận, sửa mask</text>
+<path class="ln" d="M150 92 L226 92" marker-end="url(#ah2)"/><text class="ts" x="188" y="84" text-anchor="middle">C-STORE</text>
+<path class="ln" d="M410 92 L516 92" marker-start="url(#ah2)" marker-end="url(#ah2)"/><text class="ts" x="463" y="84" text-anchor="middle">QIDO/WADO-RS</text>
+
+<rect class="bxa" x="230" y="206" width="180" height="72" rx="8"/><text class="tt" x="320" y="234" text-anchor="middle">Orthanc + ai_bridge</text><text class="ts" x="320" y="254" text-anchor="middle">mask → SEG, SR, cờ ưu tiên</text>
+<rect class="bxa" x="520" y="206" width="210" height="72" rx="8"/><text class="tt" x="625" y="234" text-anchor="middle">MONAI Label · suy luận</text><text class="ts" x="625" y="254" text-anchor="middle">POST /infer/hemorrhage</text>
+<path class="lv" d="M340 124 L340 202" marker-end="url(#ah2)"/><text class="tsv" x="348" y="195">đẩy series 1 lần</text>
+<path class="lv" d="M300 202 L300 128" marker-end="url(#ah2)"/><text class="tsv" x="292" y="195" text-anchor="end">C-STORE SEG + SR</text>
+<path class="lv" d="M410 230 L516 230" marker-end="url(#ah2)"/><text class="tsv" x="463" y="222" text-anchor="middle">volume NIfTI</text>
+<path class="lv" d="M516 256 L414 256" marker-end="url(#ah2)"/><text class="tsv" x="463" y="272" text-anchor="middle">mask 6 lớp</text>
+
+<rect class="bxr" x="24" y="380" width="180" height="72" rx="8"/><text class="tt" x="114" y="408" text-anchor="middle">3D Slicer (gán nhãn)</text><text class="ts" x="114" y="428" text-anchor="middle">extension MONAILabel</text>
+<rect class="bxr" x="260" y="380" width="200" height="72" rx="8"/><text class="tt" x="360" y="408" text-anchor="middle">MONAI Label · nghiên cứu</text><text class="ts" x="360" y="428" text-anchor="middle">infer, SAM, scribbles, train</text>
+<path class="cyl" d="M550 384 L550 448 A85 10 0 0 0 720 448 L720 384 A85 10 0 0 1 550 384 Z"/><ellipse class="cyl" cx="635" cy="384" rx="85" ry="10"/>
+<text class="tt" x="635" y="414" text-anchor="middle">Model registry</text><text class="ts" x="635" y="434" text-anchor="middle">MONAI bundle đã duyệt</text>
+<path class="lr" d="M204 416 L256 416" marker-start="url(#ah2)" marker-end="url(#ah2)"/><text class="tsr" x="230" y="408" text-anchor="middle">REST</text>
+<path class="lr" d="M380 282 L380 376" marker-start="url(#ah2)" marker-end="url(#ah2)"/><text class="tsr" x="388" y="350">DICOMweb: ảnh đã khử định danh, nhãn SEG</text>
+<path class="lr" d="M460 416 L546 416" marker-end="url(#ah2)"/><text class="tsr" x="503" y="408" text-anchor="middle">bundle mới</text>
+<path class="lv" d="M690 374 L690 282" marker-end="url(#ah2)"/><text class="tsv" x="682" y="328" text-anchor="end">chỉ nạp bản đã duyệt</text>
+<text class="ts" x="380" y="510" text-anchor="middle">Hai máy chủ MONAI Label: cùng app và mô hình hemorrhage, khác cấu hình và khác tầng mạng.</text>
+<text class="ts" x="380" y="530" text-anchor="middle">Máy suy luận không train và không có datastore nghiên cứu; máy nghiên cứu không thấy dữ liệu có định danh.</text>
+</svg></div>
+<p class="figcap">Xanh dương: lâm sàng. Tím: suy luận AI (luồng triage tự động). Hồng: nghiên cứu (vòng gán nhãn trong sơ đồ nhận được). Các thành phần khác của kiến trúc (Keycloak, HIS/RIS, SeaweedFS, PostgreSQL, sao lưu) không đổi và không vẽ lại ở đây.</p>
+</div>
+<ol class="flow">
+<li class="f-dec"><b class="t">Luồng 2 · triage tự động</b>Khi một chuỗi CT đủ ảnh, plugin <code>ai_bridge.py</code> trong Orthanc gửi volume tới máy chủ MONAI Label suy luận, nhận mask 6 lớp, dựng DICOM SEG (mỗi thể một segment) và SR (thể tích từng thể), rồi gửi về PACS bằng C-STORE. Bác sĩ thấy kết quả trong 3D Slicer mà không cần bấm Run.</li>
+<li class="f-dec"><b class="t">Luồng 3 · gán nhãn và huấn luyện</b>Đúng sơ đồ nhận được, nhưng datastore là DICOMweb của Orthanc (bản đã khử định danh). Người gán nhãn dùng 3D Slicer + extension MONAILabel: Next Sample, Run, sửa bằng SAM, scribbles hoặc Segment Editor, Submit Label. Nhãn được lưu thành SEG trên cổng rồi sao sang bucket nghiên cứu; trainer của app huấn luyện mô hình mới từ dataset đã đóng băng.</li>
+<li class="f-dec"><b class="t">Bàn giao mô hình</b>Mô hình mới được đăng ký vào registry dưới dạng MONAI bundle có phiên bản, số đo và trạng thái duyệt. Máy chủ suy luận chỉ nạp bản đã duyệt và ghi phiên bản đó vào SEG và SR.</li>
+</ol>
+
+<h2 class="sec" id="pacs"><span class="n">10</span>Có còn cần PACS và Orthanc không</h2>
+<p>Cả MONAI Label và 3D Slicer đều có chỗ chứa ảnh, nhưng cả hai đều không làm được việc của PACS:</p>
+<div class="tbl"><table>
+<tr><th>Việc</th><th>PACS (dcm4chee)</th><th>Datastore MONAI Label</th><th>CSDL DICOM của Slicer</th></tr>
+<tr><td class="k">Nhận ảnh từ nhiều máy CT (C-STORE)</td><td class="y">Có</td><td class="n">Không: chỉ đọc thư mục hoặc DICOMweb của server khác</td><td class="p">Có listener, nhưng cho một máy trạm</td></tr>
+<tr><td class="k">Worklist từ chỉ định HIS (MWL, luồng 1.4)</td><td class="y">Có</td><td class="n">Không</td><td class="n">Không</td></tr>
+<tr><td class="k">DICOMweb cho nhiều bác sĩ cùng lúc</td><td class="y">Có</td><td class="n">Không</td><td class="n">Không</td></tr>
+<tr><td class="k">Đẩy chuỗi ảnh sang cổng AI (luồng 2.1)</td><td class="y">Có, quy tắc xuất</td><td class="n">Không</td><td class="n">Không</td></tr>
+<tr><td class="k">Lưu trữ 10 năm, vòng đời, sao lưu</td><td class="y">Có (cùng SeaweedFS, cloud)</td><td class="n">Không</td><td class="n">Không: bộ đệm, nên xoá theo phiên</td></tr>
+<tr><td class="k">Audit IHE, phân quyền</td><td class="y">Có</td><td class="n">Không</td><td class="n">Không</td></tr>
+<tr><td class="k">Chạy cụm N+1</td><td class="y">Có</td><td class="n">Không</td><td class="n">Không</td></tr>
+</table></div>
+<div class="callout cyan"><b>Khi nào bỏ được PACS.</b> Chỉ khi phạm vi đồ án được thu hẹp thành <b>công cụ nghiên cứu và gán nhãn</b>: 3D Slicer + MONAI Label trên một bộ dữ liệu công khai (ví dụ CT-ICH PhysioNet), không có ca thật từ máy CT. Khi đó đồ án không còn là hệ thống triage trong bệnh viện. Với phạm vi hiện tại (CT gửi vào PACS, bác sĩ đọc, AI báo ca nghi xuất huyết), PACS vẫn là thành phần bắt buộc. Đây là quyết định về phạm vi, cần thống nhất với giảng viên hướng dẫn.</div>
+<div class="callout"><b>Vì sao vẫn giữ cổng Orthanc giữa PACS và MONAI.</b>
+<ul>
+<li><b>Kích hoạt AI tự động.</b> MONAI Label chỉ chạy khi có ai gọi <code>/infer</code>. Orthanc nhận series PACS đẩy sang, chờ series đủ ảnh rồi <code>ai_bridge.py</code> gọi MONAI.</li>
+<li><b>Chuyển định dạng.</b> DICOM sang NIfTI cho MONAI, và mask NIfTI sang DICOM SEG, SR, cờ ưu tiên cho PACS và Slicer.</li>
+<li><b>AI không có tài khoản trên PACS.</b> Kết quả về PACS qua Orthanc bằng C-STORE tới một AE chỉ được phép lưu.</li>
+<li><b>Điểm khử định danh duy nhất.</b> Máy chủ MONAI Label nghiên cứu chỉ đọc bản đã khử định danh trên Orthanc, không bao giờ đọc PACS.</li>
+<li><b>Bản làm việc tách khỏi PACS.</b> Tiền xử lý, chạy lại khi lỗi hay khi đổi mô hình không tạo tải lên PACS mà bác sĩ đang dùng.</li>
+</ul></div>
+
+<h2 class="sec" id="changes"><span class="n">11</span>Thay đổi so với kiến trúc hiện tại</h2>
+<div class="tbl"><table>
+<tr><th>Thành phần</th><th>Hiện tại</th><th>Đề xuất</th></tr>
+<tr><td class="k">PACS, cổng Orthanc, SeaweedFS, PostgreSQL, sao lưu, Keycloak</td><td>D1–D9</td><td>Không đổi</td></tr>
+<tr><td class="k">Trình xem của bác sĩ</td><td>3D Slicer + module ICH Triage (D10, đề xuất)</td><td>Không đổi. Không cài extension MONAILabel trên máy đọc lâm sàng</td></tr>
+<tr><td class="k">Dịch vụ suy luận AI</td><td>Khối trừu tượng; ứng viên MONAI Deploy + Triton</td><td>MONAI Label Server chế độ chỉ suy luận, chạy mô hình <code>hemorrhage</code> (MONAI bundle). MONAI Deploy giữ làm hướng production</td></tr>
+<tr><td class="k">Plugin <code>ai_bridge.py</code></td><td>POST NIfTI tới <code>AI_SEGMENT_URL</code>, mask nhị phân, một segment</td><td>Gọi <code>/infer/hemorrhage</code>; mask 6 lớp thành SEG nhiều segment và thể tích từng thể</td></tr>
+<tr><td class="k">Gán nhãn</td><td>Khối trừu tượng (báo cáo đã ghi MONAI Label + 3D Slicer)</td><td>MONAI Label Server nghiên cứu, datastore = DICOMweb của Orthanc (bản khử định danh); 3D Slicer + extension MONAILabel</td></tr>
+<tr><td class="k">Huấn luyện</td><td>Khối trừu tượng</td><td>Trainer của app MONAI Label (thêm cho mô hình <code>hemorrhage</code>) trên GPU nghiên cứu, hoặc script huấn luyện của bundle</td></tr>
+<tr><td class="k">Registry mô hình</td><td>Kho mô hình có phiên bản</td><td>Kho MONAI bundle có phiên bản, số đo, phiên bản dataset và trạng thái duyệt</td></tr>
+</table></div>
+
+<h2 class="sec" id="contract"><span class="n">12</span>Hợp đồng cổng trung gian ↔ MONAI</h2>
+<p>Theo mã nguồn của MONAI Label, <code>POST /infer/{model}</code> nhận hoặc <code>image</code> (ID ảnh trong datastore), hoặc <code>file</code> (volume tải lên), kèm <code>params</code> dạng JSON. Tham số <code>output</code> chọn kiểu trả về: <code>image</code> trả đúng file mask, <code>json</code> chỉ trả tham số, <code>dicom_seg</code> trả DICOM SEG (cần datastore DICOMweb và <code>label_info</code>), còn mặc định trả multipart gồm cả hai. Trong <code>params</code>, <code>result_extension</code> chọn định dạng file mask (<code>.nii.gz</code> hoặc <code>.nrrd</code>). Vì vậy có hai cách nối cổng với MONAI:</p>
+<div class="tbl"><table>
+<tr><th>Cách</th><th>Lời gọi</th><th>Ưu</th><th>Nhược</th></tr>
+<tr><td class="k win">A · tải volume lên (dùng ngay)</td><td class="win"><code>POST /infer/hemorrhage?output=image</code>, multipart <code>file=series.nii.gz</code>, <code>params={"result_extension": ".nii.gz"}</code></td><td class="win">Giữ hợp đồng "NIfTI vào, mask ra" mà <code>ai_bridge.py</code> và <code>nifti_bridge.py</code> đã làm; máy chủ suy luận không cần datastore</td><td class="win">Mỗi lần gọi tải cả volume qua mạng (vài chục MB, trong cùng VLAN)</td></tr>
+<tr><td class="k">B · chỉ gửi ID (giống bước 4 của sơ đồ)</td><td>Máy chủ chạy với <code>--studies</code> là DICOMweb của Orthanc; cổng gọi <code>POST /infer/hemorrhage?image=&lt;SeriesInstanceUID&gt;</code></td><td>Đúng mô hình "AI đọc từ cổng qua DICOMweb" của Luồng 2</td><td>Máy chủ suy luận giữ bộ đệm ảnh có định danh; phải cấu hình datastore DICOMweb và xác thực</td></tr>
+</table></div>
+<pre class="code"><span class="c"># Phác thảo, chưa chạy: segment() mới trong ai_bridge.py theo cách A</span>
+def segment(volume):
+    response = requests.post(
+        f"{MONAI_URL}/infer/hemorrhage", params={"output": "image"},
+        files={"file": ("series.nii.gz", gzip.compress(volume.to_bytes()), "application/gzip")},
+        data={"params": json.dumps({"result_extension": ".nii.gz"})},
+        timeout=AI_TIMEOUT_SECONDS)
+    response.raise_for_status()
+    return nib.Nifti1Image.from_bytes(gzip.decompress(response.content))
+<span class="c"># mask_to_seg: một SegmentDescription cho mỗi nhãn 1–5 có voxel, thay cho một segment "hemorrhage"</span></pre>
+<div class="callout amber"><b>Cần kiểm tra khi làm PoC.</b> Mask trả về phải cùng lưới (shape, affine) với volume gửi đi; <code>ai_bridge.py</code> đã từ chối mask lệch lưới. Nếu app tự resample hoặc đổi hướng trục thì phải sửa phần hậu xử lý của app, không sửa ở cổng.</div>
+
+<h2 class="sec" id="servers"><span class="n">13</span>Hai máy chủ MONAI Label</h2>
+<div class="tbl"><table>
+<tr><th></th><th>Máy chủ suy luận</th><th>Máy chủ nghiên cứu</th></tr>
+<tr><td class="k">Tầng mạng</td><td>VLAN 30 (suy luận AI)</td><td>VLAN 40 (nghiên cứu AI)</td></tr>
+<tr><td class="k">Ai gọi</td><td>Chỉ <code>ai_bridge.py</code> của cổng Orthanc</td><td>3D Slicer + extension MONAILabel của người gán nhãn</td></tr>
+<tr><td class="k">Dữ liệu</td><td>Volume có định danh, chỉ trong lúc suy luận</td><td>Chỉ bản đã khử định danh</td></tr>
+<tr><td class="k">Datastore (<code>--studies</code>)</td><td>Thư mục tạm rỗng (cách A)</td><td>DICOMweb của Orthanc, bản khử định danh</td></tr>
+<tr><td class="k">Models</td><td><code>hemorrhage</code></td><td><code>hemorrhage</code> và các công cụ tương tác (SAM, scribbles)</td></tr>
+<tr><td class="k">Trainers, active learning</td><td>Tắt</td><td>Bật (thêm trainer cho <code>hemorrhage</code>)</td></tr>
+<tr><td class="k">Phiên bản mô hình</td><td>Bản đã duyệt trong registry</td><td>Bản mới nhất để sinh bản nháp (theo quy tắc nhãn của Luồng 3)</td></tr>
+</table></div>
+<pre class="code"><span class="c"># Phác thảo, chưa chạy. Tên app và các khoá --conf phụ thuộc app của đội AI</span>
+<span class="c"># Máy chủ suy luận (VLAN 30)</span>
+monailabel start_server --app apps/radiology --studies /srv/monai/empty \
+  --conf models hemorrhage --conf skip_trainers true --conf skip_strategies true --port 8000
+<span class="c"># Máy chủ nghiên cứu (VLAN 40)</span>
+monailabel start_server --app apps/radiology --studies http://gateway:8042/dicom-web \
+  --conf models hemorrhage,sam_2d --port 8000</pre>
+<p>Trong đồ án, hai máy chủ có thể chạy trên cùng một máy WSL2 có GPU, miễn là ghi rõ trong báo cáo rằng khi triển khai thật chúng nằm ở hai VLAN và tầng suy luận có GPU riêng.</p>
+
+<h2 class="sec" id="risks"><span class="n">14</span>Rủi ro và cách giảm</h2>
+<h3 class="subh">Trình xem</h3>
 <div class="tbl"><table>
 <tr><th>Rủi ro</th><th>Vì sao quan trọng</th><th>Cách giảm</th></tr>
 <tr><td class="k">Cài đặt trên từng máy trạm</td><td>Bộ cài Slicer cỡ vài trăm MB đến hơn 1 GB sau khi cài, kèm extension và module. IT phải cập nhật từng máy</td><td>Đóng gói một bản Slicer cố định có sẵn module (hoặc làm Slicer custom application). Trong đồ án chỉ cần một hai máy demo</td></tr>
@@ -347,8 +524,18 @@ timer.start()</pre>
 <tr><td class="k">Giao diện nhiều chức năng</td><td>Slicer là công cụ nghiên cứu; bác sĩ X quang quen giao diện PACS gọn hơn</td><td>Module có thể ẩn toolbar, danh sách module và chỉ để lại bố cục đọc ảnh bằng Python</td></tr>
 <tr><td class="k">Không được phép chẩn đoán</td><td>Tài liệu Slicer ghi rõ không được duyệt cho dùng lâm sàng</td><td>Giống OHIF: đồ án là nghiên cứu. Khi triển khai thật dùng viewer được chứng nhận của bệnh viện; kết quả AI vẫn là SEG/SR chuẩn nên không phải sửa gì</td></tr>
 </table></div>
+<h3 class="subh">Khối AI</h3>
+<div class="tbl"><table>
+<tr><th>Rủi ro</th><th>Vì sao quan trọng</th><th>Cách giảm</th></tr>
+<tr><td class="k">MONAI Label không được thiết kế để phục vụ production</td><td>Không có hàng đợi, batch, HA hay số đo kiểu máy chủ suy luận</td><td>Hàng đợi và thử lại nằm ở <code>ai_bridge.py</code> (đã có); một tác vụ mỗi GPU; trạng thái "AI tạm ngừng" khi máy chủ không trả lời. Hướng production là MONAI Deploy hoặc Triton với cùng bundle</td></tr>
+<tr><td class="k">Mask 6 lớp bị gộp làm một</td><td>Mất thông tin thể xuất huyết và thể tích từng thể</td><td>Sửa <code>mask_to_seg</code> và SR; đội AI cung cấp bảng nhãn 1–5</td></tr>
+<tr><td class="k">Nhãn huấn luyện lấy từ kết quả AI đã chấp nhận</td><td>Mô hình học lại chính đầu ra của nó</td><td>Giữ quy tắc nhãn của Luồng 3: tập kiểm định và kiểm tra gán nhãn mù với AI; mô hình đang huấn luyện không sinh nháp cho chính nó</td></tr>
+<tr><td class="k">Máy chủ nghiên cứu chạm dữ liệu có định danh</td><td>Phá vỡ nguyên tắc tách lâm sàng và nghiên cứu</td><td>Datastore chỉ trỏ tới bản đã khử định danh trên cổng; tường lửa VLAN 40 không có đường tới PACS</td></tr>
+<tr><td class="k">Mạng giữa Windows, WSL2 và Docker</td><td>Slicer trên Windows gọi được <code>localhost</code> của WSL2, nhưng container Orthanc thì không</td><td>Dùng địa chỉ IP của máy chủ WSL2 hoặc chạy MONAI Label trong cùng mạng Docker với cổng</td></tr>
+</table></div>
 
-<h2 class="sec" id="plan"><span class="n">8</span>Kế hoạch PoC để chốt D10</h2>
+<h2 class="sec" id="plan"><span class="n">15</span>Kế hoạch PoC</h2>
+<h3 class="subh">Trình xem: chốt D10</h3>
 <p>Dùng lại stack <code>poc/viewer</code> (PACS, AI giả lập, dịch vụ triage), chỉ thay phía viewer. Mỗi bước có tiêu chí đạt rõ ràng để so trực tiếp với PoC OHIF.</p>
 <div class="tbl"><table>
 <tr><th>#</th><th>Việc</th><th>Đạt khi</th></tr>
@@ -360,8 +547,17 @@ timer.start()</pre>
 <tr><td class="k">6</td><td>AI ngừng / chạy lại (<code>ai-down</code>, <code>ai-up</code>)</td><td>Module hiện "AI tạm ngừng", không bao giờ giống ca âm tính</td></tr>
 </table></div>
 <div class="callout amber"><b>Quyết định sau PoC.</b> Nếu bước 1 tới 5 đạt, chốt D10 là 3D Slicer cho máy trạm đọc và giữ OHIF như phương án web. Nếu thời gian mở ca (bước 1) quá chậm so với OHIF, hoặc bệnh viện không cho cài phần mềm lên máy trạm, quay lại OHIF + extension như trang <a href="viewer.html">Viewer PoC</a>.</div>
+<h3 class="subh">Khối AI: chốt D11</h3>
+<div class="tbl"><table>
+<tr><th>#</th><th>Việc</th><th>Đạt khi</th></tr>
+<tr><td>1</td><td>Chạy máy chủ MONAI Label chỉ suy luận với mô hình <code>hemorrhage</code>; gửi một CT NIfTI bằng <code>curl -F file=@ct.nii.gz</code></td><td>Nhận mask <code>.nii.gz</code> cùng shape và affine; ghi thời gian suy luận</td></tr>
+<tr><td>2</td><td>Đổi <code>segment()</code> của <code>ai_bridge.py</code> sang cách A, sửa <code>mask_to_seg</code> thành nhiều segment</td><td>Một CT đẩy từ PACS sinh SEG có các segment theo thể, hiện đúng chỗ trong 3D Slicer</td></tr>
+<tr><td>3</td><td>Chạy máy chủ nghiên cứu với datastore là DICOMweb của Orthanc</td><td>Next Sample, Run, Submit Label trong Slicer chạy được; nhãn xuất hiện trên cổng dạng SEG</td></tr>
+<tr><td>4</td><td>Thêm trainer cho <code>hemorrhage</code></td><td><code>/info/</code> liệt kê trainer, nút Train hiện, <code>POST /train/hemorrhage</code> chạy xong và sinh mô hình mới</td></tr>
+<tr><td>5</td><td>Đưa mô hình mới qua registry (thủ công: chép bundle kèm phiên bản), máy chủ suy luận nạp lại</td><td>SEG mới mang phiên bản mô hình mới; mô hình cũ vẫn chạy nếu bản mới chưa được duyệt</td></tr>
+</table></div>
 
-<h2 class="sec" id="refs"><span class="n">9</span>Tài liệu tham khảo</h2>
+<h2 class="sec" id="refs"><span class="n">16</span>Tài liệu tham khảo</h2>
 <ol class="src">
 <li><a href="https://github.com/Slicer/Slicer">3D Slicer: mã nguồn</a> · <a href="https://slicer.readthedocs.io/en/latest/user_guide/about.html">giấy phép và tuyên bố pháp lý</a></li>
 <li><a href="https://www.kitware.com/announcing-3d-slicer-5-12/">Kitware: Announcing 3D Slicer 5.12</a> (SEG, Parametric Map, SR TID 1500 vào lõi) · <a href="https://discourse.slicer.org/t/slicer-5-12-summary-highlights-and-changelog/47540">changelog 5.12</a></li>
@@ -371,12 +567,19 @@ timer.start()</pre>
 <li><a href="https://slicer.readthedocs.io/en/latest/user_guide/modules/segmenteditor.html">Slicer: Segment Editor</a> · <a href="https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html">Script repository</a> (ví dụ Python cho DICOM, segmentation, giao diện)</li>
 <li><a href="https://github.com/Project-MONAI/MONAILabel">MONAI Label</a> (Slicer là client chính, dùng cho khối gán nhãn)</li>
 <li><a href="viewer.html">Viewer PoC: OHIF + AI triage</a> · <a href="decisions.html#d10">D10: Radiologist viewer</a></li>
+<li><a href="https://github.com/Slicer/Slicer">3D Slicer: mã nguồn</a></li>
+<li><a href="https://docs.monai.io/projects/label/en/latest/">MONAI Label: tài liệu</a></li>
+<li><a href="https://github.com/Project-MONAI/MONAILabel/blob/main/monailabel/endpoints/infer.py">MONAI Label: endpoint <code>/infer</code> (tham số <code>image</code>, <code>file</code>, <code>params</code>, <code>output</code>)</a></li>
+<li><a href="https://github.com/Project-MONAI/MONAILabel/blob/main/monailabel/transform/writer.py">MONAI Label: Writer (<code>result_extension</code>)</a></li>
+<li><a href="https://github.com/lassoan/SlicerMONAIAuto3DSeg">SlicerMONAIAuto3DSeg: chạy mô hình MONAI ngay trong Slicer</a></li>
+<li><a href="https://github.com/Project-MONAI/monai-deploy-app-sdk">MONAI Deploy App SDK</a> · <a href="https://github.com/Project-MONAI/model-zoo">MONAI Model Zoo (bundle)</a></li>
+<li><a href="viewer.html">Viewer PoC: OHIF + AI triage</a> · <a href="decisions.html#d10">D10</a> · <a href="decisions.html#d11">D11</a> · <a href="index.html#flow-ai">Luồng 3</a></li>
 </ol>
 
 </main>
 </div>
 
-<footer>Intracerebral hemorrhage AI system · Đánh giá 3D Slicer · <a href="viewer.html">Viewer PoC</a> · <a href="decisions.html#d10">Decisions D10</a>. Các kết luận về Slicer dựa trên tài liệu của Slicer 5.12, chưa chạy thử trên stack của đồ án.</footer>
+<footer>Intracerebral hemorrhage AI system · 3D Slicer + MONAI · <a href="viewer.html">Viewer PoC</a> · <a href="decisions.html#d10">Decisions D10</a> · <a href="decisions.html#d11">D11</a>. Các kết luận về Slicer dựa trên tài liệu của Slicer 5.12; API của MONAI Label đối chiếu với mã nguồn. Cấu hình máy chủ và phần sửa cổng chưa chạy thử trên stack của đồ án.</footer>
 </div>
 <script src="assets/site.js"></script>
 </body></html>
