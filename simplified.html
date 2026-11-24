@@ -218,7 +218,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="tagt t-violet" x="1162" y="313" text-anchor="middle" dominant-baseline="central">PROPOSED · MONAI</text>
 <text class="bt big" x="990" y="321" text-anchor="middle" dominant-baseline="central">AI inference · MONAI</text>
 <text class="bs" x="1020" y="343" text-anchor="middle" dominant-baseline="central">Input: series from the gateway  →  Output: hemorrhage mask + report</text>
-<text class="bs" x="1020" y="359" text-anchor="middle" dominant-baseline="central">AI worker + MONAI Label infer-only server</text></g>
+<text class="bs" x="1020" y="359" text-anchor="middle" dominant-baseline="central">AI worker + MONAI Label (hemorrhage_approved)</text></g>
 
 <!-- data lane -->
 <g><path class="cy s-emerald" d="M520 455 L520 525 A75 10 0 0 0 670 525 L670 455 A75 10 0 0 1 520 455 Z"/>
@@ -320,7 +320,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tr><td class="k">PACS (dcm4chee)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>The hospital's central image archive: receives studies from the scanner, serves them to the viewer over DICOMweb, holds the official clinical record and pushes selected series once to the gateway. Its configuration is kept in OpenLDAP on the same server</td></tr>
 <tr><td class="k">3D Slicer (radiologist viewer, proposed)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Desktop workstation with an ICH Triage Python module (<a href="slicer.html">assessment</a>). Opens the series that have arrived while later ones are still coming and overlays the AI mask once it is ready; the doctor confirms or corrects it and diagnoses here</td></tr>
 <tr><td class="k">Gateway (Orthanc)</td><td><span class="pilltag tc-violet">AI inference</span></td><td>Receives the series exported by the PACS, hands them to the AI service and returns the AI results to the PACS by C-STORE, so the AI holds no PACS credentials</td></tr>
-<tr><td class="k">AI inference service</td><td><span class="pilltag tc-violet">AI inference</span></td><td>An AI worker (our code; in staging it runs as the <code>ai_bridge.py</code> plugin inside Orthanc) and a MONAI Label server in infer-only mode with the AI team's <code>hemorrhage</code> model (proposed, <a href="slicer.html#part-ai">Slicer + MONAI</a>). The worker sends the volume to MONAI, gets a mask with one label per subtype, and returns it as DICOM SEG and SR</td></tr>
+<tr><td class="k">AI inference service</td><td><span class="pilltag tc-violet">AI inference</span></td><td>An AI worker (our code; in staging it runs as the <code>ai_bridge.py</code> plugin inside Orthanc) and a MONAI Label server whose <code>hemorrhage_approved</code> model (the AI team's approved bundle) runs every study (proposed, <a href="slicer.html#part-ai">Slicer + MONAI</a>). The worker sends the volume to MONAI, gets a mask with one label per subtype, and returns it as DICOM SEG and SR</td></tr>
 <tr><td class="k">SeaweedFS</td><td><span class="pilltag tc-emerald">Data</span></td><td>Self-hosted object storage with an S3 interface; one bucket for the PACS image files and one for the gateway files</td></tr>
 <tr><td class="k">PostgreSQL</td><td><span class="pilltag tc-emerald">Data</span></td><td>Relational database holding the PACS index and the gateway index in separate databases</td></tr>
 </tbody></table></div>

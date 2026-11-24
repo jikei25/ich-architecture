@@ -3,3 +3,5 @@
 # 24/09/2026 (Vinh): Prompt và thay đổi chủ yếu ở mục 8
 
 # 22/11/2026 (Huy): Hiện thực các khối AI bằng MONAI Label (suy luận, gán nhãn, huấn luyện), cập nhật bảng kết nối, Luồng 3 và hình kiến trúc
+
+# 24/11/2026 (Huy): Một máy chủ MONAI Label hai mô hình (hemorrhage_approved, hemorrhage_dev), kết quả AI làm bản nháp, nhãn có phiên bản, bản sửa của bác sĩ qua PACS

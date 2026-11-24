@@ -37,8 +37,8 @@ Tài liệu hiện đã dài và có giọng "AI viết". Vì vậy cứ thêm n
 
 Kiến trúc hiện tại, để mọi chỗ mô tả giống nhau:
 - **Lâm sàng:** máy CT → PACS dcm4chee → 3D Slicer + module ICH Triage (D10, đề xuất).
-- **Suy luận AI:** PACS đẩy series một lần sang cổng Orthanc. Khối AI inference = **AI worker** (code của đề tài: job, chuyển NIfTI, dựng SEG/SR, cờ ưu tiên; trong staging chạy dưới dạng plugin `ai_bridge.py` trong Orthanc) + **MONAI Label chỉ suy luận** (D11).
-- **Nghiên cứu:** 3D Slicer (extension MONAILabel) + máy chủ MONAI Label nghiên cứu, đọc bản đã khử định danh qua DICOMweb của Orthanc. Registry lưu MONAI bundle.
+- **Suy luận AI:** PACS đẩy series một lần sang cổng Orthanc. Khối AI inference = **AI worker** (code của đề tài: job, chuyển NIfTI, dựng SEG/SR, cờ ưu tiên; trong staging chạy dưới dạng plugin `ai_bridge.py` trong Orthanc) + **một máy chủ MONAI Label giữ hai mô hình** (D11): `hemorrhage_approved` chạy cho mọi ca và không bao giờ huấn luyện lại tại chỗ; `hemorrhage_dev` phục vụ gán nhãn và huấn luyện. Máy chủ nằm ở VLAN 30, VLAN 40 chỉ tới được phần `hemorrhage_dev` qua proxy. Khi triển khai thật thì tách thành hai máy chủ.
+- **Nghiên cứu:** 3D Slicer (extension MONAILabel) gọi `hemorrhage_dev`, đọc CT và kết quả AI đã khử định danh qua DICOMweb của Orthanc. CT và mọi mask của nó được đổi UID theo cùng một quy tắc băm có khoá. Kết quả AI làm bản nháp (chỉ cho ca huấn luyện). Mỗi lần lưu là một phiên bản nhãn mới, ghi ai sửa và khi nào; người duyệt chọn một phiên bản. Bản sửa của bác sĩ đi PACS → Orthanc → kho nhãn, ở trạng thái chưa duyệt. Registry lưu MONAI bundle; chỉ bundle đã duyệt mới thành `hemorrhage_approved`.
 - **Dữ liệu:** SeaweedFS, PostgreSQL, OpenLDAP, sao lưu bằng pgBackRest/rclone lên cloud.
 
 ## Đưa ý tưởng hoặc thay đổi kiến trúc vào repo
