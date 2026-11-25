@@ -165,8 +165,7 @@ ol.flow>li{padding-left:78px}
     <a href="simplified.html"><b>Simplified</b><span>Scenario 1 core</span></a>
     <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
     <a href="decisions.html"><b>Decisions</b><span>Why these products</span></a>
-    <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
-    <a href="slicer.html"><b>3D Slicer</b><span>Proposed viewer</span></a>
+    <a href="slicer.html"><b>Slicer + MONAI</b><span>Viewer + AI</span></a>
     <a href="dcm4chee.html" aria-current="page"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
   <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
@@ -371,7 +370,7 @@ ol.flow>li{padding-left:78px}
 <h2 class="sec" id="open"><span class="n">10</span>Not covered yet</h2>
 <ul>
 <li><b>Storage tiering inside dcm4chee.</b> The architecture moves older data to cloud storage classes with rclone and bucket rules (<a href="index.html#flow-backup">Flow 4</a>). dcm4chee also has its own mechanisms (several storage descriptors, a cache storage with a deleter threshold, export of studies to another storage); these were not exercised in the lab.</li>
-<li><b>Export rules to the AI gateway and the AI result AE.</b> Shown in the earlier proof of concept (<code>poc/</code>), not repeated here.</li>
+<li><b>Export rules to the AI gateway and the AI result AE.</b> Shown in an earlier proof of concept, not repeated here.</li>
 <li><b>Security.</b> Keycloak tokens on REST and the UI, TLS on DICOM and HL7, and audit logging are off in the lab.</li>
 <li><b>High availability.</b> Two archive nodes sharing LDAP, PostgreSQL and storage, as drawn on the <a href="index.html#ha">architecture page</a>, need a separate test.</li>
 </ul>

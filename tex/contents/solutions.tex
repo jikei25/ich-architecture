@@ -103,6 +103,16 @@ khi tự xây dựng, đặc biệt khi các thành phần phân tích ảnh t�
 các giai đoạn sau. Đổi lại, nó cần thêm hàng đợi thông điệp và kho đối tượng, nặng
 so với thiết bị trọn gói ở bối cảnh C.
 
+\textbf{MONAI Label} là máy chủ gán nhãn có AI hỗ trợ của dự án MONAI \cite{monailabel}.
+Mỗi ứng dụng MONAI Label khai báo các mô hình suy luận, công cụ tương tác (SAM,
+scribbles), chiến lược chọn ca kế tiếp (active learning) và tác vụ huấn luyện, và phục
+vụ chúng qua REST. Datastore của nó có thể là một thư mục ảnh hoặc DICOMweb của một
+máy chủ DICOM. 3D Slicer là client chính qua extension MONAILabel; bản thân Slicer
+không chứa MONAI. Ngoài việc phục vụ người gán nhãn, endpoint \texttt{/infer} nhận được
+volume do chương trình khác tải lên, nên cùng một ứng dụng có thể chạy như máy chủ
+suy luận cho cổng trung gian. Đổi lại, MONAI Label được thiết kế cho gán nhãn, không có
+hàng đợi, xử lý theo lô hay cơ chế sẵn sàng cao của một máy chủ suy luận chuyên dụng.
+
 \subsection{Các nền tảng ảnh y khoa trên đám mây}
 \label{sec:cloud}
 

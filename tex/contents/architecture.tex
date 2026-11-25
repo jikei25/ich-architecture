@@ -82,7 +82,7 @@ tiếp độ sẵn sàng của tầng lâm sàng.
 liền đậm màu đen: luồng lâm sàng; nét màu xanh: luồng suy luận AI; nét xám: luồng
 dữ liệu nội bộ và nghiên cứu; nét đứt: sao lưu và khôi phục. Số trong vòng tròn có
 dạng \emph{luồng.bước}, ví dụ 2.3 là bước 3 của Luồng 2 (Mục~\ref{sec:flow}).
-Khung nét đứt là khối trừu tượng chưa chốt công cụ.}
+Khung nét đứt là các khối AI, đề xuất hiện thực bằng MONAI và chờ PoC xác nhận.}
 \label{fig:arch-s1}
 \end{sidewaysfigure}
 
@@ -160,10 +160,21 @@ P1).
 \item[Bộ điều phối tác vụ] Nhận sự kiện ``ca chụp đã đủ ảnh'' từ cổng, tạo một tác vụ
       suy luận cho mỗi ca, gán hạn chót và độ ưu tiên (ca cấp cứu trước), và loại bỏ tác
       vụ trùng khi nhiều nút cổng cùng phát sự kiện cho một ca (khoá theo Study Instance
-      UID). Thành phần này là mã nguồn riêng của đề tài.
-\item[Dịch vụ suy luận AI] Khối trừu tượng, công cụ cụ thể chưa chốt; các ứng viên là
-      ứng dụng MONAI Deploy chạy mô hình phân đoạn 3D trên một máy chủ suy luận như
-      NVIDIA Triton. Hợp đồng đầu vào, đầu ra của khối này được cố định ở
+      UID). Bộ điều phối đọc chuỗi ảnh từ cổng, chuyển thành một volume NIfTI, gửi tới
+      mô hình \texttt{hemorrhage\_approved} trên máy chủ MONAI Label, rồi dựng DICOM SEG, SR và cờ ưu tiên từ mặt nạ trả
+      về. Thành phần này là mã nguồn riêng của đề tài; trong bản staging, nó chạy dưới
+      dạng plugin \texttt{ai\_bridge.py} bên trong Orthanc.
+\item[Dịch vụ suy luận AI] Đề xuất dùng một máy chủ MONAI Label \cite{monailabel}
+      giữ hai mô hình phân đoạn xuất huyết của nhóm AI (đóng gói thành MONAI bundle):
+      \texttt{hemorrhage\_approved} là bản đã duyệt, chạy cho mọi ca và không bao giờ huấn luyện
+      lại tại chỗ; \texttt{hemorrhage\_dev} phục vụ gán nhãn và huấn luyện ở tầng nghiên cứu.
+      Máy chủ nằm ở VLAN 30; VLAN 40 chỉ tới được các endpoint của \texttt{hemorrhage\_dev} qua
+      một reverse proxy. Lời gọi suy luận tải volume lên, không ghi vào datastore, và máy
+      chủ không có tài khoản trên PACS. Suy luận được ưu tiên GPU: huấn luyện chạy vào giờ
+      thấp tải, có giới hạn bộ nhớ, và dừng nếu suy luận vượt ngân sách độ trễ. Khi triển
+      khai thật, hoặc khi huấn luyện làm chậm việc phân loại, \texttt{hemorrhage\_approved} được
+      tách sang một máy chủ suy luận riêng; MONAI Deploy với một máy chủ suy luận như
+      NVIDIA Triton là hướng production. Hợp đồng đầu vào, đầu ra của khối này được cố định ở
       Mục~\ref{sec:aicontract}, nên thay đổi công cụ không ảnh hưởng các tầng khác.
 \end{description}
 
@@ -189,12 +200,17 @@ duyệt mới được đưa sang tầng suy luận.
 
 \textbf{Thành phần.}
 \begin{description}[leftmargin=3.4cm,style=nextline]
-\item[Gán nhãn] MONAI Label \cite{monailabel} làm máy chủ gán nhãn, với 3D Slicer làm
-      công cụ phía người dùng, cùng ứng dụng mà bác sĩ dùng để đọc ảnh. Công cụ đọc ảnh đã khử định danh và ghi nhãn
-      (DICOM SEG) qua DICOMweb của cổng trung gian, không đọc trực tiếp từ kho đối tượng.
-\item[Huấn luyện và registry] Khối trừu tượng: huấn luyện trên GPU, đánh giá trên tập
-      kiểm tra giữ riêng, và lưu mô hình kèm số đo, phiên bản dataset và trạng thái duyệt
-      trong một registry. Registry là điểm bàn giao duy nhất giữa nghiên cứu và suy luận.
+\item[Gán nhãn] Mô hình \texttt{hemorrhage\_dev} trên cùng máy chủ MONAI Label, với 3D
+      Slicer và extension MONAILabel làm công cụ phía người dùng, cùng ứng dụng mà bác sĩ
+      dùng để đọc ảnh. Datastore là DICOMweb của cổng trung gian (bản đã khử định danh),
+      không phải một thư mục ảnh. Mỗi ca huấn luyện mở ra với kết quả AI của Luồng 2 làm
+      bản nháp; người gán nhãn chỉnh bằng công cụ tương tác (SAM, scribbles) hoặc Segment
+      Editor. Mỗi lần lưu là một phiên bản DICOM SEG mới, ghi người sửa, vai trò, mô hình
+      tạo bản nháp và thời điểm; người duyệt chọn một phiên bản cho mỗi ca.
+\item[Huấn luyện và registry] Huấn luyện bằng trainer của \texttt{hemorrhage\_dev}, đánh giá trên tập kiểm tra giữ riêng, và lưu mô hình dưới dạng MONAI
+      bundle kèm số đo, phiên bản dataset và trạng thái duyệt trong một registry. Registry
+      là điểm bàn giao duy nhất giữa nghiên cứu và suy luận: chỉ bundle đã duyệt được
+      nạp làm \texttt{hemorrhage\_approved}.
 \end{description}
 
 \textbf{Quy tắc về nhãn.} Nhãn huấn luyện không được lấy từ kết quả AI mà bác sĩ đã
@@ -202,6 +218,8 @@ chấp nhận, vì như vậy mô hình sẽ học lại chính đầu ra của 
 (bản nháp) được phép dùng cho tập huấn luyện để giảm công vẽ, nhưng tập kiểm định, tập
 kiểm tra và các ca bác sĩ bất đồng phải được gán nhãn mù hoàn toàn với AI, đọc đôi và
 có người phân xử. Mô hình đang huấn luyện không được dùng để tạo bản nháp cho chính nó.
+Bản sửa của bác sĩ khi đọc ca được lưu vào PACS, rồi qua cổng (khử định danh) vào kho
+nhãn với trạng thái chưa duyệt; một lần xác nhận không sửa thì không tạo nhãn.
 
 \textbf{Khi có sự cố.} Không ảnh hưởng tới khám chữa bệnh. Nhãn đã lưu được sao chép
 ngay sang SeaweedFS nên không mất khi một nút cổng gặp sự cố.
@@ -303,11 +321,13 @@ Máy chụp CT & PACS & DICOM, 11112 (TLS nếu thiết bị hỗ trợ) & Ca ch
 HIS/RIS & PACS & HL7 v2 qua MLLP, 2575 & Thông tin bệnh nhân, chỉ định (ADT, ORM) \\
 Trình xem (3D Slicer) & PACS & HTTPS, qua reverse proxy & QIDO-RS, WADO-RS; STOW-RS cho mặt nạ đã sửa; token đăng nhập được kiểm tra tại proxy \\
 Trình xem (3D Slicer) & Keycloak & HTTPS & Đăng nhập OpenID Connect qua trình duyệt hệ thống (Authorization Code + PKCE), do mô-đun ICH Triage thực hiện \\
-PACS & Cổng trung gian & DICOM, 4242 & Xuất chuỗi ảnh (C-STORE), do PACS khởi tạo \\
+PACS & Cổng trung gian & DICOM, 4242 & Xuất chuỗi ảnh, và SEG bác sĩ đã sửa của ca nghiên cứu (C-STORE), do PACS khởi tạo \\
 Cổng trung gian & PACS (AE \texttt{AI\_RESULTS}) & DICOM, 11113 & Chỉ C-STORE kết quả AI; AE này không nhận truy vấn \\
-Cổng trung gian & Dịch vụ suy luận & API nội bộ & Giao tác vụ, trả mặt nạ (Mục~\ref{sec:aicontract}) \\
-Dịch vụ suy luận & HIS/RIS & HL7 ORU hoặc FHIR & Cờ ưu tiên \\
-Công cụ gán nhãn & Cổng trung gian & HTTPS (DICOMweb) & Đọc bản đã khử định danh, ghi nhãn SEG \\
+Bộ điều phối tác vụ & Cổng trung gian & HTTP nội bộ (DICOMweb) & Nhận sự kiện ca đủ ảnh, đọc chuỗi ảnh; ghi SEG, SR (STOW-RS) \\
+Bộ điều phối tác vụ & MONAI Label (\texttt{hemorrhage\_approved}) & HTTP nội bộ, \texttt{POST /infer} & Gửi volume NIfTI, nhận mặt nạ (Mục~\ref{sec:aicontract}) \\
+Bộ điều phối tác vụ & HIS/RIS & HL7 ORU hoặc FHIR & Cờ ưu tiên, suy ra từ mặt nạ \\
+Công cụ gán nhãn (3D Slicer) & MONAI Label (\texttt{hemorrhage\_dev}), qua proxy & HTTPS (REST) & Lấy ca, bản nháp, lưu nhãn, huấn luyện \\
+MONAI Label (\texttt{hemorrhage\_dev}) & Cổng trung gian & HTTPS (DICOMweb) & Đọc CT và kết quả AI đã khử định danh, ghi phiên bản nhãn SEG \\
 PACS, cổng & SeaweedFS & S3 qua HTTP & Tệp ảnh (bucket riêng cho mỗi bên) \\
 PACS, cổng, Keycloak & PostgreSQL & PostgreSQL, 5432, TLS & Chỉ mục, tác vụ, kết quả \\
 PACS & OpenLDAP & LDAP, 389/636 & Cấu hình \\
@@ -386,22 +406,27 @@ ngân sách độ trễ của AI (Bảng~\ref{tab:latency}).
 lại theo tuần, theo tháng.
 \begin{description}[leftmargin=1.2cm,style=nextline]
 \item[3.1] Với các ca được chọn cho nghiên cứu, cổng trung gian tạo bản đã khử định
-      danh (Mục~\ref{sec:archdeid}) và đánh dấu bản đó để chỉ công cụ gán nhãn được thấy.
-      Công cụ gán nhãn đọc bản này qua DICOMweb; người gán nhãn không bao giờ thấy danh
+      danh (Mục~\ref{sec:archdeid}) cho cả CT lẫn kết quả AI của ca, đổi UID theo cùng một
+      quy tắc băm có khoá để mặt nạ vẫn khớp với CT, và đánh dấu bản đó để chỉ
+      \texttt{hemorrhage\_dev} được thấy. Máy chủ đọc bản đó qua DICOMweb và phục vụ 3D Slicer của người gán nhãn; người gán nhãn không bao giờ thấy danh
       tính bệnh nhân và không có đường nào tới PACS.
-\item[3.2] Nhãn được lưu ngược về cổng dưới dạng DICOM SEG. Cổng sao chép ngay mỗi nhãn
-      sang bucket \texttt{research} trên SeaweedFS, nên nhãn, vốn là công sức không tạo
-      lại được, không phụ thuộc vào bản làm việc của cổng.
+\item[3.2] Mỗi ca huấn luyện mở ra với kết quả AI làm bản nháp. Mỗi lần lưu là một
+      phiên bản DICOM SEG mới trên cổng, kèm người sửa, vai trò, mô hình tạo bản nháp và
+      thời điểm. Cổng sao chép ngay mỗi phiên bản sang bucket \texttt{research} trên
+      SeaweedFS, nên nhãn, vốn là công sức không tạo lại được, không phụ thuộc vào bản làm
+      việc của cổng. Bản sửa của bác sĩ đi từ PACS qua cổng, được khử định danh theo cùng
+      quy tắc và vào cùng kho nhãn với trạng thái chưa duyệt. Người duyệt chọn một phiên
+      bản cho mỗi ca.
 \item[3.3] Một phiên bản dataset (danh sách ca, ảnh, nhãn và phiên bản quy trình tiền
       xử lý) được đóng băng trong bucket \texttt{research} và chuyển cho bước huấn luyện;
       mỗi mô hình về sau truy được tới đúng dữ liệu đã dùng để huấn luyện nó.
-\item[3.4] Kỹ sư ML huấn luyện, đánh giá trên tập kiểm tra giữ riêng và đăng ký mô hình
+\item[3.4] Kỹ sư ML huấn luyện \texttt{hemorrhage\_dev} vào giờ thấp tải, đánh giá trên tập kiểm tra giữ riêng và đăng ký mô hình
       ứng viên vào registry. Chỉ phiên bản được bác sĩ và nhóm AI duyệt mới được đánh dấu
       hợp lệ. Trước khi bật cảnh báo cho bác sĩ, mô hình mới chạy ở chế độ ``im lặng'': có
       kết quả để so sánh nhưng không hiển thị và không gửi cờ.
-\item[3.5] Dịch vụ suy luận nạp phiên bản đã duyệt. Công cụ gán nhãn dùng mô hình hợp lệ
-      mới nhất để sinh bản nháp cho tập huấn luyện, khép kín vòng gán nhãn theo các quy tắc
-      về nhãn ở tầng nghiên cứu.
+\item[3.5] Chỉ bundle đã duyệt được nạp làm \texttt{hemorrhage\_approved}; kết quả của nó trên các
+      ca mới trở thành bản nháp cho lần gán nhãn tiếp theo, khép kín vòng gán nhãn theo
+      các quy tắc về nhãn ở tầng nghiên cứu.
 \end{description}
 
 \paragraph{Luồng 4: sao lưu và nhân bản lên đám mây.} Luồng chạy nền, một chiều, và
@@ -454,8 +479,9 @@ hiện trên một máy, không tải, nên chỉ cho thấy bậc độ lớn.}
 \subsection{Hợp đồng dữ liệu của tầng AI}
 \label{sec:aicontract}
 
-Dịch vụ suy luận là khối trừu tượng, nên giao diện của nó được cố định trước để mọi
-công cụ hiện thực sau này đều lắp vào được mà không đổi các tầng khác.
+Giao diện của dịch vụ suy luận được cố định trước và không phụ thuộc công cụ hiện
+thực: MONAI Label (đề xuất) hay một công cụ khác sau này đều lắp vào được mà không đổi
+các tầng khác.
 
 \textbf{Đầu vào.} Mô hình chỉ làm việc với chuỗi CT sọ não không tiêm thuốc cản quang,
 lát mỏng, mặt phẳng trục. Nếu ca chụp không có chuỗi như vậy, ca được gắn trạng thái
@@ -471,6 +497,22 @@ các số đo, được tạo sau cờ ưu tiên.
 trình tiền xử lý, thời điểm chạy và trạng thái xác nhận. Thiếu bất kỳ trường nào thì kết
 quả không được ghi, vì khi đó không thể truy vết kết quả về đúng mô hình và đúng dữ liệu
 đã tạo ra nó.
+
+\textbf{Hiện thực đề xuất bằng MONAI.} 3D Slicer không chứa sẵn MONAI: lõi Slicer chỉ
+là trình xem, còn extension MONAILabel là client gọi REST tới một máy chủ MONAI Label
+riêng, nơi mô hình thực sự chạy. Vòng tương tác Slicer--MONAI Label (lấy ca kế tiếp,
+chạy mô hình, sửa, lưu nhãn, huấn luyện) vì vậy thuộc Luồng 3, không thay được Luồng 2,
+nơi AI phải tự chạy khi chuỗi CT đủ ảnh. Trong Luồng 2, bộ điều phối tác vụ (trong bản staging là plugin của cổng) gọi
+\texttt{POST /infer/hemorrhage\_approved}, tải volume NIfTI lên (tham số
+\texttt{file}) và nhận lại đúng tệp mặt nạ (\texttt{output=image}), nên hợp đồng ``NIfTI
+vào, mặt nạ ra'' hiện có không đổi. Mặt nạ có một nhãn cho mỗi thể xuất huyết; bộ điều phối
+dựng DICOM SEG với một segment cho mỗi thể, SR ghi thể tích từng thể, và cờ ưu tiên.
+Một máy chủ MONAI Label giữ cả hai mô hình; kết quả của \texttt{hemorrhage\_approved} cho mỗi ca
+được khử định danh cùng CT và trở thành bản nháp cho người gán nhãn.
+Cả MONAI Label lẫn 3D Slicer đều không thay được PACS: datastore của MONAI Label chỉ là
+một thư mục hoặc DICOMweb của máy chủ khác, còn CSDL DICOM của Slicer là bộ đệm của một
+máy trạm; không thành phần nào nhận ảnh từ máy chụp, dựng worklist, xuất chuỗi ảnh sang
+cổng AI hay lưu trữ dài hạn.
 
 \textbf{Trạng thái hiển thị.} Trình xem phân biệt rõ bốn trạng thái: chưa chạy AI; AI
 thất bại hoặc quá hạn (``không có kết quả AI''); không phân tích được (thiếu chuỗi phù
@@ -780,7 +822,7 @@ các giá trị này phải được đặt tường minh cho ca cấp cứu. Th
 danh, nên việc chặn truy cập dựa vào tách cổng mạng và cần bổ sung DICOM TLS. Thứ tư,
 Orthanc không có sẵn bước ``khử định danh, kiểm tra, rồi giữ hoặc từ chối'', nên bước này
 là mã nguồn riêng, khoảng 110 dòng Python, và vì bản đã khử định danh nằm cùng Orthanc
-với bản gốc, công cụ gán nhãn cần một quy tắc phân quyền chỉ cho thấy các bản đã đánh
+với bản gốc, \texttt{hemorrhage\_dev} cần một quy tắc phân quyền chỉ cho thấy các bản đã đánh
 dấu.
 
 % ---------------------------------------------------------------------------

@@ -3,8 +3,8 @@
 \input{figures/arch/base.tex}
 
 \archcomp{gw}{10.2,9.1}{archserver}{Gateway Orthanc}{active-active,\\khử định danh}
-\archcomp[archboxwide]{ai}{15.9,9.1}{archgpu}{Suy luận AI}{GPU trong LAN\\cờ ưu tiên, overlay}
-\archcomp[archabstract]{train}{17.9,6.1}{archgpu}{Huấn luyện}{GPU, registry mô hình}
+\archcomp[archboxwide]{ai}{15.9,9.1}{archgpu}{Suy luận AI}{điều phối + MONAI Label\\GPU trong LAN}
+\archcomp[archabstract]{train}{17.9,6.1}{archgpu}{Huấn luyện}{MONAI Label trainer,\\registry bundle}
 \input{figures/arch/links.tex}
 
 \draw[archai] ([yshift=2.5mm]gw.east) -- node[archlbl, above=1pt, pos=0.72] {series} ([yshift=2.5mm]gw.east -| ai.west);

@@ -161,8 +161,7 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
     <a href="simplified.html"><b>Simplified</b><span>Scenario 1 core</span></a>
     <a href="scenario2.html"><b>Scenario 2</b><span>GPUs at site 2</span></a>
     <a href="decisions.html" aria-current="page"><b>Decisions</b><span>Why these products</span></a>
-    <a href="viewer.html"><b>Viewer PoC</b><span>OHIF + AI triage</span></a>
-    <a href="slicer.html"><b>3D Slicer</b><span>Proposed viewer</span></a>
+    <a href="slicer.html"><b>Slicer + MONAI</b><span>Viewer + AI</span></a>
     <a href="dcm4chee.html"><b>dcm4chee</b><span>PACS deep dive</span></a>
   </nav>
   <button class="theme-btn" type="button">◐ <span class="tl">Auto</span></button>
@@ -182,6 +181,7 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 <li><a href="#data">Data layer</a></li>
 <li><a href="#backup">Backup to cloud</a></li>
 <li><a href="#access">Clinical access</a></li>
+<li><a href="#aiblocks">AI blocks</a></li>
 <li><a href="#qa">Questions reviewers ask</a></li>
 <li><a href="#followups">Follow-ups</a></li>
 <li><a href="#sources">Sources</a></li>
@@ -201,7 +201,8 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 <tr><td><a href="#d7">D7</a></td><td>Database backup</td><td>pgBackRest</td><td>pg_dump, Barman, WAL-G</td><td>Point-in-time recovery, encryption, S3 repository, dedicated repo host over TLS</td></tr>
 <tr><td><a href="#d8">D8</a></td><td>File copy to cloud</td><td>rclone copy</td><td>SeaweedFS remote sync, provider CLIs</td><td>Provider-neutral, never deletes at the destination, checksums and bandwidth limits</td></tr>
 <tr><td><a href="#d9">D9</a></td><td>Identity</td><td><span class="o">Keycloak (stand-in)</span></td><td>The hospital's existing identity system</td><td>Represents "an on-premise OIDC provider with MFA"; will integrate with what the hospital has</td></tr>
-<tr><td><a href="#d10">D10</a></td><td>Radiologist viewer</td><td><span class="o">3D Slicer (proposed)</span></td><td>OHIF (tried in a PoC), Weasis, the hospital's certified viewer</td><td>Advisor's recommendation: reads the PACS, SEG and SR, and edits masks out of the box; the missing parts are one Python module. To be confirmed by a PoC</td></tr>
+<tr><td><a href="#d10">D10</a></td><td>Radiologist viewer</td><td><span class="o">3D Slicer (proposed)</span></td><td>OHIF, Weasis, the hospital's certified viewer</td><td>Advisor's recommendation: reads the PACS, SEG and SR, and edits masks out of the box; the missing parts are one Python module. To be confirmed by a PoC</td></tr>
+<tr><td><a href="#d11">D11</a></td><td>AI inference, annotation, training</td><td><span class="o">MONAI (proposed)</span></td><td>MONAI Deploy App SDK + Triton, MONAIAuto3DSeg inside Slicer, a custom FastAPI service</td><td>One MONAI Label server with two models: hemorrhage_approved runs on every study and is never retrained; hemorrhage_dev drafts for annotators and trains. To be confirmed by a PoC</td></tr>
 </table></div>
 
 <h2 class="sec" id="dicom"><span class="n">2</span>DICOM servers</h2>
@@ -235,7 +236,7 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 </div>
 
 <h3 class="dec" id="d2"><span class="dn">D2</span>AI gateway: Orthanc</h3>
-<p><b>Context.</b> The gateway is the only AI-side system that talks to the PACS. It receives the export once, triggers the AI job, de-identifies fail-closed, serves de-identified studies to the annotation tool and stores the labels it saves, returns SEG and SR to the PACS, and in <a href="scenario2.html#flow-triage">scenario 2</a> also crops, resamples, encrypts and forwards one tensor per study to site 2. The gateway does not annotate; it only serves images to the annotation tool (still to be chosen) and stores its labels.</p>
+<p><b>Context.</b> The gateway is the only AI-side system that talks to the PACS. It receives the export once, triggers the AI job, de-identifies fail-closed, serves de-identified studies to the annotation tool and stores the labels it saves, returns SEG and SR to the PACS, and in <a href="scenario2.html#flow-triage">scenario 2</a> also crops, resamples, encrypts and forwards one tensor per study to site 2. The gateway does not annotate; it only serves images to the annotation tool (3D Slicer with MONAI Label's <code>hemorrhage_dev</code> model, proposed in <a href="#d11">D11</a>) and stores its labels.</p>
 <div class="tbl"><table>
 <tr><th>Option</th><th>Why it was not chosen, or why it was</th></tr>
 <tr><td class="k">AI pulls from the PACS over DICOMweb</td><td><span class="n">Rejected.</span> Breaks "push, don't pull": the AI would hold PACS credentials, repeated reads (preprocessing, retries, re-runs) would load the PACS hot tier, and data minimisation would depend on configuration instead of architecture.</td></tr>
@@ -393,10 +394,32 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 <tr><td class="k">The hospital's existing certified viewer</td><td>Already approved and familiar to radiologists</td><td>Must read from the PACS and display SEG; confirm-or-correct may need a separate tool</td></tr>
 </table></div>
 <div class="callout"><b>The architecture does not depend on this choice.</b> AI results are stored in the PACS as standard SEG and SR, so any viewer that reads DICOMweb and displays SEG shows them. Choosing the viewer changes no other component.</div>
-<div class="callout"><b>OHIF has been tried.</b> A proof of concept (dcm4chee 5.35.2 + OHIF 3.13.14) shows OHIF reading the PACS over DICOMweb and displaying the AI mask (SEG) with no code changes. It does not display the volumetric SR, does not pick up a mask that arrives after the study is opened, and has no notion of priority or alerts; those come from a small AI results service and an OHIF panel. See <a href="viewer.html">Viewer PoC</a>.</div>
-<div class="callout"><b>Why 3D Slicer is proposed.</b> Every server-side piece of the OHIF PoC stays the same: the PACS, the simulated AI and the AI results service. Only the panel injected into OHIF is replaced, by an "ICH Triage" Python module inside Slicer. That module lists studies by priority, listens to the same Server-Sent Events, shows the AI state, confirms or rejects, loads a late mask without reopening the study, and saves a corrected mask as a new SEG over STOW-RS. The assessment, risks and a six-step PoC plan are on <a href="slicer.html">3D Slicer</a>. If the PoC is too slow to open a study, or the hospital does not allow software on reading workstations, fall back to OHIF with an extension.</div>
+<div class="callout"><b>Why 3D Slicer is proposed.</b> Slicer reads the PACS and shows SEG and SR as they are, and its Segment Editor is the strongest tool here for correcting the mask. What it lacks (priority list, alerts, confirm or reject, OIDC login) comes from one "ICH Triage" Python module that talks to the AI results service. The assessment, risks and a six-step PoC plan are on <a href="slicer.html">Slicer + MONAI</a>. If the PoC is too slow to open a study, or the hospital does not allow software on reading workstations, fall back to OHIF with an extension.</div>
 
-<h2 class="sec" id="qa"><span class="n">6</span>Questions reviewers ask</h2>
+<h2 class="sec" id="aiblocks"><span class="n">6</span>AI blocks</h2>
+<p>The AI inference, annotation and training blocks were abstract: the architecture fixed their inputs and outputs, not the tools. Feedback on the design asked to use 3D Slicer with MONAI, so this section records how MONAI fills those blocks.</p>
+
+<h3 class="dec" id="d11"><span class="dn open">D11</span>AI blocks: MONAI proposed</h3>
+<p><b>Context.</b> 3D Slicer does not include MONAI. Its core is a viewer, and MONAI reaches it only through extensions. The MONAILabel extension is a client of a separate MONAI Label server, where the model runs. The interaction diagram we received (Next Sample, Run, Submit Label, Train between 3D Slicer and a MONAI Label server) is therefore the annotation loop of Flow 3. It is not the triage path: there, the AI must run as soon as a CT series is complete, before anyone opens the study.</p>
+<div class="tbl"><table>
+<tr><th>Candidate</th><th>Strengths</th><th>Open questions</th></tr>
+<tr><td class="k win">MONAI Label, one server with two models (proposed)</td><td class="win">One app, one GPU, one place to configure. <code>POST /infer/{model}</code> accepts an uploaded volume (<code>file</code>), and <code>output=image</code> returns only the mask, so the AI worker keeps its "NIfTI in, mask out" contract. <code>hemorrhage_approved</code> never trains, so a freshly trained model cannot reach patients except through the registry. 3D Slicer is the main client of <code>hemorrhage_dev</code></td><td class="win">Training and triage share the GPU and the process: a training job can slow triage, and a crash stops both. MONAI Label is built for annotation, not production serving (no batching, HA or serving metrics). The app needs a trainer for <code>hemorrhage_dev</code>, which the received diagram lacks (<code>trainers = {}</code>)</td></tr>
+<tr><td class="k">MONAI Label, two servers</td><td>Inference and research fully apart, each in its own VLAN; a research restart or crash never touches triage</td><td>Two servers and GPUs to run. The path to take in a real deployment, or when the shared server's guards are not enough</td></tr>
+<tr><td class="k">MONAI Deploy App SDK + Triton</td><td>Made for running models in hospitals: packaged application, DICOM in and out, inference server with batching and metrics</td><td>More work than the project scope allows; annotation and training still need MONAI Label or another tool</td></tr>
+<tr><td class="k">MONAIAuto3DSeg inside 3D Slicer</td><td>No server; the model runs inside Slicer</td><td>Needs a GPU on every workstation and runs only when a doctor clicks, after the study is opened. Does not meet triage</td></tr>
+<tr><td class="k">Custom inference service</td><td>Full control; <code>tools/mock_ai.py</code> already shows the contract</td><td>Re-implements what MONAI Label already does, and annotation needs a separate tool anyway</td></tr>
+</table></div>
+<ol class="flow">
+<li class="f-dec"><b class="t">The approved model runs on every study</b>The AI worker (in staging, the <code>ai_bridge.py</code> plugin inside Orthanc) sends each stable CT series to <code>hemorrhage_approved</code> and turns the mask into a SEG (one segment per subtype), an SR and a priority flag, which reach the PACS through the gateway.</li>
+<li class="f-dec"><b class="t">Annotators fix that result</b>Orthanc keeps de-identified copies of the CT and its AI SEG, renamed with one keyed-hash UID rule so they line up. <code>hemorrhage_dev</code> reads them over DICOMweb and opens each case with the AI SEG as its draft. Every save is a new SEG version with who, role, drafting model and time. Validation and test cases get no draft.</li>
+<li class="f-dec"><b class="t">Radiologists fix through the PACS</b>A radiologist's correction is saved to the PACS as a new SEG; an export rule sends it to Orthanc, which de-identifies it and files it as "radiologist, not reviewed". A Confirm with no edit creates no label.</li>
+<li class="f-dec"><b class="t">Review, then the registry</b>A reviewer picks one label version per case. Reviewed labels train <code>hemorrhage_dev</code>; the new bundle goes to the registry, and only an approved bundle is loaded as <code>hemorrhage_approved</code>.</li>
+</ol>
+<div class="callout amber"><b>Guards on the shared server.</b> It sits in VLAN 30; a proxy lets VLAN 40 reach only the <code>hemorrhage_dev</code> endpoints, and only the AI worker may call <code>hemorrhage_approved</code>. Authentication is on so labels record who made them. Inference has priority on the GPU: training runs at low-load hours with a memory cap and stops if triage misses its latency budget. <b>Revisit</b> and split into two servers for a real deployment, or as soon as training slows triage or a crash takes it down.</div>
+<div class="callout"><b>The PACS stays.</b> The MONAI Label datastore is a folder or another server's DICOMweb, and the DICOM database of 3D Slicer is one workstation's cache. Neither receives studies from the scanners, builds a worklist, exports series to the gateway, keeps images for 10 years or serves many radiologists. Dropping the PACS would only make sense if the project were narrowed to an annotation and research tool on a public dataset.</div>
+<div class="callout"><b>Details.</b> The reading of the received diagram, the new architecture diagram, the gateway contract, the shared server and its guards, risks and a six-step PoC plan are on <a href="slicer.html#part-ai">Slicer + MONAI</a>.</div>
+
+<h2 class="sec" id="qa"><span class="n">7</span>Questions reviewers ask</h2>
 <dl class="qa">
 <dt>Why two DICOM servers instead of one?</dt>
 <dd>Because the two roles need opposite things. Orthanc as the PACS would put custom scripts for HL7, worklist, export rules and retention on the clinical path; dcm4chee as the gateway would turn the AI pipeline into Java EE development and need a second WildFly + LDAP stack. Running both costs little because they share the same database and object store.</dd>
@@ -412,20 +435,23 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 <dd>Not for internal use. dcm4chee is MPL 1.1 / GPL / LGPL. Orthanc's core is GPLv3 and its PostgreSQL and DICOMweb plugins are AGPLv3; if the hospital modifies an AGPL component and lets users reach it over the network, the modified source must be offered to those users. SeaweedFS and Keycloak (Apache 2.0), Patroni and rclone (MIT), pgBackRest (MIT-style) and PostgreSQL (PostgreSQL licence) are permissive.</dd>
 <dt>Is active-active Orthanc actually supported?</dt>
 <dd>Yes, with conditions. Since Orthanc 1.9.2 with PostgreSQL plugin 4.0, several instances can share one index. PostgreSQL plugin 6.0 with Orthanc 1.12.3 adds a <code>TransactionMode</code> option, where <code>ReadCommitted</code> lets several instances write at the same time. The shared lock must be disabled (<code>Lock: false</code>), and duplicate stable-study events must be filtered by the dispatcher.</dd>
+<dt>With 3D Slicer and MONAI Label, do we still need a PACS?</dt>
+<dd>Yes, for a triage system in a hospital. 3D Slicer and MONAI Label each keep images, but only as a workstation cache or an annotation datastore. Receiving studies from the scanners, the worklist, the export to the AI gateway, long-term retention, audit and serving many readers stay with dcm4chee (D1). See <a href="#d11">D11</a>.</dd>
 </dl>
 
-<h2 class="sec" id="followups"><span class="n">7</span>Follow-ups</h2>
+<h2 class="sec" id="followups"><span class="n">8</span>Follow-ups</h2>
 <div class="callout amber"><b>Open points to close before deployment.</b><ul>
 <li><b>Pin the gateway versions.</b> The <a href="index.html#ha">High availability</a> section cites Orthanc 1.9.2. Write down the minimum versions and settings used for active-active: Orthanc ≥ 1.12.3, PostgreSQL plugin ≥ 6.0, <code>Lock: false</code>, <code>IndexConnectionsCount</code> above 1, and the chosen <code>TransactionMode</code>. Test concurrent writes under load.</li>
 <li><b>Draw the Patroni dependencies.</b> Add the three-node etcd and the primary-routing layer (HAProxy or a floating IP) to the Data layer (D5).</li>
 <li><b>Back up the LDAP configuration.</b> Schedule an LDIF export and copy it with rclone (D6).</li>
 <li><b>Pin pgBackRest to 2.59.3 or later</b> and align its retention with Object Lock on the PostgreSQL backup bucket (D7).</li>
 <li><b>Choose the SeaweedFS replication setting</b> and confirm which features the free edition includes (D3).</li>
+<li><b>Run the MONAI PoC</b>: <code>hemorrhage_approved</code> behind the AI worker, multi-segment SEG, the keyed-hash UID rule for CT and SEG, <code>hemorrhage_dev</code> on the gateway's DICOMweb with AI drafts and versioned labels, a trainer for <code>hemorrhage_dev</code> (D11).</li>
 <li><b>Choose the identity integration and the viewer</b> with the hospital, and add identity to the HA table (D9, D10).</li>
 <li><b>Confirm with the hospital:</b> the existing PACS, viewer and identity system, and who operates each component.</li>
 </ul></div>
 
-<h2 class="sec" id="sources"><span class="n">8</span>Sources</h2>
+<h2 class="sec" id="sources"><span class="n">9</span>Sources</h2>
 <ol class="src">
 <li><a href="https://dcm4che.atlassian.net/wiki/spaces/ee2/pages/2555988/ORM+Service">dcm4chee: ORM Service (HL7 ORM to modality worklist)</a></li>
 <li><a href="https://dcm4chee-arc-cs.readthedocs.io/en/latest/networking/config/hl7ExportRule.html">dcm4chee: HL7 Export Rule (priors selection)</a></li>
@@ -450,6 +476,10 @@ ol.flow>li.f-dec{--fc:var(--violet);--fp:""}
 <li><a href="https://www.kitware.com/announcing-3d-slicer-5-12/">Kitware: Announcing 3D Slicer 5.12 (DICOM SEG and TID 1500 SR in the core)</a></li>
 <li><a href="https://slicer.readthedocs.io/en/latest/user_guide/modules/dicom.html">3D Slicer: DICOM module (DIMSE, DICOMweb, STOW-RS)</a></li>
 <li><a href="https://slicer.readthedocs.io/en/latest/user_guide/about.html">3D Slicer: licence and regulatory statement</a></li>
+<li><a href="https://github.com/Project-MONAI/MONAILabel">MONAI Label: source, radiology app, 3D Slicer plugin</a></li>
+<li><a href="https://github.com/Project-MONAI/MONAILabel/blob/main/monailabel/endpoints/infer.py">MONAI Label: the /infer endpoint (image, file, params, output)</a></li>
+<li><a href="https://github.com/Project-MONAI/monai-deploy-app-sdk">MONAI Deploy App SDK</a></li>
+<li><a href="https://github.com/lassoan/SlicerMONAIAuto3DSeg">SlicerMONAIAuto3DSeg</a></li>
 </ol>
 
 </main>

@@ -1,3 +1,0 @@
-# Files run inside Linux containers or by bash: keep LF on every OS.
-* text=auto eol=lf
-*.png binary

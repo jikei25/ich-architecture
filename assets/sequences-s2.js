@@ -22,7 +22,7 @@ window.SEQ.s2 = [
       { id: "pacs", name: "PACS", sub: "dcm4chee · N+1", color: "blue", group: "clin" },
       { id: "gw", name: "AI gateway", sub: "Orthanc · de-id · tensor", color: "violet", group: "ai" },
       { id: "pg", name: "PostgreSQL", sub: "AI results", color: "emerald", group: "data" },
-      { id: "inf", name: "GPU inference", sub: "service · TBD", color: "violet", group: "site2" }
+      { id: "inf", name: "GPU inference", sub: "MONAI hemorrhage model", color: "violet", group: "site2" }
     ],
     steps: [
       { t: "sep", label: "Clinical path · unchanged from scenario 1" },
@@ -81,12 +81,12 @@ window.SEQ.s2 = [
     },
     participants: [
       { id: "ann", name: "Clinician", sub: "annotates · validates", kind: "actor", color: "pink", group: "res" },
-      { id: "aui", name: "Annotation UI", sub: "tool · TBD", kind: "ui", color: "pink", group: "res" },
+      { id: "aui", name: "3D Slicer", sub: "+ MONAI Label (research)", kind: "ui", color: "pink", group: "res" },
       { id: "gw", name: "AI gateway", sub: "Orthanc · DICOMweb", color: "violet", group: "ai" },
       { id: "s3", name: "SeaweedFS", sub: "research bucket", color: "emerald", group: "data" },
       { id: "trn", name: "Model training", sub: "site 2 GPUs", color: "pink", group: "site2" },
       { id: "reg", name: "Model registry", sub: "approved versions", color: "pink", group: "site2" },
-      { id: "inf", name: "GPU inference", sub: "service · TBD", color: "violet", group: "site2" }
+      { id: "inf", name: "GPU inference", sub: "MONAI hemorrhage model", color: "violet", group: "site2" }
     ],
     steps: [
       { t: "sep", label: "Annotate at the main site" },
