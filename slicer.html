@@ -362,47 +362,9 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 
 <h2 class="sec" id="proposal"><span class="n">8</span>Proposed architecture</h2>
 <p>The clinical and data layers stay as they are. MONAI Label runs two models in two places (<a href="decisions.html#d12">D12</a>): <code>hemorrhage_approved</code> runs on every study on the hospital GPU and is never retrained, and <code>hemorrhage_dev</code> serves annotation and training at the HCMUT lab, run by the AI team. The approved model's result for each study becomes the annotator's draft, so annotators and radiologists only fix what the AI already produced.</p>
-<div class="figure"><div class="figscroll">
-<svg class="flowsvg wide" viewBox="0 0 900 640" role="img" aria-labelledby="mo-t mo-d"><title id="mo-t">3D Slicer and MONAI in the ICH architecture</title><desc id="mo-d">Clinical layer: the CT scanner sends studies to the dcm4chee PACS, and the radiologist reads in 3D Slicer with the ICH Triage module. Step 1: the PACS pushes each CT series once to Orthanc. Step 2: the AI worker sends a NIfTI volume to the hemorrhage_approved model on the MONAI Label server and gets a mask back. Step 3: the mask becomes a SEG that goes to the PACS. Step 4: Orthanc pushes de-identified copies of the CT and the AI mask, renamed with the same rule, to the label store at the HCMUT lab; the hemorrhage_dev model there hands them to annotators in 3D Slicer with the MONAILabel extension, and every saved fix goes into the label store as a new version. Step 5, optional: a radiologist's fix is saved to the PACS, sent on to Orthanc, de-identified and added to the label store. Step 6: reviewed labels train hemorrhage_dev, a new bundle goes to the model registry, and only an approved bundle is loaded into hemorrhage_approved.</desc>
-<defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
-<rect class="lanebx" x="10" y="16" width="880" height="132" rx="12"/><text class="lanet t-blue" x="24" y="38">CLINICAL · VLAN 10–20 · real patient data</text>
-<rect class="lanebx" x="10" y="160" width="880" height="172" rx="12"/><text class="lanet t-violet" x="24" y="182">AI INFERENCE · VLAN 30</text>
-<rect class="lanebx" x="10" y="344" width="880" height="244" rx="12"/><text class="lanet t-pink" x="24" y="366">AI RESEARCH · HCMUT LAB</text>
-
-<rect class="bxc" x="30" y="60" width="120" height="64" rx="8"/><text class="tt" x="90" y="88" text-anchor="middle">CT scanner</text><text class="ts" x="90" y="108" text-anchor="middle">modality</text>
-<rect class="bxc" x="250" y="60" width="180" height="64" rx="8"/><text class="tt" x="340" y="88" text-anchor="middle">PACS · dcm4chee</text><text class="ts" x="340" y="108" text-anchor="middle">archive + DICOMweb</text>
-<rect class="bxc" x="600" y="60" width="230" height="64" rx="8"/><text class="tt" x="715" y="88" text-anchor="middle">3D Slicer + ICH Triage</text><text class="ts" x="715" y="108" text-anchor="middle">radiologist: read, confirm, fix</text>
-<path class="ln" d="M150 84 L246 84" marker-end="url(#ah2)"/><text class="ts" x="198" y="76" text-anchor="middle">C-STORE</text>
-<path class="ln" d="M430 84 L596 84" marker-start="url(#ah2)" marker-end="url(#ah2)"/><text class="ts" x="513" y="76" text-anchor="middle">read study</text>
-<path class="gap" d="M596 112 L434 112" marker-end="url(#ah2)"/><text class="gt" x="515" y="134" text-anchor="middle">5 · radiologist saves a fix</text>
-
-<rect class="bxa" x="200" y="205" width="220" height="84" rx="8"/><text class="tt" x="310" y="233" text-anchor="middle">Orthanc + AI worker</text><text class="ts" x="310" y="253" text-anchor="middle">de-identifies with a fixed UID rule</text><text class="ts" x="310" y="271" text-anchor="middle">turns the mask into SEG + SR</text>
-<path class="lv" d="M280 124 L280 201" marker-end="url(#ah2)"/><text class="tsv" x="272" y="150" text-anchor="end">1 · CT series, once</text>
-<path class="lv" d="M320 201 L320 128" marker-end="url(#ah2)"/><text class="tsv" x="328" y="150">3 · AI SEG</text>
-<path class="gap" d="M400 124 L400 201" marker-end="url(#ah2)"/><text class="gt" x="408" y="175">5 · fix sent on</text>
-
-<rect class="bxa" x="490" y="220" width="210" height="60" rx="8"/><text class="tt" x="595" y="245" text-anchor="middle">hemorrhage_approved</text><text class="ts" x="595" y="265" text-anchor="middle">hospital GPU, never trained</text>
-<path class="lv" d="M420 236 L486 236" marker-end="url(#ah2)"/><text class="tsv" x="453" y="228" text-anchor="middle">2 · NIfTI</text>
-<path class="lv" d="M486 266 L424 266" marker-end="url(#ah2)"/><text class="tsv" x="455" y="282" text-anchor="middle">mask</text>
-
-<rect class="bxr" x="490" y="384" width="210" height="60" rx="8"/><text class="tt" x="595" y="409" text-anchor="middle">hemorrhage_dev</text><text class="ts" x="595" y="429" text-anchor="middle">lab GPU: drafts, training</text>
-<path class="cyl" d="M740 388 L740 436 A70 10 0 0 0 880 436 L880 388 A70 10 0 0 1 740 388 Z"/><ellipse class="cyl" cx="810" cy="388" rx="70" ry="10"/>
-<text class="tt" x="810" y="414" text-anchor="middle">Model registry</text><text class="ts" x="810" y="432" text-anchor="middle">versioned bundles</text>
-<path class="lr" d="M700 404 L736 404" marker-end="url(#ah2)"/><text class="tsr" x="810" y="462" text-anchor="middle">6 · new bundle</text>
-<path class="lv" d="M810 378 L810 250 L704 250" marker-end="url(#ah2)"/><text class="tsv" x="802" y="300" text-anchor="end">approved only,</text><text class="tsv" x="802" y="316" text-anchor="end">fetched by the hospital</text>
-
-<path class="lr" d="M214 426 L486 426" marker-start="url(#ah2)" marker-end="url(#ah2)"/><text class="tsr" x="350" y="404" text-anchor="middle">4 · cases + drafts in,</text><text class="tsr" x="350" y="418" text-anchor="middle">label versions out</text>
-<path class="cyl" d="M30 404 L30 468 A90 10 0 0 0 210 468 L210 404 A90 10 0 0 1 30 404 Z"/><ellipse class="cyl" cx="120" cy="404" rx="90" ry="10"/>
-<text class="tt" x="120" y="430" text-anchor="middle">Label store</text><text class="ts" x="120" y="448" text-anchor="middle">every version: who, role,</text><text class="ts" x="120" y="464" text-anchor="middle">draft model, time</text>
-<path class="lr" d="M230 289 L230 378 L120 378 L120 390" marker-end="url(#ah2)"/><text class="tsr" x="238" y="302">4 · de-identified CT + AI SEG,</text><text class="tsr" x="238" y="317">pushed over a VPN the</text><text class="tsr" x="238" y="332">hospital opens</text>
-<path class="lr" d="M120 480 L120 520 L510 520 L510 448" marker-end="url(#ah2)"/><text class="tsr" x="300" y="512">6 · reviewed labels → train</text>
-<rect class="bxr" x="600" y="500" width="230" height="60" rx="8"/><text class="tt" x="715" y="525" text-anchor="middle">3D Slicer + MONAILabel</text><text class="ts" x="715" y="545" text-anchor="middle">annotator: open case, fix draft</text>
-<path class="lr" d="M650 448 L650 496" marker-start="url(#ah2)" marker-end="url(#ah2)"/><text class="tsr" x="642" y="488" text-anchor="end">next case, save label</text>
-
-<text class="ts" x="450" y="612" text-anchor="middle">Violet: automatic for every study (1–3). Pink: research work, labelling, review, training (4, 6). Dashed red: only when a radiologist fixes a mask (5).</text>
-<text class="ts" x="450" y="630" text-anchor="middle">Research runs at the HCMUT lab on de-identified data only; the hospital opens every connection to the lab (D12).</text>
-</svg></div>
-<p class="figcap">Keycloak, HIS/RIS, SeaweedFS, PostgreSQL and backup are unchanged and not drawn. The label store and the model registry are at the HCMUT lab, run by the AI team.</p>
+<div class="figure adg">
+  <div class="figscroll"><img class="lt" src="assets/diagrams/slicer-monai-light.svg" width="1070" height="720" alt="3D Slicer and MONAI in the ICH architecture"><img class="dk" src="assets/diagrams/slicer-monai-dark.svg" width="1070" height="720" alt="3D Slicer and MONAI in the ICH architecture"></div>
+  <p class="figcap">Numbers match the steps below. Keycloak, HIS/RIS, SeaweedFS, PostgreSQL and backup are unchanged and not drawn. The label store and the model registry are at the HCMUT lab, run by the AI team. <a href="assets/diagrams/slicer-monai.html">Open the interactive version</a> (hover a node, follow a link, switch theme, export). Drawn with Archify from <code>assets/diagrams/slicer-monai.architecture.json</code>.</p>
 </div>
 <ol class="flow">
 <li class="f-dec"><b class="t">1 · The CT reaches the gateway</b>The scanner sends the study to the PACS, which pushes the CT series once to Orthanc.</li>

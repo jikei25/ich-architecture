@@ -167,146 +167,10 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <main>
 
 <h2 class="sec" id="diagram"><span class="n">1</span>Architecture diagram</h2>
-<p>Layers run top to bottom, from the clinical systems down to the data stores. Use the buttons, or click any arrow label, to highlight one flow at a time.</p>
-<div class="figure">
-  <div class="focusbar" role="group" aria-label="Highlight a flow">
-    <span>Highlight:</span>
-    <button type="button" data-f="" aria-pressed="true">All flows</button>
-    <button type="button" data-f="clinical" data-sec="flow-clinical" data-desc="Red: the scanner sends straight to the PACS and the viewer reads while series arrive. This is the only path a doctor waits on." aria-pressed="false">1 · Clinical path</button>
-    <button type="button" data-f="triage" data-sec="flow-triage" data-desc="Violet: the PACS pushes selected series once to the Orthanc gateway. The AI worker inside Orthanc sends a NIfTI volume to MONAI Label and turns the mask into SEG + SR, which return to the PACS through the gateway. Best-effort, never on the critical path." aria-pressed="false">2 · AI triage</button>
-  </div>
-  <p class="focuscap" aria-live="polite"></p>
-  <div class="figscroll"><svg id="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 740" role="img" aria-labelledby="ttl dsc">
-<title id="ttl">ICH AI system architecture, Scenario 1 simplified</title>
-<desc id="dsc">Swimlane architecture with clinical, AI inference and data lanes. CT sends studies directly to the dcm4chee PACS, which stores image files in SeaweedFS and its index in PostgreSQL; the viewer reads from the PACS while series are still arriving. The PACS pushes selected series once to an Orthanc gateway. The AI worker runs inside Orthanc as a plugin, sends a NIfTI volume to the hemorrhage_approved model on a MONAI Label server and turns the returned mask into SEG and SR, which return through the gateway to the PACS.</desc>
-<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1.5 1L8.5 5L1.5 9" fill="none" stroke="context-stroke" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
-<rect class="bg" x="0" y="0" width="1300" height="740"/>
-<text class="h1" x="20" y="34">Intracerebral hemorrhage AI system · Scenario 1, simplified</text>
-<text class="h2" x="20" y="58">Clinical path and AI triage only · research, identity, HIS/RIS, backup and cloud are shown in the full scenario 1</text>
-
-<rect class="lane f-blue" x="20" y="80" width="1260" height="170"/>
-<rect class="lh h-blue" x="20" y="80" width="150" height="170"/>
-<text class="lt t-blue" x="34" y="155" dominant-baseline="central">Clinical</text>
-<text class="ls t-blue" x="34" y="175" dominant-baseline="central">VLAN 10–20</text>
-<rect class="lane f-violet" x="20" y="250" width="1260" height="170"/>
-<rect class="lh h-violet" x="20" y="250" width="150" height="170"/>
-<text class="lt t-violet" x="34" y="325" dominant-baseline="central">AI inference</text>
-<text class="ls t-violet" x="34" y="345" dominant-baseline="central">VLAN 30</text>
-<rect class="lane f-emerald" x="20" y="420" width="1260" height="170"/>
-<rect class="lh h-emerald" x="20" y="420" width="150" height="170"/>
-<text class="lt t-emerald" x="34" y="495" dominant-baseline="central">Data</text>
-<text class="ls t-emerald" x="34" y="515" dominant-baseline="central">VLAN 50</text>
-<rect class="frame" x="20" y="80" width="1260" height="510" rx="0"/>
-
-<!-- clinical lane -->
-<g><rect class="bx s-blue" x="230" y="133" width="150" height="64" rx="12"/>
-<text class="bt" x="305" y="156" text-anchor="middle" dominant-baseline="central">CT</text>
-<text class="bs" x="305" y="176" text-anchor="middle" dominant-baseline="central">scanner</text></g>
-<g><rect class="bx s-blue" x="520" y="133" width="150" height="64" rx="12"/>
-<text class="bt" x="595" y="156" text-anchor="middle" dominant-baseline="central">PACS · dcm4chee</text>
-<text class="bs" x="595" y="176" text-anchor="middle" dominant-baseline="central">archive + DICOMweb</text></g>
-<g><rect class="bx s-blue" x="1000" y="133" width="150" height="64" rx="12"/>
-<text class="bt" x="1075" y="156" text-anchor="middle" dominant-baseline="central">3D Slicer</text>
-<text class="bs" x="1075" y="176" text-anchor="middle" dominant-baseline="central">reads + confirms</text></g>
-
-<!-- AI inference lane: the AI worker runs inside Orthanc -->
-<g><rect class="bx s-violet" x="480" y="290" width="320" height="96" rx="14"/>
-<text class="bt" x="550" y="322" text-anchor="middle" dominant-baseline="central">Gateway · Orthanc</text>
-<text class="bs" x="550" y="342" text-anchor="middle" dominant-baseline="central">receives exports</text>
-<text class="bs" x="550" y="358" text-anchor="middle" dominant-baseline="central">files + index below</text></g>
-<g><rect class="bx s-violet af-violet" x="630" y="302" width="160" height="74" rx="10"/>
-<text class="bt" x="710" y="320" text-anchor="middle" dominant-baseline="central">AI worker · plugin</text>
-<text class="bs" x="710" y="340" text-anchor="middle" dominant-baseline="central">series → NIfTI</text>
-<text class="bs" x="710" y="356" text-anchor="middle" dominant-baseline="central">mask → SEG + SR</text></g>
-<g><rect class="abs s-violet af-violet" x="920" y="290" width="320" height="96" rx="14"/>
-<rect class="tagbg h-violet" x="1090" y="281" width="140" height="18" rx="9"/>
-<text class="tagt t-violet" x="1160" y="290" text-anchor="middle" dominant-baseline="central">PROPOSED · MONAI</text>
-<text class="bt" x="936" y="312" dominant-baseline="central">MONAI Label server · GPU</text>
-<rect class="bx s-violet" x="934" y="328" width="292" height="36" rx="8"/>
-<text class="bt" x="946" y="346" dominant-baseline="central">hemorrhage_approved</text>
-<text class="bs" x="1214" y="346" text-anchor="end" dominant-baseline="central">every study, frozen</text></g>
-
-<!-- data lane -->
-<g><path class="cy s-emerald" d="M520 455 L520 525 A75 10 0 0 0 670 525 L670 455 A75 10 0 0 1 520 455 Z"/>
-<ellipse class="cyt s-emerald" cx="595" cy="455" rx="75" ry="10"/>
-<text class="bt" x="595" y="486" text-anchor="middle" dominant-baseline="central">SeaweedFS</text>
-<text class="bs" x="595" y="506" text-anchor="middle" dominant-baseline="central">image files (S3)</text></g>
-<g><path class="cy s-emerald" d="M800 455 L800 525 A75 10 0 0 0 950 525 L950 455 A75 10 0 0 1 800 455 Z"/>
-<ellipse class="cyt s-emerald" cx="875" cy="455" rx="75" ry="10"/>
-<text class="bt" x="875" y="486" text-anchor="middle" dominant-baseline="central">PostgreSQL</text>
-<text class="bs" x="875" y="506" text-anchor="middle" dominant-baseline="central">PACS + gateway index</text></g>
-
-<!-- flow 1: clinical -->
-<path class="a crit" data-g="clinical" d="M380 165 L516 165" marker-end="url(#ar)"/>
-<path class="a crit" data-g="clinical" d="M670 165 L996 165" marker-end="url(#ar)"/>
-<path class="a flow" data-g="clinical" d="M535 197 L535 214 L440 214 L440 490 L516 490" marker-end="url(#ar)"/>
-<path class="a flow" data-g="clinical" d="M440 490 L440 565 L875 565 L875 539" marker-end="url(#ar)"/>
-<!-- flow 2: AI triage -->
-<path class="a ai" data-g="triage" d="M560 197 L560 286" marker-end="url(#ar)"/>
-<path class="a ai" data-g="triage" d="M792 336 L930 336" marker-end="url(#ar)"/>
-<path class="a ai" data-g="triage" d="M932 354 L794 354" marker-end="url(#ar)"/>
-<path class="a ai" data-g="triage" d="M610 290 L610 201" marker-end="url(#ar)"/>
-<path class="a flow" data-g="triage" d="M595 386 L595 441" marker-end="url(#ar)"/>
-<path class="a flow" data-g="triage" d="M700 386 L700 410 L875 410 L875 441" marker-end="url(#ar)"/>
-
-<!-- labels -->
-<g data-g="clinical"><rect class="pill" x="388" y="172" width="120" height="34" rx="7"/>
-<text class="lb" x="448" y="182" text-anchor="middle" dominant-baseline="central">C-STORE</text>
-<text class="lb" x="448" y="196" text-anchor="middle" dominant-baseline="central">:11112 direct</text></g>
-<g data-g="clinical"><rect class="pill" x="713" y="155" width="240" height="20" rx="7"/>
-<text class="lb" x="833" y="165" text-anchor="middle" dominant-baseline="central">QIDO / WADO-RS · while series arrive</text></g>
-<g data-g="clinical"><rect class="pill" x="448" y="466" width="66" height="20" rx="7"/>
-<text class="lb" x="481" y="476" text-anchor="middle" dominant-baseline="central">files · S3</text></g>
-<g data-g="clinical"><rect class="pill" x="690" y="555" width="80" height="20" rx="7"/>
-<text class="lb" x="730" y="565" text-anchor="middle" dominant-baseline="central">index · SQL</text></g>
-<g data-g="triage"><rect class="pill" x="446" y="228" width="108" height="34" rx="7"/>
-<text class="lb" x="500" y="238" text-anchor="middle" dominant-baseline="central">export (push)</text>
-<text class="lb" x="500" y="252" text-anchor="middle" dominant-baseline="central">C-STORE · retried</text></g>
-<g data-g="triage"><rect class="pill" x="620" y="228" width="128" height="34" rx="7"/>
-<text class="lb" x="684" y="238" text-anchor="middle" dominant-baseline="central">results: SEG + SR</text>
-<text class="lb" x="684" y="252" text-anchor="middle" dominant-baseline="central">C-STORE to PACS</text></g>
-<g data-g="triage"><rect class="pill" x="815" y="308" width="92" height="20" rx="7"/>
-<text class="lb" x="861" y="318" text-anchor="middle" dominant-baseline="central">NIfTI volume</text></g>
-<g data-g="triage"><rect class="pill" x="815" y="362" width="92" height="20" rx="7"/>
-<text class="lb" x="861" y="372" text-anchor="middle" dominant-baseline="central">mask (NIfTI)</text></g>
-<g data-g="triage"><rect class="pill" x="548" y="398" width="94" height="20" rx="7"/>
-<text class="lb" x="595" y="408" text-anchor="middle" dominant-baseline="central">Orthanc files</text></g>
-<g data-g="triage"><rect class="pill" x="738" y="400" width="100" height="20" rx="7"/>
-<text class="lb" x="788" y="410" text-anchor="middle" dominant-baseline="central">Orthanc index</text></g>
-
-<!-- step numbers: flow.step, matching the numbered lists below -->
-<g class="stepb sb-clin" data-g="clinical"><circle cx="448" cy="148" r="11"/><text x="448" y="148" text-anchor="middle" dominant-baseline="central">1.1</text></g>
-<g class="stepb sb-clin" data-g="clinical"><circle cx="440" cy="350" r="11"/><text x="440" y="350" text-anchor="middle" dominant-baseline="central">1.2</text></g>
-<g class="stepb sb-clin" data-g="clinical"><circle cx="975" cy="148" r="11"/><text x="975" y="148" text-anchor="middle" dominant-baseline="central">1.3</text></g>
-<g class="stepb sb-clin" data-g="clinical"><circle cx="1075" cy="214" r="11"/><text x="1075" y="214" text-anchor="middle" dominant-baseline="central">1.4</text></g>
-<g class="stepb sb-tri" data-g="triage"><circle cx="560" cy="275" r="11"/><text x="560" y="275" text-anchor="middle" dominant-baseline="central">2.1</text></g>
-<g class="stepb sb-tri" data-g="triage"><circle cx="595" cy="432" r="11"/><text x="595" y="432" text-anchor="middle" dominant-baseline="central">2.2</text></g>
-<g class="stepb sb-tri" data-g="triage"><circle cx="861" cy="345" r="11"/><text x="861" y="345"text-anchor="middle" dominant-baseline="central">2.3</text></g>
-<g class="stepb sb-tri" data-g="triage"><circle cx="610" cy="275" r="11"/><text x="610" y="275" text-anchor="middle" dominant-baseline="central">2.4</text></g>
-
-<!-- legend -->
-<rect class="legend" x="20" y="610" width="1260" height="110" rx="14"/>
-<text class="lgh" x="40" y="638">Legend</text>
-<path class="a crit" d="M40 668 L84 668" marker-end="url(#ar)"/>
-<text class="lgt" x="96" y="668" dominant-baseline="central">Clinical critical path</text>
-<path class="a ai" d="M300 668 L344 668" marker-end="url(#ar)"/>
-<text class="lgt" x="356" y="668" dominant-baseline="central">AI triage, best-effort</text>
-<path class="a flow" d="M560 668 L604 668" marker-end="url(#ar)"/>
-<text class="lgt" x="616" y="668" dominant-baseline="central">Internal data flow</text>
-<g class="stepb sb-tri"><circle cx="832" cy="668" r="11"/><text x="832" y="668" text-anchor="middle" dominant-baseline="central">2.3</text></g>
-<text class="lgt" x="850" y="668" dominant-baseline="central">Flow 2, step 3</text>
-<rect class="bx s-slate" x="40" y="684" width="54" height="28" rx="9"/><text class="lgt" x="106" y="698" dominant-baseline="central">Component</text>
-<rect class="abs s-violet af-violet" x="300" y="684" width="54" height="28" rx="9"/><text class="lgt" x="366" y="698" dominant-baseline="central">Proposed block (PoC pending)</text>
-<path class="cy s-slate" d="M560 690 L560 708 A27 5 0 0 0 614 708 L614 690 A27 5 0 0 1 560 690 Z"/><ellipse class="cyt s-slate" cx="587" cy="690" rx="27" ry="5"/>
-<text class="lgt" x="626" y="698" dominant-baseline="central">Data store</text>
-<rect class="lh h-blue" x="822" y="688" width="20" height="20" rx="5"/>
-<text class="lgt" x="850" y="698" dominant-baseline="central">Clinical</text>
-<rect class="lh h-violet" x="942" y="688" width="20" height="20" rx="5"/>
-<text class="lgt" x="970" y="698" dominant-baseline="central">AI inference</text>
-<rect class="lh h-emerald" x="1092" y="688" width="20" height="20" rx="5"/>
-<text class="lgt" x="1120" y="698" dominant-baseline="central">Data</text>
-</svg></div>
-  <p class="figcap">Numbered circles mark the steps described below: <b>2.3</b> is step 3 of Flow 2, and its colour matches the flow. Every component is drawn as a single box; the high-availability model of each one is described in the <a href="index.html#ha">full scenario 1</a>.</p>
+<p>Layers run top to bottom, from the clinical systems down to the data stores.</p>
+<div class="figure adg">
+  <div class="figscroll"><img class="lt" src="assets/diagrams/simplified-light.svg" width="1310" height="536" alt="ICH AI system, scenario 1 simplified"><img class="dk" src="assets/diagrams/simplified-dark.svg" width="1310" height="536" alt="ICH AI system, scenario 1 simplified"></div>
+  <p class="figcap">Every component is drawn as a single box; the high-availability model of each one is described in the <a href="index.html#ha">full scenario 1</a>. <a href="assets/diagrams/simplified.html">Open the interactive version</a> (hover a node, follow a link, switch theme, export). Drawn with Archify from <code>assets/diagrams/simplified.architecture.json</code>.</p>
 </div>
 
 <h2 class="sec" id="layers"><span class="n">2</span>The three layers</h2>
@@ -332,7 +196,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 </tbody></table></div>
 
 <h2 class="sec" id="flow-clinical" data-flow="clinical"><span class="n">4</span>Flow 1 · CT to diagnosis</h2>
-<p>The red path is the time a doctor actually waits, from the end of the scan to the first image on screen.</p>
+<p>This path is the time a doctor actually waits, from the end of the scan to the first image on screen.</p>
 <ol class="flow f-clin">
 <li><b class="t">The scanner sends directly to the PACS</b>The CT scanner sends the head scan to dcm4chee without any intermediate router, so no extra component can delay or block it.<br><span class="pr">DICOM C-STORE :11112</span></li>
 <li><b class="t">The PACS stores the study</b>Image files go to SeaweedFS and the study index to PostgreSQL. The study becomes queryable as soon as its first instances are stored.<br><span class="pr">S3 · PostgreSQL :5432</span></li>
@@ -342,7 +206,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <div class="callout"><b>The AI is not on this path.</b> If the gateway or the AI service stops, scanning, reading and diagnosis continue normally; only the AI result is delayed.</div>
 
 <h2 class="sec" id="flow-triage" data-flow="triage"><span class="n">5</span>Flow 2 · AI triage (push model)</h2>
-<p>This is the path shown in violet. The PACS decides what the AI receives and pushes it; the AI never reaches into the PACS.</p>
+<p>The PACS decides what the AI receives and pushes it; the AI never reaches into the PACS.</p>
 <ol class="flow f-tri">
 <li><b class="t">The PACS pushes the relevant series</b>An export rule in dcm4chee selects the CT series the AI needs and sends them to the gateway. If the gateway is down, dcm4chee queues the export and retries it.<br><span class="pr">DICOM C-STORE export</span></li>
 <li><b class="t">The gateway keeps a working copy</b>Orthanc stores the series (files in SeaweedFS, index in PostgreSQL) and waits until the series is stable, that is, until no new instance has arrived for a set time.<br><span class="pr">stable-series event</span></li>

@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "ICH physical layout · Scenario 1",
+    "output": "physical-layout.html",
+    "quality_profile": "showcase"
+  },
+  "layout": { "mode": "grid", "cols": 6, "cellW": 170, "cellH": 64, "gapX": 90, "gapY": 80 },
+  "components": [
+    { "id": "ct", "type": "frontend", "label": "CT / MRI scanner", "sublabel": "CT room · VLAN 10", "row": 0, "col": 0 },
+    { "id": "readws", "type": "frontend", "label": "Radiologist PCs", "sublabel": "3D Slicer · no GPU", "row": 0, "col": 1 },
+    { "id": "his", "type": "external", "label": "HIS / RIS", "sublabel": "existing hospital IT", "row": 0, "col": 2 },
+    { "id": "annws", "type": "frontend", "label": "Annotator PCs", "sublabel": "optional · Slicer", "row": 0, "col": 3 },
+    { "id": "lab", "type": "backend", "label": "HCMUT lab GPU", "sublabel": "dev model, labels, registry", "tag": "AI team", "row": 0, "col": 5 },
+
+    { "id": "lb", "type": "security", "label": "Load balancer pair", "sublabel": "VIPs: PACS, Orthanc, PG", "row": 1, "col": 1 },
+    { "id": "core", "type": "security", "label": "Core switch pair", "sublabel": "VLAN 10-80, deny default", "row": 1, "col": 2 },
+    { "id": "witness", "type": "database", "label": "Witness host", "sublabel": "etcd 3, SeaweedFS master", "row": 1, "col": 3 },
+    { "id": "egress", "type": "security", "label": "Egress firewall", "sublabel": "pair · 443 out only", "row": 1, "col": 4 },
+    { "id": "isp", "type": "external", "label": "ISP 1 + ISP 2", "sublabel": "two internet links", "row": 1, "col": 5 },
+
+    { "id": "gpu", "type": "backend", "label": "GPU server", "sublabel": "hemorrhage_approved", "tag": "inference", "row": 2, "col": 0 },
+    { "id": "appa", "type": "backend", "label": "App host A (VMs)", "sublabel": "dcm4chee + Orthanc/worker", "row": 2, "col": 1 },
+    { "id": "appb", "type": "backend", "label": "App host B (VMs)", "sublabel": "dcm4chee + Orthanc/worker", "row": 2, "col": 2 },
+    { "id": "bkp", "type": "backend", "label": "Backup gateway", "sublabel": "pgBackRest, rclone", "row": 2, "col": 3 },
+    { "id": "dicom", "type": "cloud", "label": "DICOM tiers", "sublabel": "Standard, IA, Archive: 10 y", "row": 2, "col": 5 },
+
+    { "id": "dba", "type": "database", "label": "PostgreSQL primary", "sublabel": "DB server A, Patroni", "row": 3, "col": 1 },
+    { "id": "dbb", "type": "database", "label": "PostgreSQL standby", "sublabel": "DB server B", "row": 3, "col": 2 },
+    { "id": "pgbk", "type": "cloud", "label": "PG backups", "sublabel": "WAL + base, 35 days", "row": 3, "col": 5 },
+
+    { "id": "s12", "type": "database", "label": "Storage nodes 1-2", "sublabel": "SeaweedFS, last 90 days", "row": 4, "col": 1 },
+    { "id": "s34", "type": "database", "label": "Storage nodes 3-4", "sublabel": "SeaweedFS, last 90 days", "row": 4, "col": 2 },
+    { "id": "kms", "type": "security", "label": "KMS + Object Lock", "sublabel": "hospital keys, WORM", "row": 4, "col": 5 }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Hospital main site", "wraps": ["ct", "readws", "his", "annws", "lb", "core", "witness", "egress", "gpu", "appa", "appb", "bkp", "dba", "dbb", "s12", "s34"] },
+    { "kind": "security-group", "label": "Network rack", "wraps": ["lb", "core", "witness", "egress"] },
+    { "kind": "security-group", "label": "Rack A · UPS feed A", "wraps": ["gpu", "appa", "dba", "s12"] },
+    { "kind": "security-group", "label": "Rack B · UPS feed B", "wraps": ["appb", "bkp", "dbb", "s34"] },
+    { "kind": "region", "label": "HCMUT lab", "wraps": ["lab"] },
+    { "kind": "region", "label": "Cloud · storage only", "wraps": ["dicom", "pgbk", "kms"] }
+  ],
+  "connections": [
+    { "id": "ct-lb", "from": "ct", "to": "lb", "label": "DICOM", "variant": "emphasis" },
+    { "id": "read-lb", "from": "readws", "to": "lb", "label": "DICOMweb" },
+    { "id": "his-lb", "from": "his", "to": "lb", "label": "HL7" },
+    { "id": "lb-appa", "from": "lb", "to": "appa", "label": "VIP" },
+    { "id": "lb-appb", "from": "lb", "to": "appb", "label": "VIP" },
+    { "id": "appa-gpu", "from": "appa", "to": "gpu", "label": "NIfTI" },
+    { "id": "appa-dba", "from": "appa", "to": "dba", "label": "SQL" },
+    { "id": "dba-dbb", "from": "dba", "to": "dbb", "label": "replica", "variant": "dashed" },
+    { "id": "s12-s34", "from": "s12", "to": "s34", "label": "copy", "variant": "dashed" },
+    { "id": "dba-bkp", "from": "dba", "to": "bkp", "label": "WAL" },
+    { "id": "bkp-egress", "from": "bkp", "to": "egress", "label": "HTTPS" },
+    { "id": "egress-isp", "from": "egress", "to": "isp", "label": "IPsec", "variant": "security" },
+    { "id": "isp-dicom", "from": "isp", "to": "dicom", "label": "S3 PUT" },
+    { "id": "isp-lab", "from": "isp", "to": "lab", "label": "de-identified", "variant": "security" },
+    { "id": "annws-lab", "from": "annws", "to": "lab", "label": "VPN", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "HA pairs split across racks", "items": ["dcm4chee, Orthanc, OpenLDAP and PostgreSQL run one node in rack A and one in rack B", "SeaweedFS keeps a copy of every volume in the other rack", "The witness host gives etcd and the SeaweedFS masters a majority after a rack loss"] },
+    { "dot": "cyan", "title": "AI and long-term storage", "items": ["One inference GPU in the hospital, no twin: the AI is best-effort", "Annotation and training at the HCMUT lab (D12), on de-identified data only", "SeaweedFS keeps 90 days; after that the cloud DICOM tiers hold the only copy"] }
+  ]
+}
