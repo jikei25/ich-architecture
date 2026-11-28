@@ -30,7 +30,7 @@ Tài liệu hiện đã dài và có giọng "AI viết". Vì vậy cứ thêm n
 | `slicer.html` | "Slicer + MONAI": phần A trình xem (D10), phần B khối AI (D11) | English |
 | `dcm4chee.html` | Tìm hiểu sâu dcm4chee. Ghi lại thứ đã làm, không phải kiến trúc hiện tại | English |
 | `assets/site.css`, `site.js` | CSS và JS dùng chung (thanh trên, mục lục, zoom sơ đồ, theme) | |
-| `assets/diagrams/` | Sơ đồ Archify: `<tên>.architecture.json` (nguồn), `<tên>.html` (bản tương tác), `<tên>-light.svg`, `<tên>-dark.svg` (ảnh nhúng trong trang). Hiện có `simplified` và `slicer-monai` | English |
+| `assets/diagrams/` | Sơ đồ Archify: `<tên>.architecture.json` (nguồn), `<tên>.html` (bản tương tác), `<tên>-light.svg`, `<tên>-dark.svg` (ảnh nhúng trong trang). Hiện có `simplified` | English |
 | `assets/sequence.js` | Bộ vẽ sơ đồ tuần tự (tab, giai đoạn theo `sep`, đi từng bước) | |
 | `assets/sequences-s1.js`, `-s2.js` | Dữ liệu sơ đồ tuần tự của từng kịch bản | English |
 | `tex/` | Báo cáo: `main.tex`, `contents/*.tex`, hình `figures/arch/*.tex` (TikZ), `refs.bib`, `changelog.txt` | Tiếng Việt |
@@ -38,10 +38,10 @@ Tài liệu hiện đã dài và có giọng "AI viết". Vì vậy cứ thêm n
 
 Kiến trúc hiện tại, để mọi chỗ mô tả giống nhau:
 - **Lâm sàng:** máy CT → PACS dcm4chee → 3D Slicer + module ICH Triage (D10, đề xuất).
-- **Suy luận AI (ở bệnh viện):** PACS đẩy series một lần sang cổng Orthanc. **AI worker** (code của đề tài: job, chuyển NIfTI, dựng SEG/SR, cờ ưu tiên) chạy bên trong mỗi node Orthanc dưới dạng plugin (`ai_bridge.py` trong staging). Worker gửi NIfTI tới `hemorrhage_approved` trên GPU của bệnh viện (MONAI Label, D11) và nhận mask về; model này không bao giờ được huấn luyện lại tại chỗ.
-- **Nghiên cứu (ở lab Bách khoa, team AI vận hành, D12):** Orthanc khử định danh CT, AI SEG và bản sửa của bác sĩ (bản sửa ở trạng thái chưa duyệt) bằng một quy tắc băm UID có khoá. Khoá giữ ở bệnh viện. Orthanc đẩy các bản đó sang label store ở lab qua VPN do bệnh viện mở; lab không kết nối ngược vào được. 3D Slicer (extension MONAILabel) dùng `hemorrhage_dev` ở lab; kết quả AI làm bản nháp (chỉ cho ca huấn luyện). Mỗi lần lưu là một phiên bản nhãn mới, ghi ai sửa và khi nào; người duyệt chọn một phiên bản. Registry ở lab lưu MONAI bundle; bệnh viện chỉ kéo về bundle đã duyệt để làm `hemorrhage_approved`.
+- **Suy luận AI:** PACS đẩy series một lần sang cổng Orthanc. **AI worker** (code của đề tài: job, chuyển NIfTI, dựng SEG/SR, cờ ưu tiên) chạy trong mỗi node Orthanc dưới dạng plugin (`ai_bridge.py`). Một app MONAI Label chạy thành **hai server** (D11): server suy luận giữ `hemorrhage_approved` trên GPU suy luận ở VLAN 30, không bao giờ huấn luyện lại tại chỗ.
+- **Nghiên cứu (ở bệnh viện, VLAN 40):** gateway lưu bản khử định danh của CT và AI SEG (bản nháp) lên **research Orthanc**, tức label store. Gateway đổi UID bằng một quy tắc băm có khoá, khoá giữ ở VLAN 30. Server nghiên cứu (`hemorrhage_dev`, GPU huấn luyện riêng) đọc research Orthanc, phục vụ 3D Slicer (extension MONAILabel) và huấn luyện. Annotation không bao giờ đọc gateway. Mỗi lần lưu là một phiên bản nhãn mới; bản sửa của bác sĩ đi PACS → gateway → research Orthanc, ở trạng thái chưa duyệt. Registry lưu MONAI bundle; chỉ bundle đã duyệt mới thành `hemorrhage_approved`. Kịch bản 1 giả định bệnh viện có đủ GPU, nên huấn luyện trên dữ liệu thật diễn ra trong bệnh viện.
 - **Dữ liệu:** SeaweedFS giữ 90 ngày, PostgreSQL, OpenLDAP. Sao lưu bằng pgBackRest/rclone lên cloud; sau 90 ngày, các tầng DICOM trên cloud là bản lưu trữ lâu dài duy nhất (10 năm).
-- **Nơi host:** triển khai thật ở bệnh viện; staging (4 server PACS, Gateway, Database, Storage) ở lab Bách khoa, cùng chỗ với máy AI của team AI.
+- **Nơi host:** kịch bản 1 triển khai thật ở bệnh viện. Staging và phát triển ở lab Bách khoa (D12), chỉ dùng dữ liệu thử. File request xin 4 server, còn `deploy/staging` hiện có 5 server (thêm Research). Team AI train thử trên dữ liệu công khai ở lab.
 
 ## Đưa ý tưởng hoặc thay đổi kiến trúc vào repo
 
@@ -72,7 +72,7 @@ Người đọc lướt để tìm một câu trả lời. Văn dài và rập k
 
 Một thành phần thường xuất hiện ở 6–8 chỗ. Khi đổi tên sản phẩm, luồng hay vai trò của một khối, kiểm tra lần lượt:
 
-1. SVG vẽ tay trong `index.html` (`#arch`, `#phys`) và `scenario2.html`: khối, nhãn mũi tên, `<desc>`, chú thích hình, `data-desc` của các nút highlight và vòng số bước. Sơ đồ Archify trong `assets/diagrams/` (simplified, Slicer + MONAI): sửa file `.architecture.json` rồi xuất lại, xem "Ghi chú kỹ thuật".
+1. SVG vẽ tay trong `index.html` (`#arch`, `#phys`) và `scenario2.html`: khối, nhãn mũi tên, `<desc>`, chú thích hình, `data-desc` của các nút highlight và vòng số bước. Sơ đồ Archify trong `assets/diagrams/` (simplified): sửa file `.architecture.json` rồi xuất lại, xem "Ghi chú kỹ thuật".
 2. Bảng thành phần (glossary), thẻ các tầng, các bước Flow, mục `#abstract` trong `index.html`.
 3. `decisions.html`: dòng trong bảng index và mục `#dN`.
 4. `assets/sequences-s*.js`: tên và `sub` của participant, các bước liên quan.
@@ -86,7 +86,7 @@ Dùng grep tìm tên cũ trên toàn repo trước khi báo xong. Ví dụ: `gre
 - **Trang mới:** chép phần `<head>` và thanh `nav.scen` từ một trang có sẵn, rồi thêm link trang mới vào `nav.scen` của **mọi** trang. Thanh trên phải nằm một hàng; kiểm tra ở độ rộng 1280, 900 và 375 px.
 - **Sơ đồ tuần tự:** chia giai đoạn bằng `{t: "sep"}` ở cấp ngoài cùng, không đặt bên trong `alt/par/loop`. Mỗi giai đoạn nên khoảng 15 bước trở xuống. Mọi `from/to` phải là id có trong `participants`; kiểm tra bằng `node --check` và mở trang xem.
 - **Sơ đồ kiến trúc chính và physical layout giữ bản SVG vẽ tay** trong `index.html`. Team đã thử vẽ bằng Archify nhưng quay lại: bản Archify làm mất nội dung (các tầng lưu trữ cloud, luồng restore, rclone, nút highlight và số bước khớp với Flow 1–5). Ngoài ra Archify vẽ luồng logic, không vẽ được kết nối vật lý (dây, switch, rack, UPS).
-- **Sơ đồ Archify** (skill `archify`, cài global) dùng cho simplified và Slicer + MONAI. Không sửa SVG xuất ra bằng tay; sửa file nguồn rồi chạy lại:
+- **Sơ đồ Archify** (skill `archify`, cài global) dùng cho simplified. Không sửa SVG xuất ra bằng tay; sửa file nguồn rồi chạy lại:
   ```
   node ~/.claude/skills/archify/bin/archify.mjs finalize architecture <tên>.architecture.json <tên>.html --quality showcase --json
   node ~/.claude/skills/archify/bin/export-svg.mjs <tên>.html <tên>-light.svg light
