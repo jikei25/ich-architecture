@@ -24,12 +24,13 @@ Tài liệu hiện đã dài và có giọng "AI viết". Vì vậy cứ thêm n
 
 | Phần | Nội dung | Ngôn ngữ |
 |---|---|---|
-| `index.html` | Kịch bản 1: sơ đồ kiến trúc SVG (`#arch`), sơ đồ tuần tự, các tầng, bảng thành phần, Flow 1–5, mục khối AI (`#abstract`), nguyên tắc | English |
+| `index.html` | Kịch bản 1: sơ đồ kiến trúc SVG vẽ tay (`#arch`), physical layout SVG vẽ tay (`#phys`), staging ở lab Bách khoa, sơ đồ tuần tự, các tầng, bảng thành phần, Flow 1–5, mục khối AI (`#abstract`), nguyên tắc | English |
 | `simplified.html`, `scenario2.html` | Kịch bản 1 rút gọn; kịch bản 2 (GPU ở cơ sở 2) | English |
 | `decisions.html` | Bảng quyết định D1–D11, mỗi quyết định một mục `#dN`, câu hỏi reviewer, follow-ups, nguồn | English |
 | `slicer.html` | "Slicer + MONAI": phần A trình xem (D10), phần B khối AI (D11) | English |
 | `dcm4chee.html` | Tìm hiểu sâu dcm4chee. Ghi lại thứ đã làm, không phải kiến trúc hiện tại | English |
 | `assets/site.css`, `site.js` | CSS và JS dùng chung (thanh trên, mục lục, zoom sơ đồ, theme) | |
+| `assets/diagrams/` | Sơ đồ Archify: `<tên>.architecture.json` (nguồn), `<tên>.html` (bản tương tác), `<tên>-light.svg`, `<tên>-dark.svg` (ảnh nhúng trong trang). Hiện có `simplified` | English |
 | `assets/sequence.js` | Bộ vẽ sơ đồ tuần tự (tab, giai đoạn theo `sep`, đi từng bước) | |
 | `assets/sequences-s1.js`, `-s2.js` | Dữ liệu sơ đồ tuần tự của từng kịch bản | English |
 | `tex/` | Báo cáo: `main.tex`, `contents/*.tex`, hình `figures/arch/*.tex` (TikZ), `refs.bib`, `changelog.txt` | Tiếng Việt |
@@ -37,9 +38,10 @@ Tài liệu hiện đã dài và có giọng "AI viết". Vì vậy cứ thêm n
 
 Kiến trúc hiện tại, để mọi chỗ mô tả giống nhau:
 - **Lâm sàng:** máy CT → PACS dcm4chee → 3D Slicer + module ICH Triage (D10, đề xuất).
-- **Suy luận AI:** PACS đẩy series một lần sang cổng Orthanc. Khối AI inference = **AI worker** (code của đề tài: job, chuyển NIfTI, dựng SEG/SR, cờ ưu tiên; trong staging chạy dưới dạng plugin `ai_bridge.py` trong Orthanc) + **một máy chủ MONAI Label giữ hai mô hình** (D11): `hemorrhage_approved` chạy cho mọi ca và không bao giờ huấn luyện lại tại chỗ; `hemorrhage_dev` phục vụ gán nhãn và huấn luyện. Máy chủ nằm ở VLAN 30, VLAN 40 chỉ tới được phần `hemorrhage_dev` qua proxy. Khi triển khai thật thì tách thành hai máy chủ.
-- **Nghiên cứu:** 3D Slicer (extension MONAILabel) gọi `hemorrhage_dev`, đọc CT và kết quả AI đã khử định danh qua DICOMweb của Orthanc. CT và mọi mask của nó được đổi UID theo cùng một quy tắc băm có khoá. Kết quả AI làm bản nháp (chỉ cho ca huấn luyện). Mỗi lần lưu là một phiên bản nhãn mới, ghi ai sửa và khi nào; người duyệt chọn một phiên bản. Bản sửa của bác sĩ đi PACS → Orthanc → kho nhãn, ở trạng thái chưa duyệt. Registry lưu MONAI bundle; chỉ bundle đã duyệt mới thành `hemorrhage_approved`.
-- **Dữ liệu:** SeaweedFS, PostgreSQL, OpenLDAP, sao lưu bằng pgBackRest/rclone lên cloud.
+- **Suy luận AI:** PACS đẩy series một lần sang cổng Orthanc. **AI worker** (code của đề tài: job, chuyển NIfTI, dựng SEG/SR, cờ ưu tiên) chạy trong mỗi node Orthanc dưới dạng plugin (`ai_bridge.py`). Một app MONAI Label chạy thành **hai server** (D11): server suy luận giữ `hemorrhage_approved` trên GPU suy luận ở VLAN 30, không bao giờ huấn luyện lại tại chỗ.
+- **Nghiên cứu:** gateway lưu bản khử định danh của CT và AI SEG (bản nháp) lên **research Orthanc** (label store, VLAN 40, ở bệnh viện), đổi UID bằng quy tắc băm có khoá (khoá ở VLAN 30). **Research server** (`hemorrhage_dev`: drafts, active learning, training) chạy trên **GPU của team AI ở lab Bách khoa** (D12), nối vào bệnh viện qua VPN site-to-site **chỉ mở VLAN 40** (research Orthanc và registry). Annotation không bao giờ đọc gateway. Mỗi lần lưu là một phiên bản nhãn mới; bản sửa của bác sĩ đi PACS → gateway → research Orthanc, ở trạng thái chưa duyệt. Registry và việc duyệt model ở bệnh viện; chỉ bundle đã duyệt mới thành `hemorrhage_approved`.
+- **Dữ liệu:** SeaweedFS giữ 90 ngày, PostgreSQL, OpenLDAP. Sao lưu bằng pgBackRest/rclone lên cloud; sau 90 ngày, các tầng DICOM trên cloud là bản lưu trữ lâu dài duy nhất (10 năm).
+- **Nơi host:** kịch bản 1 ở bệnh viện, trừ research server đặt trên GPU ở lab Bách khoa. Staging và phát triển cũng ở lab (D12), chỉ dùng dữ liệu thử. File request xin 4 server, còn `deploy/staging` hiện có 5 server (thêm Research).
 
 ## Đưa ý tưởng hoặc thay đổi kiến trúc vào repo
 
@@ -70,7 +72,7 @@ Người đọc lướt để tìm một câu trả lời. Văn dài và rập k
 
 Một thành phần thường xuất hiện ở 6–8 chỗ. Khi đổi tên sản phẩm, luồng hay vai trò của một khối, kiểm tra lần lượt:
 
-1. Chữ trong SVG của `index.html` và `simplified.html`, `scenario2.html`, gồm khối, nhãn mũi tên, `<desc>`, chú thích hình và `data-desc` của các nút highlight.
+1. SVG vẽ tay trong `index.html` (`#arch`, `#phys`) và `scenario2.html`: khối, nhãn mũi tên, `<desc>`, chú thích hình, `data-desc` của các nút highlight và vòng số bước. Sơ đồ Archify trong `assets/diagrams/` (simplified): sửa file `.architecture.json` rồi xuất lại, xem "Ghi chú kỹ thuật".
 2. Bảng thành phần (glossary), thẻ các tầng, các bước Flow, mục `#abstract` trong `index.html`.
 3. `decisions.html`: dòng trong bảng index và mục `#dN`.
 4. `assets/sequences-s*.js`: tên và `sub` của participant, các bước liên quan.
@@ -83,7 +85,16 @@ Dùng grep tìm tên cũ trên toàn repo trước khi báo xong. Ví dụ: `gre
 
 - **Trang mới:** chép phần `<head>` và thanh `nav.scen` từ một trang có sẵn, rồi thêm link trang mới vào `nav.scen` của **mọi** trang. Thanh trên phải nằm một hàng; kiểm tra ở độ rộng 1280, 900 và 375 px.
 - **Sơ đồ tuần tự:** chia giai đoạn bằng `{t: "sep"}` ở cấp ngoài cùng, không đặt bên trong `alt/par/loop`. Mỗi giai đoạn nên khoảng 15 bước trở xuống. Mọi `from/to` phải là id có trong `participants`; kiểm tra bằng `node --check` và mở trang xem.
-- **Chữ trong SVG:** sau khi đổi chữ, mở trang và kiểm tra chữ không tràn khối và không đè nhau (dùng `getBBox()` trong trình duyệt).
+- **Physical layout** (`#phys` trong `index.html`) là hình isometric (máy chủ, rack, laptop, cloud) sinh từ `assets/diagrams/physical_layout.py`: sửa phần scene trong script rồi chạy `python assets/diagrams/physical_layout.py index.html slicer.html` (sơ đồ có ở cả hai trang); CSS của hình (`ISO_CSS`) nhúng ngay trong SVG để không bị cache của `site.css` làm mất màu. Không sửa tay SVG đó.
+- **Sơ đồ kiến trúc chính giữ bản SVG vẽ tay** trong `index.html`. Team đã thử vẽ bằng Archify nhưng quay lại: bản Archify làm mất nội dung (các tầng lưu trữ cloud, luồng restore, rclone, nút highlight và số bước khớp với Flow 1–5). Ngoài ra Archify vẽ luồng logic, không vẽ được kết nối vật lý (dây, switch, rack, UPS).
+- **Sơ đồ Archify** (skill `archify`, cài global) dùng cho simplified. Không sửa SVG xuất ra bằng tay; sửa file nguồn rồi chạy lại:
+  ```
+  node ~/.claude/skills/archify/bin/archify.mjs finalize architecture <tên>.architecture.json <tên>.html --quality showcase --json
+  node ~/.claude/skills/archify/bin/export-svg.mjs <tên>.html <tên>-light.svg light
+  node ~/.claude/skills/archify/bin/export-svg.mjs <tên>.html <tên>-dark.svg dark
+  ```
+  Chạy trong một thư mục nháp rồi chép bốn file vào `assets/diagrams/`. Đừng chép các file phụ của finalize (`*.finalize*.json`, `*.delivery*.json`, `*.browser-check.json`). Finalize và export đều không ghi đè: xoá kết quả cũ trước khi chạy lại. Khung chỉ có hai loại, `region` (site) và `security-group` (vùng mạng, rack). Dùng `layout.mode: "grid"` với `row`/`col` và giữ canvas rộng tối đa khoảng 1550px. Sửa hết lỗi mà finalize báo trước khi dùng ảnh. Trang nhúng ảnh qua `<div class="figure adg">` (CSS trong `site.css` đổi ảnh sáng/tối theo theme).
+- **Chữ trong SVG vẽ tay** (`index.html`, `scenario2.html`, sơ đồ tuần tự): sau khi đổi chữ, mở trang và kiểm tra chữ không tràn khối và không đè nhau (dùng `getBBox()` trong trình duyệt).
 - **Xem thử:** `python -m http.server 8765` ở thư mục gốc, rồi mở `http://127.0.0.1:8765/`. Trình duyệt hay giữ bản cũ của `assets/*.js|css`; tải lại có bỏ cache.
 - **LaTeX:** sửa file `.tex` bằng script Python đặt trong file (viết bằng công cụ Write), không viết inline trong lệnh shell. Lệnh shell có thể nuốt `\\`, làm hỏng `\textbf`, `\\` cuối dòng bảng hay xuống dòng trong node TikZ. Sau khi sửa, kiểm tra số `{` và `}` cân bằng và các dòng bảng kết thúc bằng `\\`. MiKTeX trên máy dev hiện lỗi font `vntex` ngay cả với `main`; nếu không build được thì nói rõ, đừng báo là đã build.
 - **Xuống dòng:** repo lưu LF, working copy có thể là CRLF (`core.autocrlf`). Khi sửa bằng script, đọc và ghi với `newline=""` và giữ đúng kiểu xuống dòng của file.

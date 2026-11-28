@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "ICH AI system · Scenario 1, simplified",
+    "output": "simplified.html",
+    "quality_profile": "showcase"
+  },
+  "layout": { "mode": "grid", "cols": 5, "cellW": 170, "cellH": 64, "gapX": 100, "gapY": 90 },
+  "components": [
+    { "id": "ct", "type": "frontend", "label": "CT scanner", "sublabel": "modality", "row": 0, "col": 0 },
+    { "id": "pacs", "type": "backend", "label": "PACS · dcm4chee", "sublabel": "archive + DICOMweb", "row": 0, "col": 1, "emphasis": true },
+    { "id": "viewer", "type": "frontend", "label": "3D Slicer", "sublabel": "reads + confirms", "row": 0, "col": 3 },
+    { "id": "orthanc", "type": "backend", "label": "Orthanc gateway", "sublabel": "receives exports", "row": 1, "col": 2 },
+    { "id": "worker", "type": "backend", "label": "AI worker", "sublabel": "Orthanc plugin", "row": 1, "col": 3 },
+    { "id": "monai", "type": "backend", "label": "MONAI Label · GPU", "sublabel": "hemorrhage_approved", "tag": "proposed", "row": 1, "col": 4 },
+    { "id": "s3", "type": "database", "label": "SeaweedFS", "sublabel": "image files (S3)", "row": 2, "col": 1 },
+    { "id": "pg", "type": "database", "label": "PostgreSQL", "sublabel": "PACS + gateway index", "row": 2, "col": 2 }
+  ],
+  "boundaries": [
+    { "kind": "security-group", "label": "Clinical · VLAN 10-20", "wraps": ["ct", "pacs", "viewer"] },
+    { "kind": "security-group", "label": "AI inference · VLAN 30", "wraps": ["orthanc", "worker", "monai"] },
+    { "kind": "security-group", "label": "each Orthanc node", "wraps": ["orthanc", "worker"], "pad": 10 },
+    { "kind": "security-group", "label": "Data · VLAN 50", "wraps": ["s3", "pg"] }
+  ],
+  "connections": [
+    { "id": "c-ct-pacs", "from": "ct", "to": "pacs", "label": "C-STORE", "variant": "emphasis" },
+    { "id": "c-pacs-viewer", "from": "pacs", "to": "viewer", "label": "QIDO / WADO-RS", "variant": "emphasis" },
+    { "id": "c-pacs-s3", "from": "pacs", "to": "s3", "label": "files" },
+    { "id": "c-pacs-pg", "from": "pacs", "to": "pg", "label": "index" },
+    { "id": "c-pacs-orthanc", "from": "pacs", "to": "orthanc", "label": "export" },
+    { "id": "c-orthanc-pacs", "from": "orthanc", "to": "pacs", "label": "SEG + SR" },
+    { "id": "c-orthanc-worker", "from": "orthanc", "to": "worker", "label": "stable" },
+    { "id": "c-worker-monai", "from": "worker", "to": "monai", "label": "NIfTI" },
+    { "id": "c-monai-worker", "from": "monai", "to": "worker", "label": "mask" },
+    { "id": "c-orthanc-pg", "from": "orthanc", "to": "pg", "label": "index" }
+  ]
+}

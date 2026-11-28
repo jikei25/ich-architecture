@@ -242,11 +242,11 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <h3 class="subh">AI blocks (D11)</h3>
 <div class="verdict">
   <div class="card c-blue"><h4>Slicer does not include MONAI</h4><p>The MONAILabel extension is only a client; the model runs on a MONAI Label server.</p></div>
-  <div class="card c-violet"><h4>One app, two servers</h4><p><code>hemorrhage_approved</code> (VLAN 30) runs on every study. <code>hemorrhage_dev</code> (VLAN 40) drafts and trains on de-identified data.</p></div>
+  <div class="card c-violet"><h4>One app, two servers</h4><p><code>hemorrhage_approved</code> (VLAN 30) runs on every study. <code>hemorrhage_dev</code> drafts and trains on de-identified data, on the AI team's GPU at the HCMUT lab.</p></div>
   <div class="card c-pink"><h4>The received diagram is Flow 3</h4><p>Its AI runs only when someone clicks Run, so it cannot replace automatic triage.</p></div>
   <div class="card c-emerald"><h4>PACS and Orthanc stay</h4><p>MONAI Label and Slicer keep images only as caches.</p></div>
 </div>
-<div class="callout"><b>Recommendation.</b> Keep the clinical and data layers. Fill the AI blocks with one MONAI Label app run as two servers, and keep de-identified copies and every label version on a research Orthanc. The approved model's result is the annotator's draft, and the model registry is the only way a trained model reaches patients. The staging PoC ran this data path end to end (section <a href="#plan">9</a>). Recorded as <a href="decisions.html#d11">D11</a>.</div>
+<div class="callout"><b>Recommendation.</b> Keep the clinical and data layers. Fill the AI blocks with one MONAI Label app run as two servers, and keep de-identified copies and every label version on a research Orthanc. The approved model's result is the annotator's draft, and the model registry is the only way a trained model reaches patients. The research server runs on the AI team's GPU at the HCMUT lab and reaches only VLAN 40 (<a href="decisions.html#d12">D12</a>). The staging PoC ran this data path end to end (section <a href="#plan">9</a>). Recorded as <a href="decisions.html#d11">D11</a>.</div>
 
 <div class="partbar" id="part-viewer"><span>Part A</span>3D Slicer as the radiologist viewer (D10)</div>
 
@@ -319,7 +319,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 
 <h2 class="sec" id="proposal"><span class="n">5</span>Proposed architecture</h2>
 <div class="figure"><div class="figscroll">
-<svg class="flowsvg wide" viewBox="0 0 900 640" role="img" aria-labelledby="mo-t mo-d"><title id="mo-t">3D Slicer and MONAI in the ICH architecture</title><desc id="mo-d">Clinical layer: the CT scanner sends studies to the dcm4chee PACS, and the radiologist reads in 3D Slicer with the ICH Triage module. Step 1: the PACS pushes each CT series once to Orthanc. Step 2: the AI worker sends a NIfTI volume to the hemorrhage_approved model on the MONAI Label server and gets a mask back. Step 3: the mask becomes a SEG that goes to the PACS. Step 4: the gateway de-identifies the CT and the AI mask with the same renaming rule and stores them on the research Orthanc, the label store; the hemorrhage_dev model on the research server hands them to annotators in 3D Slicer with the MONAILabel extension, and every saved fix goes back to the research Orthanc as a new version. Step 5, optional: a radiologist's fix is saved to the PACS, sent on to the gateway, de-identified and added to the label store. Step 6: reviewed labels train hemorrhage_dev, a new bundle goes to the model registry, and only an approved bundle is loaded into hemorrhage_approved.</desc>
+<svg class="flowsvg wide" viewBox="0 0 900 640" role="img" aria-labelledby="mo-t mo-d"><title id="mo-t">3D Slicer and MONAI in the ICH architecture</title><desc id="mo-d">Clinical layer: the CT scanner sends studies to the dcm4chee PACS, and the radiologist reads in 3D Slicer with the ICH Triage module. Step 1: the PACS pushes each CT series once to Orthanc. Step 2: the AI worker sends a NIfTI volume to the hemorrhage_approved model on the MONAI Label server and gets a mask back. Step 3: the mask becomes a SEG that goes to the PACS. Step 4: the gateway de-identifies the CT and the AI mask with the same renaming rule and stores them on the research Orthanc, the label store; the hemorrhage_dev model on the research server hands them to annotators in 3D Slicer with the MONAILabel extension, and every saved fix goes back to the research Orthanc as a new version. Step 5, optional: a radiologist's fix is saved to the PACS, sent on to the gateway, de-identified and added to the label store. Step 6: reviewed labels train hemorrhage_dev, a new bundle goes to the model registry, and only an approved bundle is loaded into hemorrhage_approved. The research server runs on the AI team's GPU at the HCMUT lab and reaches only VLAN 40 over a VPN.</desc>
 <defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <rect class="lanebx" x="10" y="16" width="880" height="132" rx="12"/><text class="lanet t-blue" x="24" y="38">CLINICAL · VLAN 10–20 · real patient data</text>
 <rect class="lanebx" x="10" y="160" width="880" height="172" rx="12"/><text class="lanet t-violet" x="24" y="182">AI INFERENCE · VLAN 30</text>
@@ -342,7 +342,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <path class="lv" d="M420 236 L486 236" marker-end="url(#ah2)"/><text class="tsv" x="443" y="228" text-anchor="middle">2 · NIfTI</text>
 <path class="lv" d="M486 266 L424 266" marker-end="url(#ah2)"/><text class="tsv" x="445" y="282" text-anchor="middle">mask</text>
 
-<rect class="grpr" x="470" y="372" width="250" height="96" rx="12"/><text class="grprt" x="595" y="390" text-anchor="middle">MONAI Label · research server</text>
+<rect class="grpr" x="470" y="372" width="250" height="96" rx="12"/><text class="grprt" x="595" y="390" text-anchor="middle">Research server · HCMUT lab GPU</text>
 <rect class="bxr" x="490" y="400" width="210" height="56" rx="8"/><text class="tt" x="595" y="423" text-anchor="middle">hemorrhage_dev</text><text class="ts" x="595" y="443" text-anchor="middle">drafts, active learning, training</text>
 <path class="cyl" d="M740 388 L740 436 A70 10 0 0 0 880 436 L880 388 A70 10 0 0 1 740 388 Z"/><ellipse class="cyl" cx="810" cy="388" rx="70" ry="10"/>
 <text class="tt" x="810" y="414" text-anchor="middle">Model registry</text><text class="ts" x="810" y="432" text-anchor="middle">versioned bundles</text>
@@ -358,7 +358,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <path class="lr" d="M650 460 L650 496" marker-start="url(#ah2)" marker-end="url(#ah2)"/><text class="tsr" x="642" y="488" text-anchor="end">next case, save label</text>
 
 <text class="ts" x="450" y="612" text-anchor="middle">Violet: automatic for every study (1–3). Pink: research work, labelling, review, training (4, 6). Dashed red: only when a radiologist fixes a mask (5).</text>
-<text class="ts" x="450" y="630" text-anchor="middle">One app, two servers. Research reads only the research Orthanc, never the gateway, so it never sees identified data.</text>
+<text class="ts" x="450" y="630" text-anchor="middle">One app, two servers. The research server runs at the HCMUT lab, reads only the research Orthanc over a VPN limited to VLAN 40, and never sees identified data.</text>
 </svg></div>
 <p class="figcap">Keycloak, HIS/RIS, SeaweedFS, PostgreSQL and backup are unchanged and not drawn.</p>
 </div>
@@ -376,7 +376,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <tr><th>Block</th><th>Proposed</th></tr>
 <tr><td class="k">Radiologist viewer</td><td>3D Slicer + ICH Triage module (D10); no MONAILabel extension on reading workstations</td></tr>
 <tr><td class="k">AI inference</td><td>AI worker + MONAI Label inference server (<code>hemorrhage_approved</code>), one per server room</td></tr>
-<tr><td class="k">Annotation and training</td><td>MONAI Label research server (<code>hemorrhage_dev</code>) + 3D Slicer with the MONAILabel extension</td></tr>
+<tr><td class="k">Annotation and training</td><td>MONAI Label research server (<code>hemorrhage_dev</code>) on the AI team's GPU at the HCMUT lab, reaching only VLAN 40 (<a href="decisions.html#d12">D12</a>), + 3D Slicer with the MONAILabel extension</td></tr>
 <tr><td class="k">Research Orthanc (new)</td><td>De-identified CT and every label version, in VLAN 40</td></tr>
 <tr><td class="k">PACS export rules</td><td>Also corrected SEGs of research studies</td></tr>
 <tr><td class="k">Model registry</td><td>Versioned bundles with metrics and approval; only an approved one serves patients</td></tr>
@@ -388,6 +388,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <p><b>Why two servers.</b> The same app runs twice with a different <code>--conf models</code>. Neither server keeps CT images, so splitting adds no storage, only a second process and a second copy of the model in memory. In exchange, identified volumes and annotators never meet in one process, and training cannot stop triage.</p>
 <div class="tbl"><table>
 <tr><th></th><th>Inference server</th><th>Research server</th></tr>
+<tr><td class="k">Runs at</td><td>The hospital, VLAN 30, inference GPU</td><td>The HCMUT lab, the AI team's GPU; a site-to-site VPN opens only VLAN 40</td></tr>
 <tr><td class="k">Model</td><td><code>hemorrhage_approved</code></td><td><code>hemorrhage_dev</code>, trainer, active learning</td></tr>
 <tr><td class="k">Called by</td><td>The AI worker only</td><td>3D Slicer with the MONAILabel extension</td></tr>
 <tr><td class="k">On its disk</td><td>Nothing: the upload is deleted after the response</td><td>A cache of de-identified cases; deleting it loses nothing</td></tr>
@@ -398,51 +399,358 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 
 <h2 class="sec" id="sites"><span class="n">7</span>Sites, data and failover</h2>
 <p>Every AI component is designed to survive the loss of one node and, with a second server room, the loss of a room. The clinical path does not depend on any of it: with the AI down, studies show "AI paused" and doctors read in normal order. This section is design only; staging runs on one machine.</p>
-<p><b>Room A</b> is today's server room. <b>Room B</b> is proposed: a second room on the campus, in another building, linked by two fibre paths. Today, losing the only room means days of restore from the cloud. A <b>third location</b> holds a small quorum witness, the <b>cloud</b> holds backups only, and in scenario 2 <b>site 2</b> adds GPUs (keep one inference server on the campus for when the link is down).</p>
-<div class="figure"><div class="figscroll">
-<svg class="flowsvg wide" viewBox="0 0 900 570" role="img" aria-labelledby="st-t st-d"><title id="st-t">AI blocks across two server rooms</title><desc id="st-d">Rows are places, columns are network zones. Room A and room B each run a load balancer, Orthanc gateway nodes, an AI worker and a MONAI Label inference server with a GPU in VLAN 30. The research Orthanc and the MONAI Label research server run in room A, with a cold standby in room B. In the data zone, PostgreSQL has its primary in room A and a synchronous standby in room B, and SeaweedFS keeps one copy of every file in each room. A third location holds the quorum witness, and the cloud holds backups only.</desc>
-<defs><marker id="ah3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
-<text class="lanet t-violet" x="122" y="30">AI INFERENCE · VLAN 30</text><text class="lanet t-pink" x="422" y="30">AI RESEARCH · VLAN 40</text><text class="lanet t-slate" x="632" y="30">DATA · VLAN 50</text>
-
-<rect class="lanebx" x="10" y="42" width="880" height="200" rx="12"/>
-<text class="lanet t-slate" x="22" y="68">ROOM A</text><text class="ts" x="22" y="86">main</text><text class="ts" x="22" y="102">server room</text>
-<rect class="bxk" x="122" y="56" width="136" height="42" rx="8"/><text class="tt" x="190" y="76" text-anchor="middle">Load balancer</text><text class="ts" x="190" y="92" text-anchor="middle">HAProxy, active VIP</text>
-<rect class="bxa" x="122" y="108" width="136" height="56" rx="8"/><text class="tt" x="190" y="131" text-anchor="middle">Orthanc gateway</text><text class="ts" x="190" y="151" text-anchor="middle">nodes, no own state</text>
-<rect class="bxa" x="270" y="56" width="126" height="42" rx="8"/><text class="tt" x="333" y="76" text-anchor="middle">AI worker</text><text class="ts" x="333" y="92" text-anchor="middle">jobs in PostgreSQL</text>
-<rect class="bxa" x="270" y="108" width="126" height="62" rx="8"/><text class="tt" x="333" y="130" text-anchor="middle">MONAI Label</text><text class="ts" x="333" y="148" text-anchor="middle">inference, GPU</text><text class="ts" x="333" y="163" text-anchor="middle">keeps nothing</text>
-<text class="wkt" x="122" y="200">identified: kept for days at most</text>
-<rect class="bxr" x="422" y="56" width="176" height="56" rx="8"/><text class="tt" x="510" y="79" text-anchor="middle">Research Orthanc</text><text class="ts" x="510" y="99" text-anchor="middle">label store, active</text>
-<rect class="bxr" x="422" y="122" width="176" height="56" rx="8"/><text class="tt" x="510" y="145" text-anchor="middle">MONAI Label</text><text class="ts" x="510" y="165" text-anchor="middle">research, training</text>
-<text class="tsr" x="422" y="200">de-identified only</text>
-<path class="cylk" d="M632 66 L632 176 A60 9 0 0 0 752 176 L752 66 A60 9 0 0 1 632 66 Z"/><ellipse class="cylk" cx="692" cy="66" rx="60" ry="9"/>
-<text class="tt" x="692" y="102" text-anchor="middle">PostgreSQL</text><text class="ts" x="692" y="120" text-anchor="middle">primary</text><text class="ts" x="692" y="138" text-anchor="middle">indexes, AI jobs,</text><text class="ts" x="692" y="154" text-anchor="middle">label status</text>
-<path class="cylk" d="M764 66 L764 176 A60 9 0 0 0 884 176 L884 66 A60 9 0 0 1 764 66 Z"/><ellipse class="cylk" cx="824" cy="66" rx="60" ry="9"/>
-<text class="tt" x="824" y="102" text-anchor="middle">SeaweedFS</text><text class="ts" x="824" y="120" text-anchor="middle">copy 1 of each file</text><text class="ts" x="824" y="138" text-anchor="middle">pacs, orthanc,</text><text class="ts" x="824" y="154" text-anchor="middle">research buckets</text>
-
-<rect class="lanebx" x="10" y="252" width="880" height="200" rx="12"/>
-<text class="lanet t-slate" x="22" y="278">ROOM B</text><text class="ts" x="22" y="296">second room,</text><text class="ts" x="22" y="312">proposed</text>
-<rect class="bxk" x="122" y="266" width="136" height="42" rx="8"/><text class="tt" x="190" y="286" text-anchor="middle">Load balancer</text><text class="ts" x="190" y="302" text-anchor="middle">HAProxy, standby VIP</text>
-<rect class="bxa" x="122" y="318" width="136" height="56" rx="8"/><text class="tt" x="190" y="341" text-anchor="middle">Orthanc gateway</text><text class="ts" x="190" y="361" text-anchor="middle">nodes, same config</text>
-<rect class="bxa" x="270" y="266" width="126" height="42" rx="8"/><text class="tt" x="333" y="286" text-anchor="middle">AI worker</text><text class="ts" x="333" y="302" text-anchor="middle">jobs in PostgreSQL</text>
-<rect class="bxa" x="270" y="318" width="126" height="62" rx="8"/><text class="tt" x="333" y="340" text-anchor="middle">MONAI Label</text><text class="ts" x="333" y="358" text-anchor="middle">inference, GPU</text><text class="ts" x="333" y="373" text-anchor="middle">keeps nothing</text>
-<text class="ts" x="122" y="410">each room alone carries the full load</text>
-<rect class="bxr cold" x="422" y="266" width="176" height="56" rx="8"/><text class="tt" x="510" y="289" text-anchor="middle">Research Orthanc</text><text class="ts" x="510" y="309" text-anchor="middle">cold: started if A is lost</text>
-<rect class="bxr cold" x="422" y="332" width="176" height="56" rx="8"/><text class="tt" x="510" y="355" text-anchor="middle">MONAI Label</text><text class="ts" x="510" y="375" text-anchor="middle">cold: started if A is lost</text>
-<text class="tsr" x="422" y="410">restarts on the same data</text>
-<path class="cylk" d="M632 276 L632 386 A60 9 0 0 0 752 386 L752 276 A60 9 0 0 1 632 276 Z"/><ellipse class="cylk" cx="692" cy="276" rx="60" ry="9"/>
-<text class="tt" x="692" y="312" text-anchor="middle">PostgreSQL</text><text class="ts" x="692" y="330" text-anchor="middle">synchronous</text><text class="ts" x="692" y="346" text-anchor="middle">standby</text>
-<path class="cylk" d="M764 276 L764 386 A60 9 0 0 0 884 386 L884 276 A60 9 0 0 1 764 276 Z"/><ellipse class="cylk" cx="824" cy="276" rx="60" ry="9"/>
-<text class="tt" x="824" y="312" text-anchor="middle">SeaweedFS</text><text class="ts" x="824" y="330" text-anchor="middle">copy 2 of each file</text>
-<path class="ln" d="M692 190 L692 262" marker-end="url(#ah3)"/><text class="ts" x="684" y="232" text-anchor="end">sync replication</text>
-<path class="ln" d="M824 190 L824 262" marker-start="url(#ah3)" marker-end="url(#ah3)"/><text class="ts" x="816" y="232" text-anchor="end">replication 100</text>
-
-<rect class="lanebx" x="10" y="462" width="880" height="96" rx="12"/>
-<text class="lanet t-slate" x="22" y="488">OUTSIDE</text><text class="ts" x="22" y="506">the two</text><text class="ts" x="22" y="522">rooms</text>
-<rect class="bxk" x="122" y="476" width="476" height="68" rx="8"/><text class="tt" x="360" y="499" text-anchor="middle">Cloud · backup only</text><text class="ts" x="360" y="517" text-anchor="middle">PACS bucket, research bucket, PostgreSQL WAL; encrypted, Object Lock</text><text class="ts" x="360" y="533" text-anchor="middle">a restore takes hours to days (Flow 5)</text>
-<rect class="bxk" x="632" y="476" width="252" height="68" rx="8"/><text class="tt" x="758" y="499" text-anchor="middle">Quorum witness</text><text class="ts" x="758" y="517" text-anchor="middle">etcd and SeaweedFS master,</text><text class="ts" x="758" y="533" text-anchor="middle">third location, tiny server</text>
+<p><b>Room A</b> is today's server room. <b>Room B</b> is proposed: a second room on the campus, in another building, linked by two fibre paths. Today, losing the only room means days of restore from the cloud. The <b>research server</b> runs on the AI team's GPU at the <b>HCMUT lab</b> and reaches only VLAN 40 over a site-to-site VPN. A <b>third location</b> holds a small quorum witness, the <b>cloud</b> holds backups only, and in scenario 2 <b>site 2</b> adds GPUs (keep one inference server on the campus for when the link is down). With a second room, the PACS, OpenLDAP and Keycloak need the same two-room layout, or room A stays a single point of failure for the whole hospital. The drawing below shows where each part runs with one server room; the architecture page describes it in more detail (<a href="index.html#physical">physical layout</a>).</p>
+<div class="figure"><div class="figscroll"><svg id="phys" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1840 1230" role="img" aria-labelledby="pttl pdsc">
+<title id="pttl">Physical layout, Scenario 1</title>
+<desc id="pdsc">Isometric drawing of where each part runs. In the hospital, the CT room, reading room, annotator laptops and HIS/RIS connect to a core switch pair. The server room has rack A (inference GPU server, app host A, PostgreSQL primary, storage nodes 1 and 2, UPS A) and rack B (research Orthanc host with the label store and model registry, app host B, PostgreSQL standby, storage nodes 3 and 4, backup gateway, UPS B), plus a load balancer pair, an egress firewall pair, a storage switch and a witness host. The firewall reaches the internet over two providers; from there the cloud provider holds the DICOM tiers, the research copy and the database backups, and the HCMUT lab runs the research server on a GPU and the four staging servers. The lab reaches only VLAN 40 over a site-to-site VPN.</desc>
+<style>
+#phys{display:block;width:100%;min-width:1100px;height:auto}
+:root{--iso-t:#f1f3f9;--iso-l:#d9deea;--iso-r:#c4cbdc;--iso-edge:#5d6584;--iso-floor:rgba(40,50,90,.09);--iso-screen:#1f2547;--iso-code:#7d8cff;--iso-led:#16a34a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--iso-t:#3b4054;--iso-l:#2b2f3e;--iso-r:#22252f;--iso-edge:#7d85a4;--iso-floor:rgba(0,0,0,.38);--iso-screen:#141a33;--iso-code:#8b98ff;--iso-led:#4ade80}}
+:root[data-theme="dark"]{--iso-t:#3b4054;--iso-l:#2b2f3e;--iso-r:#22252f;--iso-edge:#7d85a4;--iso-floor:rgba(0,0,0,.38);--iso-screen:#141a33;--iso-code:#8b98ff;--iso-led:#4ade80}
+.iso-bg{fill:var(--card)}
+.iso-t,.iso-l,.iso-r{stroke:var(--iso-edge);stroke-width:1;stroke-linejoin:round}
+.iso-t{fill:var(--iso-t)}.iso-l{fill:var(--iso-l)}.iso-r{fill:var(--iso-r)}.iso-l.iso-amber{fill:var(--amber-h)}
+.iso-floor{fill:var(--iso-floor)}
+.iso-led{fill:var(--iso-led)}.iso-led.iso-led-gpu{fill:var(--violet)}.iso-port{fill:var(--iso-edge)}
+.iso-slot,.iso-brick{stroke:var(--iso-edge);stroke-width:1.4}
+.iso-ant{stroke:var(--iso-edge);stroke-width:3;stroke-linecap:round}
+.iso-screen,.iso-bore{fill:var(--iso-screen);stroke:var(--iso-edge);stroke-width:1}
+.iso-code{stroke:var(--iso-code);stroke-width:2.4;stroke-linecap:round}
+.iso-unit{stroke:none}
+.r-gpu{fill:var(--violet)}.r-res{fill:var(--pink)}.r-app{fill:var(--slate)}.r-db{fill:var(--emerald)}.r-st{fill:var(--cyan)}.r-bak{fill:var(--amber)}.r-ups{fill:var(--iso-edge)}
+.iso-unit.r-free{fill:none;stroke:var(--iso-edge);stroke-dasharray:3 3}
+.iso-cyl{fill:var(--iso-l);stroke:var(--iso-edge);stroke-width:1}.iso-cyl.iso-cyltop{fill:var(--iso-t)}
+.iso-cloud{fill:var(--iso-t);stroke:var(--iso-edge);stroke-width:1.4}
+.iso-globe circle,.iso-globe ellipse,.iso-globe line{fill:none;stroke:var(--blue);stroke-width:1.8}
+.iso-link{fill:none;stroke:var(--muted);stroke-width:1.4;stroke-dasharray:4 5;opacity:.85}
+.iso-link.iso-lout{stroke:var(--amber);stroke-width:1.8}.iso-link.iso-lvpn{stroke:var(--pink);stroke-width:2.2}
+.iso-zone{fill:none;stroke:var(--border);stroke-width:1.4}
+.iso-zone2{fill:none;stroke:var(--border);stroke-width:1.2;stroke-dasharray:6 5}
+.iso-zone.iso-zlab{stroke:var(--pink);stroke-width:2;stroke-dasharray:10 6}
+.iso-zonet{fill:var(--muted);font-size:13px;font-weight:700;letter-spacing:.07em}
+.iso-zones{fill:var(--muted);font-size:12px}
+.iso-name{fill:var(--text);font-size:15px;font-weight:700}
+.iso-sub,.iso-lis{fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.iso-li{fill:var(--text);font-size:13.5px;font-weight:600}
+.iso-key{stroke:none}
+.iso-tag.iso-tag-gpu{fill:var(--violet)}.iso-tagt{fill:var(--card);font-size:11px;font-weight:700;letter-spacing:.05em}
+.iso-vpn{fill:var(--pink);font-size:12px;font-weight:600}
+.iso-h1{fill:var(--text);font-size:22px;font-weight:700}.iso-h2{fill:var(--muted);font-size:14px}
+</style>
+<rect class="iso-bg" x="0" y="0" width="1840" height="1230"/>
+<text class="iso-h1" x="24" y="40">Physical layout · Scenario 1</text>
+<text class="iso-h2" x="24" y="64">One hospital server room with two racks on separate UPS feeds · inference GPU in the hospital · research server on the HCMUT lab GPU · cloud for backup only</text>
+<rect class="iso-zone" x="20" y="90" width="1290" height="1120" rx="18"/>
+<text class="iso-zonet" x="38" y="118">HOSPITAL · MAIN SITE</text>
+<rect class="iso-zone2" x="40" y="130" width="1250" height="340" rx="18"/>
+<text class="iso-zonet" x="58" y="158">CLINICAL AND RESEARCH ROOMS</text>
+<text class="iso-zones" x="58" y="176">connected through the building network</text>
+<rect class="iso-zone2" x="40" y="610" width="1250" height="580" rx="18"/>
+<text class="iso-zonet" x="58" y="638">SERVER ROOM</text>
+<text class="iso-zones" x="58" y="656">racks A and B on separate UPS feeds (battery-backed power) · network rack on both</text>
+<rect class="iso-zone" x="1340" y="90" width="480" height="380" rx="18"/>
+<text class="iso-zonet" x="1358" y="118">CLOUD PROVIDER</text>
+<text class="iso-zones" x="1358" y="136">storage only, no compute</text>
+<rect class="iso-zone iso-zlab" x="1340" y="740" width="480" height="470" rx="18"/>
+<text class="iso-zonet" x="1358" y="768">HCMUT LAB</text>
+<text class="iso-zones" x="1358" y="786">run by the AI team</text>
+<polygon class="iso-floor" points="190.0,282.0 311.2,352.0 190.0,422.0 68.8,352.0"/>
+<polygon class="iso-r" points="285.3,395.0 264.5,407.0 264.5,391.0 285.3,379.0"/>
+<polygon class="iso-l" points="184.8,361.0 264.5,407.0 264.5,391.0 184.8,345.0"/>
+<polygon class="iso-t" points="205.6,333.0 285.3,379.0 264.5,391.0 184.8,345.0"/>
+<polygon class="iso-r" points="290.5,380.0 266.2,394.0 266.2,389.0 290.5,375.0"/>
+<polygon class="iso-l" points="183.1,346.0 266.2,394.0 266.2,389.0 183.1,341.0"/>
+<polygon class="iso-t iso-soft" points="207.3,327.0 290.5,375.0 266.2,389.0 183.1,341.0"/>
+<polygon class="iso-r" points="226.4,327.0 146.7,373.0 146.7,285.0 226.4,239.0"/>
+<polygon class="iso-l" points="124.2,360.0 146.7,373.0 146.7,285.0 124.2,272.0"/>
+<polygon class="iso-t" points="203.9,226.0 226.4,239.0 146.7,285.0 124.2,272.0"/>
+<polygon class="iso-bore" points="162.3,320.0 162.9,313.4 164.7,306.5 167.6,299.5 171.4,292.8 176.0,286.8 181.1,281.8 186.5,278.0 191.9,275.6 197.1,274.7 201.7,275.4 205.5,277.6 208.4,281.2 210.2,286.1 210.8,292.0 210.2,298.6 208.4,305.5 205.5,312.5 201.7,319.2 197.1,325.2 191.9,330.2 186.5,334.0 181.1,336.4 176.0,337.3 171.4,336.6 167.6,334.4 164.7,330.8 162.9,325.9"/>
+<text class="iso-name" x="190" y="428" text-anchor="middle">CT / MRI scanner</text>
+<text class="iso-sub" x="190" y="446" text-anchor="middle">CT room · VLAN 10</text>
+<polygon class="iso-r" points="463.9,340.0 450.0,348.0 450.0,326.0 463.9,318.0"/>
+<polygon class="iso-l" points="436.1,340.0 450.0,348.0 450.0,326.0 436.1,318.0"/>
+<polygon class="iso-t" points="450.0,310.0 463.9,318.0 450.0,326.0 436.1,318.0"/>
+<polygon class="iso-screen" points="420.6,299.0 482.9,335.0 482.9,285.0 420.6,249.0"/>
+<line class="iso-code" x1="427.5" y1="268.0" x2="465.6" y2="290.0"/>
+<line class="iso-code" x1="427.5" y1="278.0" x2="456.9" y2="295.0"/>
+<line class="iso-code" x1="427.5" y1="288.0" x2="448.3" y2="300.0"/>
+<polygon class="iso-r" points="523.9,372.0 510.0,380.0 510.0,358.0 523.9,350.0"/>
+<polygon class="iso-l" points="496.1,372.0 510.0,380.0 510.0,358.0 496.1,350.0"/>
+<polygon class="iso-t" points="510.0,342.0 523.9,350.0 510.0,358.0 496.1,350.0"/>
+<polygon class="iso-screen" points="480.6,331.0 542.9,367.0 542.9,317.0 480.6,281.0"/>
+<line class="iso-code" x1="487.5" y1="300.0" x2="525.6" y2="322.0"/>
+<line class="iso-code" x1="487.5" y1="310.0" x2="516.9" y2="327.0"/>
+<line class="iso-code" x1="487.5" y1="320.0" x2="508.3" y2="332.0"/>
+<text class="iso-name" x="480" y="428" text-anchor="middle">Radiologist workstations</text>
+<text class="iso-sub" x="480" y="446" text-anchor="middle">3D Slicer + ICH Triage · VLAN 20</text>
+<polygon class="iso-floor" points="780.0,308.0 856.2,352.0 780.0,396.0 703.8,352.0"/>
+<polygon class="iso-r" points="830.2,355.0 788.7,379.0 788.7,374.0 830.2,350.0"/>
+<polygon class="iso-l" points="729.8,345.0 788.7,379.0 788.7,374.0 729.8,340.0"/>
+<polygon class="iso-t" points="771.3,316.0 830.2,350.0 788.7,374.0 729.8,340.0"/>
+<polygon class="iso-screen" points="771.3,316.0 830.2,350.0 838.9,296.0 780.0,262.0"/>
+<line class="iso-code" x1="784.8" y1="279.5" x2="819.4" y2="299.5"/>
+<line class="iso-code" x1="783.5" y1="287.6" x2="811.2" y2="303.6"/>
+<line class="iso-code" x1="782.2" y1="295.7" x2="802.9" y2="307.7"/>
+<text class="iso-name" x="780" y="428" text-anchor="middle">Annotator laptops</text>
+<text class="iso-sub" x="780" y="446" text-anchor="middle">Slicer + MONAILabel · VLAN 40</text>
+<polygon class="iso-floor" points="1090.0,300.0 1159.3,340.0 1090.0,380.0 1020.7,340.0"/>
+<polygon class="iso-r" points="1128.1,330.0 1079.6,358.0 1079.6,266.0 1128.1,238.0"/>
+<polygon class="iso-l" points="1051.9,342.0 1079.6,358.0 1079.6,266.0 1051.9,250.0"/>
+<polygon class="iso-t" points="1100.4,222.0 1128.1,238.0 1079.6,266.0 1051.9,250.0"/>
+<line class="iso-slot" x1="1119.4" y1="269.0" x2="1088.3" y2="287.0"/>
+<circle class="iso-led" cx="1122.9" cy="271.0" r="2.6"/>
+<line class="iso-slot" x1="1119.4" y1="291.0" x2="1088.3" y2="309.0"/>
+<circle class="iso-led" cx="1122.9" cy="293.0" r="2.6"/>
+<line class="iso-slot" x1="1119.4" y1="313.0" x2="1088.3" y2="331.0"/>
+<circle class="iso-led" cx="1122.9" cy="315.0" r="2.6"/>
+<text class="iso-name" x="1090" y="428" text-anchor="middle">HIS / RIS</text>
+<text class="iso-sub" x="1090" y="446" text-anchor="middle">existing · HL7 / FHIR</text>
+<polygon class="iso-floor" points="640.0,490.0 740.5,548.0 640.0,606.0 539.5,548.0"/>
+<polygon class="iso-r" points="707.5,563.0 676.4,581.0 676.4,568.0 707.5,550.0"/>
+<polygon class="iso-l" points="572.5,521.0 676.4,581.0 676.4,568.0 572.5,508.0"/>
+<polygon class="iso-t" points="603.6,490.0 707.5,550.0 676.4,568.0 572.5,508.0"/>
+<circle class="iso-port" cx="581.1" cy="519.5" r="2.6"/>
+<circle class="iso-port" cx="588.9" cy="524.0" r="2.6"/>
+<circle class="iso-port" cx="596.7" cy="528.5" r="2.6"/>
+<circle class="iso-port" cx="604.5" cy="533.0" r="2.6"/>
+<circle class="iso-port" cx="612.3" cy="537.5" r="2.6"/>
+<circle class="iso-port" cx="620.1" cy="542.0" r="2.6"/>
+<circle class="iso-port" cx="627.9" cy="546.5" r="2.6"/>
+<circle class="iso-port" cx="635.7" cy="551.0" r="2.6"/>
+<circle class="iso-port" cx="643.5" cy="555.5" r="2.6"/>
+<circle class="iso-port" cx="651.3" cy="560.0" r="2.6"/>
+<circle class="iso-port" cx="659.1" cy="564.5" r="2.6"/>
+<text class="iso-name" x="640" y="594" text-anchor="middle">Core switch pair</text>
+<text class="iso-sub" x="640" y="612" text-anchor="middle">VLAN 10–80 · deny by default</text>
+<path class="iso-link" d="M190.0 452.0 L190.0 486.0 L640.0 486.0 L640.0 514.0"/>
+<path class="iso-link" d="M480.0 452.0 L480.0 486.0 L640.0 486.0 L640.0 514.0"/>
+<path class="iso-link" d="M780.0 452.0 L780.0 486.0 L640.0 486.0 L640.0 514.0"/>
+<path class="iso-link" d="M1090.0 452.0 L1090.0 486.0 L640.0 486.0 L640.0 514.0"/>
+<polygon class="iso-floor" points="150.0,958.0 240.1,1010.0 150.0,1062.0 59.9,1010.0"/>
+<polygon class="iso-r" points="195.0,1010.0 150.0,1036.0 150.0,846.0 195.0,820.0"/>
+<polygon class="iso-l" points="105.0,1010.0 150.0,1036.0 150.0,846.0 105.0,820.0"/>
+<polygon class="iso-t" points="150.0,794.0 195.0,820.0 150.0,846.0 105.0,820.0"/>
+<polygon class="iso-unit r-gpu" points="109.3,851.5 145.7,872.5 145.7,857.5 109.3,836.5"/>
+<circle class="iso-led" cx="114.5" cy="847.0" r="2.2"/>
+<polygon class="iso-unit r-app" points="109.3,870.5 145.7,891.5 145.7,876.5 109.3,855.5"/>
+<circle class="iso-led" cx="114.5" cy="866.0" r="2.2"/>
+<polygon class="iso-unit r-db" points="109.3,889.5 145.7,910.5 145.7,895.5 109.3,874.5"/>
+<circle class="iso-led" cx="114.5" cy="885.0" r="2.2"/>
+<polygon class="iso-unit r-st" points="109.3,908.5 145.7,929.5 145.7,914.5 109.3,893.5"/>
+<circle class="iso-led" cx="114.5" cy="904.0" r="2.2"/>
+<polygon class="iso-unit r-st" points="109.3,927.5 145.7,948.5 145.7,933.5 109.3,912.5"/>
+<circle class="iso-led" cx="114.5" cy="923.0" r="2.2"/>
+<polygon class="iso-unit r-free" points="109.3,946.5 145.7,967.5 145.7,952.5 109.3,931.5"/>
+<circle class="iso-led" cx="114.5" cy="942.0" r="2.2"/>
+<polygon class="iso-unit r-ups" points="109.3,965.5 145.7,986.5 145.7,971.5 109.3,950.5"/>
+<circle class="iso-led" cx="114.5" cy="961.0" r="2.2"/>
+<text class="iso-name" x="150" y="1060" text-anchor="middle">Rack A</text>
+<text class="iso-sub" x="150" y="1078" text-anchor="middle">UPS feed A</text>
+<rect class="iso-key r-gpu" x="225" y="719" width="12" height="12" rx="3"/>
+<text class="iso-li" x="245" y="730">Inference GPU server</text>
+<text class="iso-lis" x="245" y="746">MONAI · hemorrhage_approved · VLAN 30</text>
+<rect class="iso-key r-app" x="225" y="760" width="12" height="12" rx="3"/>
+<text class="iso-li" x="245" y="771">App host A (VMs)</text>
+<text class="iso-lis" x="245" y="787">dcm4chee 1 · Orthanc 1 + AI worker</text>
+<text class="iso-lis" x="245" y="802">Keycloak · OpenLDAP 1 · etcd 1</text>
+<rect class="iso-key r-db" x="225" y="816" width="12" height="12" rx="3"/>
+<text class="iso-li" x="245" y="827">PostgreSQL primary</text>
+<text class="iso-lis" x="245" y="843">Patroni · PACS index, AI results</text>
+<rect class="iso-key r-st" x="225" y="857" width="12" height="12" rx="3"/>
+<text class="iso-li" x="245" y="868">Storage nodes 1–2</text>
+<text class="iso-lis" x="245" y="884">SeaweedFS · copy in rack B</text>
+<rect class="iso-key r-ups" x="225" y="898" width="12" height="12" rx="3"/>
+<text class="iso-li" x="245" y="909">UPS A</text>
+<text class="iso-lis" x="245" y="925">battery-backed power</text>
+<polygon class="iso-floor" points="560.0,958.0 650.1,1010.0 560.0,1062.0 469.9,1010.0"/>
+<polygon class="iso-r" points="605.0,1010.0 560.0,1036.0 560.0,846.0 605.0,820.0"/>
+<polygon class="iso-l" points="515.0,1010.0 560.0,1036.0 560.0,846.0 515.0,820.0"/>
+<polygon class="iso-t" points="560.0,794.0 605.0,820.0 560.0,846.0 515.0,820.0"/>
+<polygon class="iso-unit r-res" points="519.3,851.5 555.7,872.5 555.7,857.5 519.3,836.5"/>
+<circle class="iso-led" cx="524.5" cy="847.0" r="2.2"/>
+<polygon class="iso-unit r-app" points="519.3,870.5 555.7,891.5 555.7,876.5 519.3,855.5"/>
+<circle class="iso-led" cx="524.5" cy="866.0" r="2.2"/>
+<polygon class="iso-unit r-db" points="519.3,889.5 555.7,910.5 555.7,895.5 519.3,874.5"/>
+<circle class="iso-led" cx="524.5" cy="885.0" r="2.2"/>
+<polygon class="iso-unit r-st" points="519.3,908.5 555.7,929.5 555.7,914.5 519.3,893.5"/>
+<circle class="iso-led" cx="524.5" cy="904.0" r="2.2"/>
+<polygon class="iso-unit r-st" points="519.3,927.5 555.7,948.5 555.7,933.5 519.3,912.5"/>
+<circle class="iso-led" cx="524.5" cy="923.0" r="2.2"/>
+<polygon class="iso-unit r-bak" points="519.3,946.5 555.7,967.5 555.7,952.5 519.3,931.5"/>
+<circle class="iso-led" cx="524.5" cy="942.0" r="2.2"/>
+<polygon class="iso-unit r-ups" points="519.3,965.5 555.7,986.5 555.7,971.5 519.3,950.5"/>
+<circle class="iso-led" cx="524.5" cy="961.0" r="2.2"/>
+<text class="iso-name" x="560" y="1060" text-anchor="middle">Rack B</text>
+<text class="iso-sub" x="560" y="1078" text-anchor="middle">UPS feed B</text>
+<rect class="iso-key r-res" x="635" y="719" width="12" height="12" rx="3"/>
+<text class="iso-li" x="655" y="730">Research Orthanc host</text>
+<text class="iso-lis" x="655" y="746">label store + model registry · VLAN 40</text>
+<rect class="iso-key r-app" x="635" y="760" width="12" height="12" rx="3"/>
+<text class="iso-li" x="655" y="771">App host B (VMs)</text>
+<text class="iso-lis" x="655" y="787">dcm4chee 2 · Orthanc 2 + AI worker</text>
+<text class="iso-lis" x="655" y="802">OpenLDAP 2 · etcd 2</text>
+<rect class="iso-key r-db" x="635" y="816" width="12" height="12" rx="3"/>
+<text class="iso-li" x="655" y="827">PostgreSQL standby</text>
+<text class="iso-lis" x="655" y="843">streaming replica · failover</text>
+<rect class="iso-key r-st" x="635" y="857" width="12" height="12" rx="3"/>
+<text class="iso-li" x="655" y="868">Storage nodes 3–4</text>
+<text class="iso-lis" x="655" y="884">SeaweedFS · copy in rack A</text>
+<rect class="iso-key r-bak" x="635" y="898" width="12" height="12" rx="3"/>
+<text class="iso-li" x="655" y="909">Backup gateway</text>
+<text class="iso-lis" x="655" y="925">pgBackRest · rclone → cloud</text>
+<rect class="iso-key r-ups" x="635" y="939" width="12" height="12" rx="3"/>
+<text class="iso-li" x="655" y="950">UPS B</text>
+<text class="iso-lis" x="655" y="966">battery-backed power</text>
+<polygon class="iso-floor" points="1010.0,724.0 1089.7,770.0 1010.0,816.0 930.3,770.0"/>
+<polygon class="iso-r" points="1058.5,772.0 1020.4,794.0 1020.4,782.0 1058.5,760.0"/>
+<polygon class="iso-l" points="961.5,760.0 1020.4,794.0 1020.4,782.0 961.5,748.0"/>
+<polygon class="iso-t" points="999.6,726.0 1058.5,760.0 1020.4,782.0 961.5,748.0"/>
+<circle class="iso-led" cx="970.2" cy="759.0" r="2.6"/>
+<circle class="iso-led" cx="976.2" cy="762.5" r="2.6"/>
+<circle class="iso-led" cx="982.3" cy="766.0" r="2.6"/>
+<polygon class="iso-r" points="1058.5,755.0 1020.4,777.0 1020.4,765.0 1058.5,743.0"/>
+<polygon class="iso-l" points="961.5,743.0 1020.4,777.0 1020.4,765.0 961.5,731.0"/>
+<polygon class="iso-t" points="999.6,709.0 1058.5,743.0 1020.4,765.0 961.5,731.0"/>
+<circle class="iso-led" cx="970.2" cy="742.0" r="2.6"/>
+<circle class="iso-led" cx="976.2" cy="745.5" r="2.6"/>
+<circle class="iso-led" cx="982.3" cy="749.0" r="2.6"/>
+<text class="iso-name" x="1010" y="820" text-anchor="middle">Load balancer pair</text>
+<text class="iso-sub" x="1010" y="838" text-anchor="middle">VIPs: PACS, Orthanc, PG</text>
+<polygon class="iso-floor" points="1190.0,724.0 1269.7,770.0 1190.0,816.0 1110.3,770.0"/>
+<polygon class="iso-r" points="1238.5,772.0 1200.4,794.0 1200.4,782.0 1238.5,760.0"/>
+<polygon class="iso-l iso-amber" points="1141.5,760.0 1200.4,794.0 1200.4,782.0 1141.5,748.0"/>
+<polygon class="iso-t" points="1179.6,726.0 1238.5,760.0 1200.4,782.0 1141.5,748.0"/>
+<polygon class="iso-r" points="1238.5,755.0 1200.4,777.0 1200.4,765.0 1238.5,743.0"/>
+<polygon class="iso-l iso-amber" points="1141.5,743.0 1200.4,777.0 1200.4,765.0 1141.5,731.0"/>
+<polygon class="iso-t" points="1179.6,709.0 1238.5,743.0 1200.4,765.0 1141.5,731.0"/>
+<line class="iso-brick" x1="1145.0" y1="756.0" x2="1196.9" y2="786.0"/>
+<line class="iso-brick" x1="1145.0" y1="739.0" x2="1196.9" y2="769.0"/>
+<text class="iso-name" x="1190" y="820" text-anchor="middle">Egress firewall pair</text>
+<text class="iso-sub" x="1190" y="838" text-anchor="middle">443 out · IPsec VPN</text>
+<polygon class="iso-floor" points="1010.0,942.0 1110.5,1000.0 1010.0,1058.0 909.5,1000.0"/>
+<polygon class="iso-r" points="1067.2,1009.0 1036.0,1027.0 1036.0,1014.0 1067.2,996.0"/>
+<polygon class="iso-l" points="952.8,979.0 1036.0,1027.0 1036.0,1014.0 952.8,966.0"/>
+<polygon class="iso-t" points="984.0,948.0 1067.2,996.0 1036.0,1014.0 952.8,966.0"/>
+<circle class="iso-port" cx="961.5" cy="977.5" r="2.6"/>
+<circle class="iso-port" cx="969.3" cy="982.0" r="2.6"/>
+<circle class="iso-port" cx="977.1" cy="986.5" r="2.6"/>
+<circle class="iso-port" cx="984.9" cy="991.0" r="2.6"/>
+<circle class="iso-port" cx="992.7" cy="995.5" r="2.6"/>
+<circle class="iso-port" cx="1000.5" cy="1000.0" r="2.6"/>
+<circle class="iso-port" cx="1008.3" cy="1004.5" r="2.6"/>
+<circle class="iso-port" cx="1016.1" cy="1009.0" r="2.6"/>
+<text class="iso-name" x="1010" y="1045" text-anchor="middle">Storage switch</text>
+<text class="iso-sub" x="1010" y="1063" text-anchor="middle">VLAN 80</text>
+<polygon class="iso-floor" points="1190.0,960.0 1259.3,1000.0 1190.0,1040.0 1120.7,1000.0"/>
+<polygon class="iso-r" points="1228.1,990.0 1179.6,1018.0 1179.6,926.0 1228.1,898.0"/>
+<polygon class="iso-l" points="1151.9,1002.0 1179.6,1018.0 1179.6,926.0 1151.9,910.0"/>
+<polygon class="iso-t" points="1200.4,882.0 1228.1,898.0 1179.6,926.0 1151.9,910.0"/>
+<line class="iso-slot" x1="1219.4" y1="929.0" x2="1188.3" y2="947.0"/>
+<circle class="iso-led" cx="1222.9" cy="931.0" r="2.6"/>
+<line class="iso-slot" x1="1219.4" y1="951.0" x2="1188.3" y2="969.0"/>
+<circle class="iso-led" cx="1222.9" cy="953.0" r="2.6"/>
+<line class="iso-slot" x1="1219.4" y1="973.0" x2="1188.3" y2="991.0"/>
+<circle class="iso-led" cx="1222.9" cy="975.0" r="2.6"/>
+<text class="iso-name" x="1190" y="1090" text-anchor="middle">Witness host</text>
+<text class="iso-sub" x="1190" y="1108" text-anchor="middle">etcd 3 · SeaweedFS master</text>
+<path class="iso-link" d="M640.0 612.0 L640.0 660.0 L150.0 660.0 L150.0 810.0"/>
+<path class="iso-link" d="M640.0 660.0 L560.0 660.0 L560.0 810.0"/>
+<path class="iso-link" d="M640.0 660.0 L1010.0 660.0 L1010.0 726.0"/>
+<path class="iso-link" d="M1010.0 660.0 L1190.0 660.0 L1190.0 726.0"/>
+<path class="iso-link" d="M1010.0 870.0 L1010.0 970.0"/>
+<ellipse class="iso-floor" cx="1560" cy="634" rx="78" ry="20"/>
+<path class="iso-cloud" transform="translate(1560,600)" d="M-62 28 C-86 28 -88 -4 -64 -8 C-62 -34 -28 -42 -12 -24 C0 -48 44 -44 46 -14 C72 -14 80 26 52 28 Z"/>
+<g class="iso-globe" transform="translate(1560,604)"><circle r="15"/><ellipse rx="6.5" ry="15"/><line x1="-15" y1="0" x2="15" y2="0"/></g>
+<text class="iso-name" x="1560" y="668" text-anchor="middle">Internet</text>
+<text class="iso-sub" x="1560" y="686" text-anchor="middle">ISP 1 + ISP 2</text>
+<path class="iso-link iso-lout" d="M1240.0 770.0 L1300.0 770.0 L1300.0 600.0 L1480.0 600.0"/>
+<polygon class="iso-floor" points="1430.0,284.0 1492.4,320.0 1430.0,356.0 1367.6,320.0"/>
+<path class="iso-cyl" d="M1398.3 274.0 L1398.3 320.0 A31.7 16.1 0 0 0 1461.7 320.0 L1461.7 274.0 A31.7 16.1 0 0 1 1398.3 274.0 Z"/>
+<ellipse class="iso-cyl iso-cyltop" cx="1430" cy="274.0" rx="31.7" ry="16.1"/>
+<text class="iso-name" x="1430" y="370" text-anchor="middle">DICOM tiers</text>
+<text class="iso-sub" x="1430" y="388" text-anchor="middle">Standard → IA → Archive</text>
+<text class="iso-sub" x="1430" y="404" text-anchor="middle">10 years · Object Lock</text>
+<polygon class="iso-floor" points="1590.0,284.0 1652.4,320.0 1590.0,356.0 1527.6,320.0"/>
+<path class="iso-cyl" d="M1558.3 274.0 L1558.3 320.0 A31.7 16.1 0 0 0 1621.7 320.0 L1621.7 274.0 A31.7 16.1 0 0 1 1558.3 274.0 Z"/>
+<ellipse class="iso-cyl iso-cyltop" cx="1590" cy="274.0" rx="31.7" ry="16.1"/>
+<text class="iso-name" x="1590" y="370" text-anchor="middle">Research copy</text>
+<text class="iso-sub" x="1590" y="388" text-anchor="middle">labels, frozen datasets</text>
+<polygon class="iso-floor" points="1740.0,288.0 1795.4,320.0 1740.0,352.0 1684.6,320.0"/>
+<path class="iso-cyl" d="M1713.2 274.0 L1713.2 320.0 A26.8 13.6 0 0 0 1766.8 320.0 L1766.8 274.0 A26.8 13.6 0 0 1 1713.2 274.0 Z"/>
+<ellipse class="iso-cyl iso-cyltop" cx="1740" cy="274.0" rx="26.8" ry="13.6"/>
+<text class="iso-name" x="1740" y="370" text-anchor="middle">PG backups</text>
+<text class="iso-sub" x="1740" y="388" text-anchor="middle">WAL + base · 35 d</text>
+<text class="iso-sub" x="1360" y="450">Encrypted with hospital-held keys (KMS).</text>
+<path class="iso-link iso-lout" d="M1560.0 562.0 L1560.0 470.0"/>
+<polygon class="iso-floor" points="1500.0,934.0 1579.7,980.0 1500.0,1026.0 1420.3,980.0"/>
+<polygon class="iso-r" points="1548.5,978.0 1506.9,1002.0 1506.9,988.0 1548.5,964.0"/>
+<polygon class="iso-l" points="1451.5,970.0 1506.9,1002.0 1506.9,988.0 1451.5,956.0"/>
+<polygon class="iso-t" points="1493.1,932.0 1548.5,964.0 1506.9,988.0 1451.5,956.0"/>
+<circle class="iso-led iso-led-gpu" cx="1460.2" cy="968.0" r="2.6"/>
+<circle class="iso-led iso-led-gpu" cx="1467.1" cy="972.0" r="2.6"/>
+<polygon class="iso-r" points="1548.5,960.0 1506.9,984.0 1506.9,970.0 1548.5,946.0"/>
+<polygon class="iso-l" points="1451.5,952.0 1506.9,984.0 1506.9,970.0 1451.5,938.0"/>
+<polygon class="iso-t" points="1493.1,914.0 1548.5,946.0 1506.9,970.0 1451.5,938.0"/>
+<circle class="iso-led iso-led-gpu" cx="1460.2" cy="950.0" r="2.6"/>
+<circle class="iso-led iso-led-gpu" cx="1467.1" cy="954.0" r="2.6"/>
+<polygon class="iso-r" points="1548.5,942.0 1506.9,966.0 1506.9,952.0 1548.5,928.0"/>
+<polygon class="iso-l" points="1451.5,934.0 1506.9,966.0 1506.9,952.0 1451.5,920.0"/>
+<polygon class="iso-t" points="1493.1,896.0 1548.5,928.0 1506.9,952.0 1451.5,920.0"/>
+<circle class="iso-led iso-led-gpu" cx="1460.2" cy="932.0" r="2.6"/>
+<circle class="iso-led iso-led-gpu" cx="1467.1" cy="936.0" r="2.6"/>
+<polygon class="iso-r" points="1548.5,924.0 1506.9,948.0 1506.9,934.0 1548.5,910.0"/>
+<polygon class="iso-l" points="1451.5,916.0 1506.9,948.0 1506.9,934.0 1451.5,902.0"/>
+<polygon class="iso-t" points="1493.1,878.0 1548.5,910.0 1506.9,934.0 1451.5,902.0"/>
+<circle class="iso-led iso-led-gpu" cx="1460.2" cy="914.0" r="2.6"/>
+<circle class="iso-led iso-led-gpu" cx="1467.1" cy="918.0" r="2.6"/>
+<rect class="iso-tag iso-tag-gpu" x="1484.7" y="852" width="30.6" height="20" rx="10"/><text class="iso-tagt" x="1500" y="866" text-anchor="middle">GPU</text>
+<text class="iso-name" x="1500" y="1040" text-anchor="middle">Research server</text>
+<text class="iso-sub" x="1500" y="1058" text-anchor="middle">MONAI · hemorrhage_dev</text>
+<text class="iso-sub" x="1500" y="1074" text-anchor="middle">drafts · active learning · training</text>
+<polygon class="iso-floor" points="1710.0,934.0 1789.7,980.0 1710.0,1026.0 1630.3,980.0"/>
+<polygon class="iso-r" points="1758.5,978.0 1716.9,1002.0 1716.9,988.0 1758.5,964.0"/>
+<polygon class="iso-l" points="1661.5,970.0 1716.9,1002.0 1716.9,988.0 1661.5,956.0"/>
+<polygon class="iso-t" points="1703.1,932.0 1758.5,964.0 1716.9,988.0 1661.5,956.0"/>
+<circle class="iso-led" cx="1670.2" cy="968.0" r="2.6"/>
+<circle class="iso-led" cx="1677.1" cy="972.0" r="2.6"/>
+<polygon class="iso-r" points="1758.5,960.0 1716.9,984.0 1716.9,970.0 1758.5,946.0"/>
+<polygon class="iso-l" points="1661.5,952.0 1716.9,984.0 1716.9,970.0 1661.5,938.0"/>
+<polygon class="iso-t" points="1703.1,914.0 1758.5,946.0 1716.9,970.0 1661.5,938.0"/>
+<circle class="iso-led" cx="1670.2" cy="950.0" r="2.6"/>
+<circle class="iso-led" cx="1677.1" cy="954.0" r="2.6"/>
+<polygon class="iso-r" points="1758.5,942.0 1716.9,966.0 1716.9,952.0 1758.5,928.0"/>
+<polygon class="iso-l" points="1661.5,934.0 1716.9,966.0 1716.9,952.0 1661.5,920.0"/>
+<polygon class="iso-t" points="1703.1,896.0 1758.5,928.0 1716.9,952.0 1661.5,920.0"/>
+<circle class="iso-led" cx="1670.2" cy="932.0" r="2.6"/>
+<circle class="iso-led" cx="1677.1" cy="936.0" r="2.6"/>
+<text class="iso-name" x="1710" y="1040" text-anchor="middle">Staging (4 servers)</text>
+<text class="iso-sub" x="1710" y="1058" text-anchor="middle">PACS · Gateway · DB · Storage</text>
+<text class="iso-sub" x="1710" y="1074" text-anchor="middle">test data only</text>
+<path class="iso-link iso-lvpn" d="M1625.0 620.0 L1680.0 620.0 L1680.0 740.0"/>
+<text class="iso-vpn" x="1360" y="800">site-to-site VPN: the lab reaches VLAN 40 only</text>
+<text class="iso-sub" x="1360" y="1160">De-identified data only; cache cleared nightly.</text>
+<text class="iso-sub" x="1360" y="1178">Label store, registry and approval stay in the hospital.</text>
+<rect class="iso-key r-gpu" x="60" y="1180" width="12" height="12" rx="3"/><text class="iso-lis" x="78" y="1191">AI inference</text>
+<rect class="iso-key r-res" x="230" y="1180" width="12" height="12" rx="3"/><text class="iso-lis" x="248" y="1191">AI research</text>
+<rect class="iso-key r-app" x="400" y="1180" width="12" height="12" rx="3"/><text class="iso-lis" x="418" y="1191">App host (VMs)</text>
+<rect class="iso-key r-db" x="570" y="1180" width="12" height="12" rx="3"/><text class="iso-lis" x="588" y="1191">Database</text>
+<rect class="iso-key r-st" x="740" y="1180" width="12" height="12" rx="3"/><text class="iso-lis" x="758" y="1191">Storage</text>
+<rect class="iso-key r-bak" x="910" y="1180" width="12" height="12" rx="3"/><text class="iso-lis" x="928" y="1191">Backup and egress</text>
+<rect class="iso-key r-ups" x="1080" y="1180" width="12" height="12" rx="3"/><text class="iso-lis" x="1098" y="1191">Power</text>
 </svg></div>
-<p class="figcap">Only the AI blocks are drawn. The PACS, OpenLDAP and Keycloak need the same two-room layout, or room A stays a single point of failure for the whole hospital.</p>
+<p class="figcap">Scenario 1 with one server room. The colour of each rack unit matches the list beside the rack. The research server on the HCMUT lab GPU reaches only VLAN 40. Drawn by <code>assets/diagrams/physical_layout.py</code>, shared with the architecture page.</p>
 </div>
+<h3 class="subh">Inside a server room</h3>
+<p>Each room has two racks on separate UPS feeds (battery-backed power) and a network rack, and every HA pair puts one node in each rack, so losing a rack, its power or its switch ports leaves one of each running. The full drawing is the <a href="index.html#physical">physical layout</a> of the architecture page.</p>
+<div class="tbl"><table>
+<tr><th>Rack A · UPS A</th><th>Rack B · UPS B</th><th>Network rack · both feeds</th></tr>
+<tr><td>Inference GPU server (MONAI Label, <code>hemorrhage_approved</code>, VLAN 30)</td><td>Research Orthanc host (label store and model registry, VLAN 40)</td><td>Core switch pair (VLAN 10–80, deny by default)</td></tr>
+<tr><td>App host A: dcm4chee 1, Orthanc 1 + AI worker, Keycloak, OpenLDAP 1, etcd 1</td><td>App host B: dcm4chee 2, Orthanc 2 + AI worker, OpenLDAP 2, etcd 2</td><td>Egress firewall pair: 443 out, IPsec VPN to the cloud and the HCMUT lab</td></tr>
+<tr><td>PostgreSQL primary (Patroni)</td><td>PostgreSQL standby</td><td>Load balancer pair: virtual IPs for dcm4chee, Orthanc, PG primary</td></tr>
+<tr><td>SeaweedFS storage nodes 1–2</td><td>SeaweedFS storage nodes 3–4, backup gateway</td><td>Storage switch (VLAN 80), witness host (third etcd and SeaweedFS master)</td></tr>
+</table></div>
+
 <h3 class="subh">Where the data lives</h3>
 <p>Two things last: the clinical record in the PACS and the labels on the research Orthanc. Research CT images are deleted once a model has been trained on them, because retraining on old images is rare and they can be fetched again from the PACS. The gateway copy is a buffer, and a frozen dataset is a list of IDs, not more images.</p>
 <div class="tbl"><table>
@@ -455,7 +763,8 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <tr><td class="k">Drafts, label versions, review status</td><td>De-identified</td><td>Research Orthanc (one per room, plus cloud)</td><td>Always</td></tr>
 <tr><td class="k">Frozen dataset</td><td>De-identified</td><td>List of CT and SEG IDs, with the de-identification rule version, in the research bucket</td><td>Always</td></tr>
 <tr><td class="k">Model bundles</td><td>No patient data</td><td>Registry in the research bucket; a local copy on each inference server</td><td>Permanently</td></tr>
-<tr><td class="k">Caches (research server, workstations)</td><td>Either</td><td>Local disk</td><td>Cleared nightly or per session</td></tr>
+<tr><td class="k">Research server cache</td><td>De-identified</td><td>Research server at the HCMUT lab</td><td>Cleared nightly; deleting it loses nothing</td></tr>
+<tr><td class="k">Workstation caches</td><td>Either</td><td>Local disk</td><td>Cleared per session</td></tr>
 </table></div>
 <p><b>Fetching an image again.</b> To retrain on a deleted case, the research server asks for it again: the PACS sends the study through the gateway, which de-identifies it with the same keyed hash, so it gets the same UIDs and its old labels still line up. This needs three things: the PACS still holds the study (10 years), the hash key never changes, and each dataset records the de-identification rule it used. Fetching many cases loads the PACS, so it runs outside reading hours.</p>
 <h3 class="subh">When something fails</h3>
@@ -467,7 +776,9 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <tr><td class="k">MONAI inference (one GPU server per room)</td><td>The other server takes the work at half capacity</td><td>Same; with both down, "AI paused"</td></tr>
 <tr><td class="k">PostgreSQL (primary / synchronous standby)</td><td>Patroni promotes the standby; no committed write lost</td><td>Same, with the witness's vote</td></tr>
 <tr><td class="k">SeaweedFS (one copy per room)</td><td>Reads go to the other copy</td><td>Every file still has a copy</td></tr>
-<tr><td class="k">Research Orthanc and server (active / cold)</td><td>Restarted in minutes; annotation waits</td><td>Started in room B on the same data</td></tr>
+<tr><td class="k">Research Orthanc (active / cold)</td><td>Restarted in minutes; annotation waits</td><td>Started in room B on the same data</td></tr>
+<tr><td class="k">Research server at the HCMUT lab, or the VPN</td><td>Annotation and training wait; triage and reading do not notice</td><td>Same</td></tr>
+<tr><td class="k">Keycloak (one instance today)</td><td>Logins stop until it is back</td><td>Same; needs a second instance in rack B or room B</td></tr>
 </table></div>
 <h3 class="subh">Orthanc as an active-active gateway</h3>
 <p>Per the Orthanc Book, several Orthanc nodes can share one PostgreSQL index (Orthanc 1.9.2 and later), and with files in SeaweedFS a node keeps nothing of its own. But each node keeps its own job list and its own "series complete" timer, and its Orthanc jobs die with it. Three rules follow:</p>
@@ -491,6 +802,10 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <tr><td class="k">Duplicate or lost AI jobs on several gateway nodes</td><td>Job table from the first slice, leases and a sweep (section <a href="#sites">7</a>)</td></tr>
 <tr><td class="k">Losing or leaking the de-identification key</td><td>Kept in VLAN 30 only, with an offline backup</td></tr>
 <tr><td class="k">Annotators copy the AI's mistakes</td><td>Drafts on training cases only; test sets labelled blind</td></tr>
+<tr><td class="k">The HCMUT lab reaches into the hospital</td><td>Site-to-site VPN that opens only the research Orthanc and registry ports in VLAN 40; no route to clinical, inference or data zones; the key stays in VLAN 30; a data-sharing agreement</td></tr>
+<tr><td class="k">A face can be rebuilt from a de-identified head CT</td><td>Deface the CT before it reaches the research Orthanc, since its images are cached at the lab</td></tr>
+<tr><td class="k">The PoC plugin lets through images with no burned-in tag, and runs with an empty key</td><td>Reject localizers, Secondary Captures and instances without the tag; refuse to start without <code>DEID_KEY</code></td></tr>
+<tr><td class="k">The PoC research server has no login</td><td>MONAI Label authentication through Keycloak before any real data; until then, test data only</td></tr>
 </table></div>
 
 <h2 class="sec" id="plan"><span class="n">9</span>PoC plan and results</h2>
@@ -516,7 +831,20 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <tr><td>6</td><td>Only an approved version serves patients</td><td><span class="ok">Passed</span>: v1 to v2 swapped in a running server after approval</td></tr>
 <tr><td>7</td><td>Annotation reads the gateway</td><td><span class="no">Failed</span>: an identified CT leaked, so the design moved to the research Orthanc</td></tr>
 </table></div>
-<div class="callout amber"><b>Not shown by the PoC.</b> Model quality (the CPU model is poor: validation Dice 0.01), the Slicer window, two rooms and failover. Code: <a href="https://github.com/jikei25/ich-architecture/tree/main/deploy/staging">deploy/staging</a>.</div>
+<div class="callout amber"><b>Not shown by the PoC.</b> Model quality (the CPU model is poor: validation Dice 0.01), the Slicer window, more than one machine, two rooms and failover. Code: <a href="https://github.com/jikei25/ich-architecture/tree/main/deploy/staging">deploy/staging</a>.</div>
+<h3 class="subh">Still to show (not run yet)</h3>
+<p>The steps above prove that the blocks connect. These settle whether the system is usable, correct and safe. Targets marked "agree" are set with the clinicians before the run.</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Task</th><th>Passes when</th></tr>
+<tr><td>8</td><td>The AI team's model on a GPU</td><td>Sensitivity and false-negative rate on a held-out test set reach the agreed target; one segment per subtype; time per CT recorded</td></tr>
+<tr><td>9</td><td>End to end: scan finished to flag on the worklist</td><td>Median and worst time under the agreed target; StableAge, export delay, inference and return measured separately</td></tr>
+<tr><td>10</td><td>Five servers instead of one machine</td><td>An approved bundle published by the research server reaches the inference server; an unapproved one never does</td></tr>
+<tr><td>11</td><td>Research server at the HCMUT lab over the VPN</td><td>Next Sample and save work from the lab; the lab cannot reach any zone but VLAN 40; the cache holds de-identified data only</td></tr>
+<tr><td>12</td><td>Failover drills</td><td>Gateway node killed mid-job: exactly one SEG reaches the PACS. PostgreSQL primary killed: no job lost. One storage node off: reads continue</td></tr>
+<tr><td>13</td><td>Safety checks</td><td>An image without the burned-in tag is rejected; the plugin refuses to start without the key; the research server refuses an anonymous call</td></tr>
+<tr><td>14</td><td>Priority flag and radiologist fix</td><td>HL7 ORU moves the study up the RIS worklist; a fix saved in Slicer reaches the research Orthanc as "radiologist, not reviewed"</td></tr>
+<tr><td>15</td><td>Restore from the cloud</td><td>A study older than 90 days and a database point-in-time restore come back; the time is recorded</td></tr>
+</table></div>
 
 <h2 class="sec" id="refs"><span class="n">10</span>References</h2>
 <ol class="src">

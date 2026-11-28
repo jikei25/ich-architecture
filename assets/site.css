@@ -196,6 +196,12 @@ html.no-scroll{overflow:hidden}
   ::-webkit-scrollbar-thumb:hover{background-color:var(--sb-thumb-hover)}
 }
 
+/* Archify diagrams: a light and a dark SVG export, shown by theme */
+.adg img{display:block;width:100%;min-width:900px;height:auto}
+.adg .dk{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .adg .lt{display:none}:root:not([data-theme="light"]) .adg .dk{display:block}}
+:root[data-theme="dark"] .adg .lt{display:none}:root[data-theme="dark"] .adg .dk{display:block}
+
 @media (max-width:700px){.sq{padding:10px}.sq-detail{font-size:14px}.figtools{margin-left:0}}
 @media print{.topbar,.totop,.figtools,.sq-toolbar,.jumps,.hlink{display:none!important}.sq-viewport{max-height:none;overflow:visible}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
