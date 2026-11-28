@@ -1,7 +1,7 @@
 """Generate the isometric physical-layout SVG (#phys) for index.html.
 
 Usage: python assets/diagrams/physical_layout.py index.html slicer.html
-Rewrites the <svg id="phys"> block in place; colours come from the iso-* CSS in assets/site.css.
+Rewrites the <svg id="phys"> block in place; its styles (ISO_CSS below) are embedded in the SVG itself.
 Edit the scene section below (devices, labels, links) and run again.
 """
 import math
@@ -50,6 +50,45 @@ def tag(x, y, text, cls):
     w = 9 + len(text) * 7.2
     out.append(f'<rect class="iso-tag {cls}" x="{x - w / 2:.1f}" y="{y - 10}" width="{w:.1f}" height="20" rx="10"/>'
                f'<text class="iso-tagt" x="{x}" y="{y + 4}" text-anchor="middle">{text}</text>')
+
+
+# Styles travel inside the SVG, so a cached page stylesheet can never leave the drawing unstyled.
+# Colours come from the page tokens (--card, --text, --violet ...) plus the --iso-* tokens below.
+ISO_CSS = '''
+#phys{display:block;width:100%;min-width:1100px;height:auto}
+:root{--iso-t:#f1f3f9;--iso-l:#d9deea;--iso-r:#c4cbdc;--iso-edge:#5d6584;--iso-floor:rgba(40,50,90,.09);--iso-screen:#1f2547;--iso-code:#7d8cff;--iso-led:#16a34a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--iso-t:#3b4054;--iso-l:#2b2f3e;--iso-r:#22252f;--iso-edge:#7d85a4;--iso-floor:rgba(0,0,0,.38);--iso-screen:#141a33;--iso-code:#8b98ff;--iso-led:#4ade80}}
+:root[data-theme="dark"]{--iso-t:#3b4054;--iso-l:#2b2f3e;--iso-r:#22252f;--iso-edge:#7d85a4;--iso-floor:rgba(0,0,0,.38);--iso-screen:#141a33;--iso-code:#8b98ff;--iso-led:#4ade80}
+.iso-bg{fill:var(--card)}
+.iso-t,.iso-l,.iso-r{stroke:var(--iso-edge);stroke-width:1;stroke-linejoin:round}
+.iso-t{fill:var(--iso-t)}.iso-l{fill:var(--iso-l)}.iso-r{fill:var(--iso-r)}.iso-l.iso-amber{fill:var(--amber-h)}
+.iso-floor{fill:var(--iso-floor)}
+.iso-led{fill:var(--iso-led)}.iso-led.iso-led-gpu{fill:var(--violet)}.iso-port{fill:var(--iso-edge)}
+.iso-slot,.iso-brick{stroke:var(--iso-edge);stroke-width:1.4}
+.iso-ant{stroke:var(--iso-edge);stroke-width:3;stroke-linecap:round}
+.iso-screen,.iso-bore{fill:var(--iso-screen);stroke:var(--iso-edge);stroke-width:1}
+.iso-code{stroke:var(--iso-code);stroke-width:2.4;stroke-linecap:round}
+.iso-unit{stroke:none}
+.r-gpu{fill:var(--violet)}.r-res{fill:var(--pink)}.r-app{fill:var(--slate)}.r-db{fill:var(--emerald)}.r-st{fill:var(--cyan)}.r-bak{fill:var(--amber)}.r-ups{fill:var(--iso-edge)}
+.iso-unit.r-free{fill:none;stroke:var(--iso-edge);stroke-dasharray:3 3}
+.iso-cyl{fill:var(--iso-l);stroke:var(--iso-edge);stroke-width:1}.iso-cyl.iso-cyltop{fill:var(--iso-t)}
+.iso-cloud{fill:var(--iso-t);stroke:var(--iso-edge);stroke-width:1.4}
+.iso-globe circle,.iso-globe ellipse,.iso-globe line{fill:none;stroke:var(--blue);stroke-width:1.8}
+.iso-link{fill:none;stroke:var(--muted);stroke-width:1.4;stroke-dasharray:4 5;opacity:.85}
+.iso-link.iso-lout{stroke:var(--amber);stroke-width:1.8}.iso-link.iso-lvpn{stroke:var(--pink);stroke-width:2.2}
+.iso-zone{fill:none;stroke:var(--border);stroke-width:1.4}
+.iso-zone2{fill:none;stroke:var(--border);stroke-width:1.2;stroke-dasharray:6 5}
+.iso-zone.iso-zlab{stroke:var(--pink);stroke-width:2;stroke-dasharray:10 6}
+.iso-zonet{fill:var(--muted);font-size:13px;font-weight:700;letter-spacing:.07em}
+.iso-zones{fill:var(--muted);font-size:12px}
+.iso-name{fill:var(--text);font-size:15px;font-weight:700}
+.iso-sub,.iso-lis{fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.iso-li{fill:var(--text);font-size:13.5px;font-weight:600}
+.iso-key{stroke:none}
+.iso-tag.iso-tag-gpu{fill:var(--violet)}.iso-tagt{fill:var(--card);font-size:11px;font-weight:700;letter-spacing:.05em}
+.iso-vpn{fill:var(--pink);font-size:12px;font-weight:600}
+.iso-h1{fill:var(--text);font-size:22px;font-weight:700}.iso-h2{fill:var(--muted);font-size:14px}
+'''
 
 
 # ------------------------------------------------------------------ icons (cx, cy = floor centre)
@@ -271,6 +310,7 @@ svg = (f'<svg id="phys" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}"
        'app host B, PostgreSQL standby, storage nodes 3 and 4, backup gateway, UPS B), plus a load balancer pair, an egress firewall pair, a storage switch and a witness host. '
        'The firewall reaches the internet over two providers; from there the cloud provider holds the DICOM tiers, the research copy and the database backups, '
        'and the HCMUT lab runs the research server on a GPU and the four staging servers. The lab reaches only VLAN 40 over a site-to-site VPN.</desc>\n'
+       + '<style>' + ISO_CSS + '</style>' + chr(10)
        + '\n'.join(out) + '\n</svg>')
 
 if __name__ == '__main__':
