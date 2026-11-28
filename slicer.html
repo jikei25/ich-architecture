@@ -224,7 +224,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <li><a href="#pacs">Do we still need the PACS and Orthanc?</a></li>
 <li><a href="#changes">Changes to the current architecture</a></li>
 <li><a href="#contract">Gateway ↔ MONAI contract</a></li>
-<li><a href="#servers">One MONAI Label server, two models</a></li>
+<li><a href="#servers">Two models, two places</a></li>
 <li><a href="#risks">Risks and mitigations</a></li>
 <li><a href="#plan">PoC plan</a></li>
 <li><a href="#refs">References</a></li>
@@ -243,7 +243,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <h3 class="subh">AI blocks (D11)</h3>
 <div class="verdict">
   <div class="card c-blue"><h4>Slicer does not include MONAI</h4><p>The Slicer core only views and processes images. MONAI reaches Slicer only through extensions, and the MONAILabel extension is only a <b>client</b>: the model runs on a separate MONAI Label server.</p></div>
-  <div class="card c-violet"><h4>The AI blocks are MONAI</h4><p>The "AI inference service", "Annotation" and "Model training" blocks, abstract until now, are filled with MONAI. One MONAI Label server holds two models: <code>hemorrhage_approved</code> runs on every study and is never retrained; <code>hemorrhage_dev</code> drafts, learns and trains.</p></div>
+  <div class="card c-violet"><h4>The AI blocks are MONAI</h4><p>The "AI inference service", "Annotation" and "Model training" blocks, abstract until now, are filled with MONAI. MONAI Label runs two models in two places: <code>hemorrhage_approved</code> runs on every study on the hospital GPU and is never retrained; <code>hemorrhage_dev</code> drafts, learns and trains at the HCMUT lab (<a href="decisions.html#d12">D12</a>).</p></div>
   <div class="card c-pink"><h4>The received diagram is Flow 3</h4><p>It is the MONAI Label annotation loop (active learning): the AI runs only when a user clicks Run. Clinical triage needs the AI to run on its own when a CT arrives, so this diagram cannot replace Flow 2.</p></div>
   <div class="card c-emerald"><h4>The PACS stays</h4><p>The MONAI Label datastore is an image folder, and the Slicer DICOM database is one workstation's cache. Neither receives studies from the scanners, builds a worklist, keeps images for 10 years or serves many radiologists.</p></div>
 </div>
@@ -361,14 +361,13 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 </ul></div>
 
 <h2 class="sec" id="proposal"><span class="n">8</span>Proposed architecture</h2>
-<p>The clinical and data layers stay as they are. One MONAI Label server holds two models: <code>hemorrhage_approved</code> runs on every study and is never retrained, and <code>hemorrhage_dev</code> serves annotation and training. The approved model's result for each study becomes the annotator's draft, so annotators and radiologists only fix what the AI already produced.</p>
-<div class="callout amber"><b>Update: annotation and training moved to the HCMUT lab (<a href="decisions.html#d12">D12</a>).</b> <code>hemorrhage_approved</code> stays on the hospital GPU; <code>hemorrhage_dev</code>, its trainer, the label store and the registry run at the lab, fed by de-identified cases that the gateway pushes. The diagram and steps below still show one shared server; the current split is in the <a href="index.html#diagram">architecture diagram</a>.</div>
+<p>The clinical and data layers stay as they are. MONAI Label runs two models in two places (<a href="decisions.html#d12">D12</a>): <code>hemorrhage_approved</code> runs on every study on the hospital GPU and is never retrained, and <code>hemorrhage_dev</code> serves annotation and training at the HCMUT lab, run by the AI team. The approved model's result for each study becomes the annotator's draft, so annotators and radiologists only fix what the AI already produced.</p>
 <div class="figure"><div class="figscroll">
-<svg class="flowsvg wide" viewBox="0 0 900 640" role="img" aria-labelledby="mo-t mo-d"><title id="mo-t">3D Slicer and MONAI in the ICH architecture</title><desc id="mo-d">Clinical layer: the CT scanner sends studies to the dcm4chee PACS, and the radiologist reads in 3D Slicer with the ICH Triage module. Step 1: the PACS pushes each CT series once to Orthanc. Step 2: the AI worker sends a NIfTI volume to the hemorrhage_approved model on the MONAI Label server and gets a mask back. Step 3: the mask becomes a SEG that goes to the PACS. Step 4: Orthanc keeps de-identified copies of the CT and the AI mask, renamed with the same rule; the hemorrhage_dev model on the same server hands them to annotators in 3D Slicer with the MONAILabel extension, and every saved fix goes back to Orthanc as a new version and into the label store. Step 5, optional: a radiologist's fix is saved to the PACS, sent on to Orthanc, de-identified and added to the label store. Step 6: reviewed labels train hemorrhage_dev, a new bundle goes to the model registry, and only an approved bundle is loaded into hemorrhage_approved.</desc>
+<svg class="flowsvg wide" viewBox="0 0 900 640" role="img" aria-labelledby="mo-t mo-d"><title id="mo-t">3D Slicer and MONAI in the ICH architecture</title><desc id="mo-d">Clinical layer: the CT scanner sends studies to the dcm4chee PACS, and the radiologist reads in 3D Slicer with the ICH Triage module. Step 1: the PACS pushes each CT series once to Orthanc. Step 2: the AI worker sends a NIfTI volume to the hemorrhage_approved model on the MONAI Label server and gets a mask back. Step 3: the mask becomes a SEG that goes to the PACS. Step 4: Orthanc pushes de-identified copies of the CT and the AI mask, renamed with the same rule, to the label store at the HCMUT lab; the hemorrhage_dev model there hands them to annotators in 3D Slicer with the MONAILabel extension, and every saved fix goes into the label store as a new version. Step 5, optional: a radiologist's fix is saved to the PACS, sent on to Orthanc, de-identified and added to the label store. Step 6: reviewed labels train hemorrhage_dev, a new bundle goes to the model registry, and only an approved bundle is loaded into hemorrhage_approved.</desc>
 <defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <rect class="lanebx" x="10" y="16" width="880" height="132" rx="12"/><text class="lanet t-blue" x="24" y="38">CLINICAL · VLAN 10–20 · real patient data</text>
 <rect class="lanebx" x="10" y="160" width="880" height="172" rx="12"/><text class="lanet t-violet" x="24" y="182">AI INFERENCE · VLAN 30</text>
-<rect class="lanebx" x="10" y="344" width="880" height="244" rx="12"/><text class="lanet t-pink" x="24" y="366">AI RESEARCH · VLAN 40</text>
+<rect class="lanebx" x="10" y="344" width="880" height="244" rx="12"/><text class="lanet t-pink" x="24" y="366">AI RESEARCH · HCMUT LAB</text>
 
 <rect class="bxc" x="30" y="60" width="120" height="64" rx="8"/><text class="tt" x="90" y="88" text-anchor="middle">CT scanner</text><text class="ts" x="90" y="108" text-anchor="middle">modality</text>
 <rect class="bxc" x="250" y="60" width="180" height="64" rx="8"/><text class="tt" x="340" y="88" text-anchor="middle">PACS · dcm4chee</text><text class="ts" x="340" y="108" text-anchor="middle">archive + DICOMweb</text>
@@ -382,39 +381,38 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <path class="lv" d="M320 201 L320 128" marker-end="url(#ah2)"/><text class="tsv" x="328" y="150">3 · AI SEG</text>
 <path class="gap" d="M400 124 L400 201" marker-end="url(#ah2)"/><text class="gt" x="408" y="175">5 · fix sent on</text>
 
-<rect class="grpv" x="470" y="192" width="250" height="276" rx="12"/><text class="grpvt" x="595" y="210" text-anchor="middle">MONAI Label server (one)</text>
-<rect class="bxa" x="490" y="220" width="210" height="60" rx="8"/><text class="tt" x="595" y="245" text-anchor="middle">hemorrhage_approved</text><text class="ts" x="595" y="265" text-anchor="middle">fixed approved model, never trained</text>
+<rect class="bxa" x="490" y="220" width="210" height="60" rx="8"/><text class="tt" x="595" y="245" text-anchor="middle">hemorrhage_approved</text><text class="ts" x="595" y="265" text-anchor="middle">hospital GPU, never trained</text>
 <path class="lv" d="M420 236 L486 236" marker-end="url(#ah2)"/><text class="tsv" x="453" y="228" text-anchor="middle">2 · NIfTI</text>
 <path class="lv" d="M486 266 L424 266" marker-end="url(#ah2)"/><text class="tsv" x="455" y="282" text-anchor="middle">mask</text>
 
-<rect class="bxr" x="490" y="384" width="210" height="60" rx="8"/><text class="tt" x="595" y="409" text-anchor="middle">hemorrhage_dev</text><text class="ts" x="595" y="429" text-anchor="middle">drafts, active learning, training</text>
+<rect class="bxr" x="490" y="384" width="210" height="60" rx="8"/><text class="tt" x="595" y="409" text-anchor="middle">hemorrhage_dev</text><text class="ts" x="595" y="429" text-anchor="middle">lab GPU: drafts, training</text>
 <path class="cyl" d="M740 388 L740 436 A70 10 0 0 0 880 436 L880 388 A70 10 0 0 1 740 388 Z"/><ellipse class="cyl" cx="810" cy="388" rx="70" ry="10"/>
 <text class="tt" x="810" y="414" text-anchor="middle">Model registry</text><text class="ts" x="810" y="432" text-anchor="middle">versioned bundles</text>
 <path class="lr" d="M700 404 L736 404" marker-end="url(#ah2)"/><text class="tsr" x="810" y="462" text-anchor="middle">6 · new bundle</text>
-<path class="lv" d="M810 378 L810 250 L704 250" marker-end="url(#ah2)"/><text class="tsv" x="802" y="316" text-anchor="end">approved only</text>
+<path class="lv" d="M810 378 L810 250 L704 250" marker-end="url(#ah2)"/><text class="tsv" x="802" y="300" text-anchor="end">approved only,</text><text class="tsv" x="802" y="316" text-anchor="end">fetched by the hospital</text>
 
-<path class="lr" d="M380 289 L380 414 L486 414" marker-start="url(#ah2)" marker-end="url(#ah2)"/><text class="tsr" x="372" y="382" text-anchor="end">4 · cases + drafts in,</text><text class="tsr" x="372" y="398" text-anchor="end">label versions out</text>
+<path class="lr" d="M214 426 L486 426" marker-start="url(#ah2)" marker-end="url(#ah2)"/><text class="tsr" x="350" y="404" text-anchor="middle">4 · cases + drafts in,</text><text class="tsr" x="350" y="418" text-anchor="middle">label versions out</text>
 <path class="cyl" d="M30 404 L30 468 A90 10 0 0 0 210 468 L210 404 A90 10 0 0 1 30 404 Z"/><ellipse class="cyl" cx="120" cy="404" rx="90" ry="10"/>
 <text class="tt" x="120" y="430" text-anchor="middle">Label store</text><text class="ts" x="120" y="448" text-anchor="middle">every version: who, role,</text><text class="ts" x="120" y="464" text-anchor="middle">draft model, time</text>
-<path class="lr" d="M230 289 L230 436 L214 436" marker-end="url(#ah2)"/><text class="tsr" x="222" y="318" text-anchor="end">keeps every label version</text>
+<path class="lr" d="M230 289 L230 378 L120 378 L120 390" marker-end="url(#ah2)"/><text class="tsr" x="238" y="302">4 · de-identified CT + AI SEG,</text><text class="tsr" x="238" y="317">pushed over a VPN the</text><text class="tsr" x="238" y="332">hospital opens</text>
 <path class="lr" d="M120 480 L120 520 L510 520 L510 448" marker-end="url(#ah2)"/><text class="tsr" x="300" y="512">6 · reviewed labels → train</text>
 <rect class="bxr" x="600" y="500" width="230" height="60" rx="8"/><text class="tt" x="715" y="525" text-anchor="middle">3D Slicer + MONAILabel</text><text class="ts" x="715" y="545" text-anchor="middle">annotator: open case, fix draft</text>
 <path class="lr" d="M650 448 L650 496" marker-start="url(#ah2)" marker-end="url(#ah2)"/><text class="tsr" x="642" y="488" text-anchor="end">next case, save label</text>
 
 <text class="ts" x="450" y="612" text-anchor="middle">Violet: automatic for every study (1–3). Pink: research work, labelling, review, training (4, 6). Dashed red: only when a radiologist fixes a mask (5).</text>
-<text class="ts" x="450" y="630" text-anchor="middle">Research works on de-identified data only. The server sits in VLAN 30; VLAN 40 reaches only the hemorrhage_dev endpoints, through a proxy.</text>
+<text class="ts" x="450" y="630" text-anchor="middle">Research runs at the HCMUT lab on de-identified data only; the hospital opens every connection to the lab (D12).</text>
 </svg></div>
-<p class="figcap">Keycloak, HIS/RIS, SeaweedFS, PostgreSQL and backup are unchanged and not drawn. The label store is the research bucket plus a label index in PostgreSQL.</p>
+<p class="figcap">Keycloak, HIS/RIS, SeaweedFS, PostgreSQL and backup are unchanged and not drawn. The label store and the model registry are at the HCMUT lab, run by the AI team.</p>
 </div>
 <ol class="flow">
 <li class="f-dec"><b class="t">1 · The CT reaches the gateway</b>The scanner sends the study to the PACS, which pushes the CT series once to Orthanc.</li>
 <li class="f-dec"><b class="t">2 · The approved model runs on every study</b>The AI worker (in staging, the <code>ai_bridge.py</code> plugin inside Orthanc) sends one NIfTI volume to <code>hemorrhage_approved</code> and gets back a mask with one label per hemorrhage subtype.</li>
 <li class="f-dec"><b class="t">3 · The radiologist sees the result</b>The worker turns the mask into a DICOM SEG (one segment per subtype), an SR with the volume of each, and a priority flag. Orthanc sends the SEG and SR to the PACS. No one clicks Run.</li>
-<li class="f-dec"><b class="t">4 · Annotators fix the AI draft</b>For studies picked for research, Orthanc keeps de-identified copies of the CT and of its AI SEG, renamed with the same rule. The annotator clicks Next Sample, and the <code>hemorrhage_dev</code> side of the server opens the case with the AI SEG as its draft. The annotator fixes it and saves. Each save is a new SEG version on Orthanc, copied to the label store with who made it, their role, the model that drafted it and the time. Run is needed only to redo a case with <code>hemorrhage_dev</code>.</li>
-<li class="f-dec"><b class="t">5 · Optional: a radiologist's fix</b>A radiologist works on identified data, so their fix does not go through MONAI Label. Slicer saves it to the PACS as a new SEG (D10). An export rule sends SEGs of research studies to Orthanc, which de-identifies them with the same rule and files them as "radiologist, not reviewed". A Confirm with no edit creates no label.</li>
-<li class="f-dec"><b class="t">6 · Review, train, release</b>A reviewer picks one label version per case. Reviewed labels form a frozen dataset that trains <code>hemorrhage_dev</code>. The new bundle goes to the registry, and only an approved bundle is loaded as <code>hemorrhage_approved</code>.</li>
+<li class="f-dec"><b class="t">4 · Annotators fix the AI draft</b>For studies picked for research, Orthanc de-identifies the CT and its AI SEG with the same rule and pushes them to the label store at the HCMUT lab, over a VPN the hospital opens. The annotator clicks Next Sample, and <code>hemorrhage_dev</code> at the lab opens the case with the AI SEG as its draft. The annotator fixes it and saves. Each save is a new SEG version in the label store, with who made it, their role, the model that drafted it and the time. Run is needed only to redo a case with <code>hemorrhage_dev</code>.</li>
+<li class="f-dec"><b class="t">5 · Optional: a radiologist's fix</b>A radiologist works on identified data, so their fix does not go through MONAI Label. Slicer saves it to the PACS as a new SEG (D10). An export rule sends SEGs of research studies to Orthanc, which de-identifies them with the same rule and pushes them to the lab, filed as "radiologist, not reviewed". A Confirm with no edit creates no label.</li>
+<li class="f-dec"><b class="t">6 · Review, train, release</b>A reviewer picks one label version per case. Reviewed labels form a frozen dataset that trains <code>hemorrhage_dev</code>. The new bundle goes to the registry at the lab, and the hospital fetches only an approved bundle and loads it as <code>hemorrhage_approved</code>.</li>
 </ol>
-<div class="callout amber"><b>One renaming rule for a CT and all its masks.</b> Orthanc's default anonymisation draws new random UIDs every time, so a SEG de-identified later would point at UIDs that no longer exist. Derive each new UID from the original with a keyed hash (for example <code>2.25.</code> followed by an HMAC of the original UID), with the key kept in VLAN 30. A CT then always gets the same new UIDs, its AI SEG and any later fix line up with it, and the research side cannot reverse the mapping.</div>
+<div class="callout amber"><b>One renaming rule for a CT and all its masks.</b> Orthanc's default anonymisation draws new random UIDs every time, so a SEG de-identified later would point at UIDs that no longer exist. Derive each new UID from the original with a keyed hash (for example <code>2.25.</code> followed by an HMAC of the original UID), with the key kept in the hospital (VLAN 30). A CT then always gets the same new UIDs, its AI SEG and any later fix line up with it, and the research side cannot reverse the mapping.</div>
 <div class="callout"><b>Drafts and the labelling rules.</b> AI drafts are used for training cases only. Validation and test cases are served without a draft and labelled blind, and cases where readers disagree get a second reader. Every label records the model that drafted it, so a biased subset can be found and dropped.</div>
 
 <h2 class="sec" id="pacs"><span class="n">9</span>Do we still need the PACS and Orthanc?</h2>
@@ -447,11 +445,11 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <tr><td class="k">AI inference service</td><td>Abstract block; candidate MONAI Deploy + Triton</td><td>An AI worker (our code; in staging it runs as the <code>ai_bridge.py</code> plugin inside Orthanc) plus one MONAI Label server running <code>hemorrhage_approved</code> (a MONAI bundle). MONAI Deploy stays as the production path</td></tr>
 <tr><td class="k"><code>ai_bridge.py</code> plugin</td><td>POSTs NIfTI to <code>AI_SEGMENT_URL</code>; binary mask, one segment</td><td>Calls <code>/infer/hemorrhage_approved</code>; the 6-class mask becomes a multi-segment SEG with the volume of each subtype</td></tr>
 <tr><td class="k">De-identification</td><td>Fail-closed, new UIDs</td><td>Same keyed-hash UID rule for a CT and all its SEGs, so masks line up with their CT</td></tr>
-<tr><td class="k">Annotation</td><td>Abstract block (the report already names MONAI Label + 3D Slicer)</td><td><code>hemorrhage_dev</code> on the same MONAI Label server, datastore = Orthanc DICOMweb (de-identified), drafts = the AI SEG from Flow 2; 3D Slicer + MONAILabel extension</td></tr>
+<tr><td class="k">Annotation</td><td>Abstract block (the report already names MONAI Label + 3D Slicer)</td><td><code>hemorrhage_dev</code> at the HCMUT lab, datastore = the label store fed by the gateway's de-identified push, drafts = the AI SEG from Flow 2; 3D Slicer + MONAILabel extension</td></tr>
 <tr><td class="k">Labels</td><td>SEG labels copied to the research bucket</td><td>Every save is a new version with who, role, drafting model and time; a reviewer picks one per case</td></tr>
 <tr><td class="k">PACS export rules</td><td>CT series to the gateway</td><td>Also corrected SEGs of research studies, so radiologists' fixes reach the label store</td></tr>
-<tr><td class="k">Training</td><td>Abstract block</td><td>The trainer of <code>hemorrhage_dev</code>, at low-load hours with a GPU cap</td></tr>
-<tr><td class="k">Model registry</td><td>Versioned model store</td><td>Store of MONAI bundles with version, metrics, dataset version and approval status; only an approved bundle becomes <code>hemorrhage_approved</code></td></tr>
+<tr><td class="k">Training</td><td>Abstract block</td><td>The trainer of <code>hemorrhage_dev</code>, on the AI team's GPU at the HCMUT lab</td></tr>
+<tr><td class="k">Model registry</td><td>Versioned model store</td><td>Store of MONAI bundles with version, metrics, dataset version and approval status, at the lab; the hospital fetches only an approved bundle as <code>hemorrhage_approved</code></td></tr>
 </table></div>
 
 <h2 class="sec" id="contract"><span class="n">11</span>Gateway ↔ MONAI contract</h2>
@@ -473,28 +471,30 @@ def segment(volume):
 <span class="c"># mask_to_seg: one SegmentDescription per label 1–5 present, instead of a single "hemorrhage" segment</span></pre>
 <div class="callout amber"><b>To check in the PoC.</b> The returned mask must be on the same grid (shape, affine) as the volume sent; <code>ai_bridge.py</code> already rejects a mask on a different grid. If the app resamples or reorients, fix the app's post-processing, not the gateway.</div>
 
-<h2 class="sec" id="servers"><span class="n">12</span>One MONAI Label server, two models</h2>
-<p>For the project one server is enough: one GPU, one app, one place to configure. It holds two models with different jobs, so a freshly trained, unchecked model never runs on patients by accident.</p>
+<h2 class="sec" id="servers"><span class="n">12</span>Two models, two places</h2>
+<p>The two models have different jobs, so a freshly trained, unchecked model never runs on patients by accident. They also run in different places (<a href="decisions.html#d12">D12</a>): inference in the hospital, research at the HCMUT lab.</p>
 <div class="tbl"><table>
 <tr><th></th><th><code>hemorrhage_approved</code></th><th><code>hemorrhage_dev</code></th></tr>
+<tr><td class="k">Runs at</td><td>The hospital GPU, VLAN 30</td><td>The AI team's GPU at the HCMUT lab</td></tr>
 <tr><td class="k">Used for</td><td>Every study (Flow 2)</td><td>Drafts on demand, active learning, training (Flow 3)</td></tr>
-<tr><td class="k">Called by</td><td>Only the AI worker</td><td>Annotators' 3D Slicer + MONAILabel extension, through the proxy</td></tr>
-<tr><td class="k">Input</td><td>An uploaded NIfTI volume (option A), never written to the datastore</td><td>De-identified cases from the Orthanc DICOMweb datastore</td></tr>
+<tr><td class="k">Called by</td><td>Only the AI worker</td><td>Annotators' 3D Slicer + MONAILabel extension</td></tr>
+<tr><td class="k">Input</td><td>An uploaded NIfTI volume (option A), never written to a datastore</td><td>De-identified cases in the label store, pushed by the gateway</td></tr>
 <tr><td class="k">Trainer</td><td>None: never retrained in place</td><td>Yes</td></tr>
-<tr><td class="k">Version</td><td>The approved bundle from the registry, replaced only by a newer approved bundle</td><td>The latest bundle</td></tr>
+<tr><td class="k">Version</td><td>The approved bundle, fetched by the hospital from the registry</td><td>The latest bundle</td></tr>
 </table></div>
-<p>Four guards keep the shared server safe:</p>
+<p>Three guards keep the split safe:</p>
 <ul>
-<li><b>Network.</b> The server sits in VLAN 30. A reverse proxy lets VLAN 40 reach only <code>/info</code>, <code>/activelearning</code>, <code>/datastore</code>, <code>/infer/hemorrhage_dev</code>, the interactive tools and <code>/train/hemorrhage_dev</code>. Only the AI worker may call <code>/infer/hemorrhage_approved</code>.</li>
-<li><b>Identity.</b> MONAI Label authentication is switched on (Keycloak), so every saved label records who made it.</li>
-<li><b>GPU.</b> Inference comes first. Training runs at low-load hours with a memory cap and stops if triage inference misses its latency budget. Emergencies also come at night, so "outside reading hours" alone is not enough.</li>
-<li><b>Data.</b> Identified volumes only pass through inference as temporary uploads. The datastore holds de-identified copies only.</li>
+<li><b>Network.</b> Only the AI worker may call <code>/infer/hemorrhage_approved</code>. The lab is reached only over a VPN that the hospital opens through the egress firewall; nothing at the lab can connect into the hospital.</li>
+<li><b>Identity.</b> MONAI Label authentication is switched on at the lab, so every saved label records who made it.</li>
+<li><b>Data.</b> Identified volumes only pass through hospital inference as temporary uploads. The lab receives de-identified copies only, and the UID key never leaves the hospital.</li>
 </ul>
 <pre class="code"><span class="c"># Sketch, not run. The app name and --conf keys depend on the AI team's app</span>
-monailabel start_server --app apps/ich --studies http://gateway:8042/dicom-web \
-  --conf models hemorrhage_approved,hemorrhage_dev,sam_2d --port 8000
-<span class="c"># the app declares a trainer for hemorrhage_dev only</span></pre>
-<div class="callout cyan"><b>When to split into two servers.</b> In a real deployment, or as soon as training slows triage, a training job crashes the server, or a research change needs a restart during reading hours: move <code>hemorrhage_approved</code> to its own inference server in VLAN 30 and keep <code>hemorrhage_dev</code> in VLAN 40. Nothing else changes, because the registry is still the only handoff.</div>
+<span class="c"># hospital: inference only</span>
+monailabel start_server --app apps/ich --studies /tmp/empty --conf models hemorrhage_approved --port 8000
+<span class="c"># HCMUT lab: annotation and training on the pushed, de-identified cases</span>
+monailabel start_server --app apps/ich --studies http://&lt;label-store&gt;/dicom-web \
+  --conf models hemorrhage_dev,sam_2d --port 8000</pre>
+<div class="callout cyan"><b>If the lab option falls through.</b> If the data-sharing agreement with the lab cannot be reached, train in the hospital on a second GPU in VLAN 40. Nothing else changes, because the registry is still the only handoff.</div>
 
 <h2 class="sec" id="risks"><span class="n">13</span>Risks and mitigations</h2>
 <h3 class="subh">Viewer</h3>
@@ -510,7 +510,7 @@ monailabel start_server --app apps/ich --studies http://gateway:8042/dicom-web \
 <h3 class="subh">AI blocks</h3>
 <div class="tbl"><table>
 <tr><th>Risk</th><th>Why it matters</th><th>Mitigation</th></tr>
-<tr><td class="k">One server for patients and research</td><td>A training job or a crash can slow or stop triage</td><td>The four guards in <a href="#servers">section 12</a>; split into two servers when they are not enough</td></tr>
+<tr><td class="k">Research data leaves the hospital</td><td>A de-identification miss would expose patient data at the HCMUT lab</td><td>Fail-closed de-identification, keyed-hash UIDs with the key kept in the hospital, burned-in text rejected, and a data-sharing agreement (<a href="#servers">section 12</a>, <a href="decisions.html#d12">D12</a>)</td></tr>
 <tr><td class="k">MONAI Label is not built for production serving</td><td>No queue, batching, HA or serving metrics as an inference server has</td><td>The queue and retries live in the AI worker; "AI paused" when the server does not answer. The production path is MONAI Deploy or Triton with the same bundle</td></tr>
 <tr><td class="k">The 6-class mask merged into one</td><td>Loses the hemorrhage subtype and the volume of each</td><td>Change <code>mask_to_seg</code> and the SR; the AI team supplies the table for labels 1–5</td></tr>
 <tr><td class="k">A mask no longer lines up after de-identification</td><td>Orthanc draws random UIDs each time, so a SEG de-identified later points at nothing</td><td>One keyed-hash UID rule for a CT and all its SEGs; checked in the PoC</td></tr>
