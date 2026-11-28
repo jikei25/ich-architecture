@@ -95,10 +95,10 @@ window.SEQ.s1 = [
     participants: [
       { id: "ann", name: "Annotator", sub: "fixes · reviews", kind: "actor", color: "pink", group: "res" },
       { id: "aui", name: "3D Slicer", sub: "MONAILabel extension", kind: "ui", color: "pink", group: "res" },
-      { id: "dev", name: "Research server", sub: "MONAI · hemorrhage_dev", color: "pink", group: "res" },
+      { id: "dev", name: "Research server", sub: "hemorrhage_dev", color: "pink", group: "res" },
       { id: "pacs", name: "PACS", sub: "dcm4chee", color: "blue", group: "clin" },
       { id: "gw", name: "Orthanc gateway", sub: "de-identify", color: "violet", group: "ai" },
-      { id: "inf", name: "Inference server", sub: "MONAI · hemorrhage_approved", color: "violet", group: "ai" },
+      { id: "inf", name: "Inference server", sub: "hemorrhage_approved", color: "violet", group: "ai" },
       { id: "s3", name: "Research Orthanc", sub: "de-id CT · every label", color: "pink", group: "data" },
       { id: "reg", name: "Model registry", sub: "versioned bundles", color: "pink", group: "data" }
     ],
