@@ -85,7 +85,7 @@ Dùng grep tìm tên cũ trên toàn repo trước khi báo xong. Ví dụ: `gre
 
 - **Trang mới:** chép phần `<head>` và thanh `nav.scen` từ một trang có sẵn, rồi thêm link trang mới vào `nav.scen` của **mọi** trang. Thanh trên phải nằm một hàng; kiểm tra ở độ rộng 1280, 900 và 375 px.
 - **Sơ đồ tuần tự:** chia giai đoạn bằng `{t: "sep"}` ở cấp ngoài cùng, không đặt bên trong `alt/par/loop`. Mỗi giai đoạn nên khoảng 15 bước trở xuống. Mọi `from/to` phải là id có trong `participants`; kiểm tra bằng `node --check` và mở trang xem.
-- **Physical layout** (`#phys` trong `index.html`) là hình isometric (máy chủ, rack, laptop, cloud) sinh từ `assets/diagrams/physical_layout.py`: sửa phần scene trong script rồi chạy `python assets/diagrams/physical_layout.py index.html`; màu nằm ở CSS `iso-*` trong `index.html`. Không sửa tay SVG đó.
+- **Physical layout** (`#phys` trong `index.html`) là hình isometric (máy chủ, rack, laptop, cloud) sinh từ `assets/diagrams/physical_layout.py`: sửa phần scene trong script rồi chạy `python assets/diagrams/physical_layout.py index.html slicer.html` (sơ đồ có ở cả hai trang); màu nằm ở CSS `iso-*` trong `assets/site.css`. Không sửa tay SVG đó.
 - **Sơ đồ kiến trúc chính giữ bản SVG vẽ tay** trong `index.html`. Team đã thử vẽ bằng Archify nhưng quay lại: bản Archify làm mất nội dung (các tầng lưu trữ cloud, luồng restore, rclone, nút highlight và số bước khớp với Flow 1–5). Ngoài ra Archify vẽ luồng logic, không vẽ được kết nối vật lý (dây, switch, rack, UPS).
 - **Sơ đồ Archify** (skill `archify`, cài global) dùng cho simplified. Không sửa SVG xuất ra bằng tay; sửa file nguồn rồi chạy lại:
   ```

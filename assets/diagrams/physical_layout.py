@@ -1,7 +1,7 @@
 """Generate the isometric physical-layout SVG (#phys) for index.html.
 
-Usage: python assets/diagrams/physical_layout.py index.html
-Rewrites the <svg id="phys"> block in place; colours come from the iso-* CSS in index.html.
+Usage: python assets/diagrams/physical_layout.py index.html slicer.html
+Rewrites the <svg id="phys"> block in place; colours come from the iso-* CSS in assets/site.css.
 Edit the scene section below (devices, labels, links) and run again.
 """
 import math
@@ -274,14 +274,14 @@ svg = (f'<svg id="phys" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}"
        + '\n'.join(out) + '\n</svg>')
 
 if __name__ == '__main__':
-    page = sys.argv[1]
-    raw = open(page, encoding='utf-8', newline='').read()
-    crlf = chr(13) + chr(10)
-    text = raw.replace(crlf, chr(10))
-    i = text.index('<svg id="phys"')
-    j = text.index('</svg>', i) + len('</svg>')
-    text = text[:i] + svg + text[j:]
-    if crlf in raw:
-        text = text.replace(chr(10), crlf)
-    open(page, 'w', encoding='utf-8', newline='').write(text)
-    print('updated', page)
+    for page in sys.argv[1:]:
+        raw = open(page, encoding='utf-8', newline='').read()
+        crlf = chr(13) + chr(10)
+        text = raw.replace(crlf, chr(10))
+        i = text.index('<svg id="phys"')
+        j = text.index('</svg>', i) + len('</svg>')
+        text = text[:i] + svg + text[j:]
+        if crlf in raw:
+            text = text.replace(chr(10), crlf)
+        open(page, 'w', encoding='utf-8', newline='').write(text)
+        print('updated', page)
