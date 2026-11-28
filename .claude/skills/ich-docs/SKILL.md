@@ -24,13 +24,13 @@ Tài liệu hiện đã dài và có giọng "AI viết". Vì vậy cứ thêm n
 
 | Phần | Nội dung | Ngôn ngữ |
 |---|---|---|
-| `index.html` | Kịch bản 1: sơ đồ kiến trúc và physical layout (ảnh Archify), staging ở lab Bách khoa, sơ đồ tuần tự, các tầng, bảng thành phần, Flow 1–5, mục khối AI (`#abstract`), nguyên tắc | English |
+| `index.html` | Kịch bản 1: sơ đồ kiến trúc SVG vẽ tay (`#arch`), physical layout SVG vẽ tay (`#phys`), staging ở lab Bách khoa, sơ đồ tuần tự, các tầng, bảng thành phần, Flow 1–5, mục khối AI (`#abstract`), nguyên tắc | English |
 | `simplified.html`, `scenario2.html` | Kịch bản 1 rút gọn; kịch bản 2 (GPU ở cơ sở 2) | English |
 | `decisions.html` | Bảng quyết định D1–D11, mỗi quyết định một mục `#dN`, câu hỏi reviewer, follow-ups, nguồn | English |
 | `slicer.html` | "Slicer + MONAI": phần A trình xem (D10), phần B khối AI (D11) | English |
 | `dcm4chee.html` | Tìm hiểu sâu dcm4chee. Ghi lại thứ đã làm, không phải kiến trúc hiện tại | English |
 | `assets/site.css`, `site.js` | CSS và JS dùng chung (thanh trên, mục lục, zoom sơ đồ, theme) | |
-| `assets/diagrams/` | Sơ đồ Archify: `<tên>.architecture.json` (nguồn), `<tên>.html` (bản tương tác), `<tên>-light.svg`, `<tên>-dark.svg` (ảnh nhúng trong trang). Có `architecture`, `physical-layout`, `simplified`, `slicer-monai` | English |
+| `assets/diagrams/` | Sơ đồ Archify: `<tên>.architecture.json` (nguồn), `<tên>.html` (bản tương tác), `<tên>-light.svg`, `<tên>-dark.svg` (ảnh nhúng trong trang). Hiện có `simplified` và `slicer-monai` | English |
 | `assets/sequence.js` | Bộ vẽ sơ đồ tuần tự (tab, giai đoạn theo `sep`, đi từng bước) | |
 | `assets/sequences-s1.js`, `-s2.js` | Dữ liệu sơ đồ tuần tự của từng kịch bản | English |
 | `tex/` | Báo cáo: `main.tex`, `contents/*.tex`, hình `figures/arch/*.tex` (TikZ), `refs.bib`, `changelog.txt` | Tiếng Việt |
@@ -72,7 +72,7 @@ Người đọc lướt để tìm một câu trả lời. Văn dài và rập k
 
 Một thành phần thường xuất hiện ở 6–8 chỗ. Khi đổi tên sản phẩm, luồng hay vai trò của một khối, kiểm tra lần lượt:
 
-1. Sơ đồ Archify trong `assets/diagrams/` (sửa file `.architecture.json` rồi xuất lại, xem "Ghi chú kỹ thuật"), chú thích hình dưới mỗi ảnh, và SVG vẽ tay còn lại trong `scenario2.html`.
+1. SVG vẽ tay trong `index.html` (`#arch`, `#phys`) và `scenario2.html`: khối, nhãn mũi tên, `<desc>`, chú thích hình, `data-desc` của các nút highlight và vòng số bước. Sơ đồ Archify trong `assets/diagrams/` (simplified, Slicer + MONAI): sửa file `.architecture.json` rồi xuất lại, xem "Ghi chú kỹ thuật".
 2. Bảng thành phần (glossary), thẻ các tầng, các bước Flow, mục `#abstract` trong `index.html`.
 3. `decisions.html`: dòng trong bảng index và mục `#dN`.
 4. `assets/sequences-s*.js`: tên và `sub` của participant, các bước liên quan.
@@ -85,14 +85,15 @@ Dùng grep tìm tên cũ trên toàn repo trước khi báo xong. Ví dụ: `gre
 
 - **Trang mới:** chép phần `<head>` và thanh `nav.scen` từ một trang có sẵn, rồi thêm link trang mới vào `nav.scen` của **mọi** trang. Thanh trên phải nằm một hàng; kiểm tra ở độ rộng 1280, 900 và 375 px.
 - **Sơ đồ tuần tự:** chia giai đoạn bằng `{t: "sep"}` ở cấp ngoài cùng, không đặt bên trong `alt/par/loop`. Mỗi giai đoạn nên khoảng 15 bước trở xuống. Mọi `from/to` phải là id có trong `participants`; kiểm tra bằng `node --check` và mở trang xem.
-- **Sơ đồ kiến trúc vẽ bằng Archify** (skill `archify`, cài global). Không sửa SVG xuất ra bằng tay; sửa file nguồn rồi chạy lại:
+- **Sơ đồ kiến trúc chính và physical layout giữ bản SVG vẽ tay** trong `index.html`. Team đã thử vẽ bằng Archify nhưng quay lại: bản Archify làm mất nội dung (các tầng lưu trữ cloud, luồng restore, rclone, nút highlight và số bước khớp với Flow 1–5). Ngoài ra Archify vẽ luồng logic, không vẽ được kết nối vật lý (dây, switch, rack, UPS).
+- **Sơ đồ Archify** (skill `archify`, cài global) dùng cho simplified và Slicer + MONAI. Không sửa SVG xuất ra bằng tay; sửa file nguồn rồi chạy lại:
   ```
   node ~/.claude/skills/archify/bin/archify.mjs finalize architecture <tên>.architecture.json <tên>.html --quality showcase --json
   node ~/.claude/skills/archify/bin/export-svg.mjs <tên>.html <tên>-light.svg light
   node ~/.claude/skills/archify/bin/export-svg.mjs <tên>.html <tên>-dark.svg dark
   ```
   Chạy trong một thư mục nháp rồi chép bốn file vào `assets/diagrams/`. Đừng chép các file phụ của finalize (`*.finalize*.json`, `*.delivery*.json`, `*.browser-check.json`). Finalize và export đều không ghi đè: xoá kết quả cũ trước khi chạy lại. Khung chỉ có hai loại, `region` (site) và `security-group` (vùng mạng, rack). Dùng `layout.mode: "grid"` với `row`/`col` và giữ canvas rộng tối đa khoảng 1550px. Sửa hết lỗi mà finalize báo trước khi dùng ảnh. Trang nhúng ảnh qua `<div class="figure adg">` (CSS trong `site.css` đổi ảnh sáng/tối theo theme).
-- **Chữ trong SVG vẽ tay** (`scenario2.html`, sơ đồ tuần tự): sau khi đổi chữ, mở trang và kiểm tra chữ không tràn khối và không đè nhau (dùng `getBBox()` trong trình duyệt).
+- **Chữ trong SVG vẽ tay** (`index.html`, `scenario2.html`, sơ đồ tuần tự): sau khi đổi chữ, mở trang và kiểm tra chữ không tràn khối và không đè nhau (dùng `getBBox()` trong trình duyệt).
 - **Xem thử:** `python -m http.server 8765` ở thư mục gốc, rồi mở `http://127.0.0.1:8765/`. Trình duyệt hay giữ bản cũ của `assets/*.js|css`; tải lại có bỏ cache.
 - **LaTeX:** sửa file `.tex` bằng script Python đặt trong file (viết bằng công cụ Write), không viết inline trong lệnh shell. Lệnh shell có thể nuốt `\\`, làm hỏng `\textbf`, `\\` cuối dòng bảng hay xuống dòng trong node TikZ. Sau khi sửa, kiểm tra số `{` và `}` cân bằng và các dòng bảng kết thúc bằng `\\`. MiKTeX trên máy dev hiện lỗi font `vntex` ngay cả với `main`; nếu không build được thì nói rõ, đừng báo là đã build.
 - **Xuống dòng:** repo lưu LF, working copy có thể là CRLF (`core.autocrlf`). Khi sửa bằng script, đọc và ghi với `newline=""` và giữ đúng kiểu xuống dòng của file.
