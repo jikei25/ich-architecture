@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Creates the data directories of one server with the owner each container runs as.
 # Safe to run repeatedly: existing directories and their content are kept.
-# Usage: ./init-dirs.sh pacs|gateway|database|storage
+# Usage: ./init-dirs.sh pacs|gateway|database|storage|research
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -11,8 +11,10 @@ case "$server" in
   storage)  dirs=("medical-ai-seaweedfs/data:0:0:750") ;;
   pacs)     dirs=("medical-ai-openldap/data:100:101:700" "medical-ai-openldap/config:100:101:700"
                   "medical-ai-dcm4chee/wildfly:1023:1023:750" "medical-ai-dcm4chee/storage:1023:1023:750") ;;
-  gateway)  dirs=("medical-ai-orthanc/db:0:0:750") ;;
-  *) echo "usage: $0 pacs|gateway|database|storage" >&2; exit 1 ;;
+  gateway)  dirs=("medical-ai-orthanc/db:0:0:750" "medical-ai-registry:0:0:750") ;;
+  research) dirs=("medical-ai-research/orthanc:0:0:750" "medical-ai-research/monai-cache:0:0:750"
+                  "medical-ai-research/models:0:0:750" "medical-ai-research/datasets:0:0:750" "medical-ai-registry:0:0:750") ;;
+  *) echo "usage: $0 pacs|gateway|database|storage|research" >&2; exit 1 ;;
 esac
 
 [ -f "$server/.env" ] || { echo "$server/.env is missing: run ./generate-env.sh first" >&2; exit 1; }

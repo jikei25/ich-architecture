@@ -1,0 +1,48 @@
+name: medical-ai-research
+
+x-logging: &logging
+  driver: json-file
+  options: {max-size: "50m", max-file: "5"}
+
+services:
+  # Research Orthanc, the label store: de-identified CT series and every SEG label version, never overwritten.
+  # Each SEG has one Orthanc label for its status (draft, unreviewed, reviewed); provenance is user metadata.
+  orthanc:
+    image: orthancteam/orthanc:26.9.1
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${RESEARCH_HTTP_PORT:-8043}:8042"
+    environment:
+      ORTHANC__NAME: ich-research
+      ORTHANC__AUTHENTICATION_ENABLED: "true"
+      ORTHANC__REGISTERED_USERS: '{"gateway": "${RESEARCH_GATEWAY_PASSWORD:?run generate-env.sh}", "monai": "${RESEARCH_MONAI_PASSWORD:?run generate-env.sh}"}'
+      ORTHANC__DICOM_WEB__ENABLE: "true"
+      ORTHANC__USER_METADATA: '{"Author": 1024, "Role": 1025, "DraftModel": 1026, "ReviewedAt": 1027}'
+    volumes:
+      # shortcut: SQLite index and files on local disk; use the PostgreSQL cluster and the research bucket before production.
+      - ${DATA_ROOT:?run generate-env.sh}/medical-ai-research/orthanc:/var/lib/orthanc/db
+    logging: *logging
+
+  # MONAI Label research server: hemorrhage_dev for 3D Slicer (MONAILabel extension), active learning and training.
+  # Its cache holds downloaded copies only and can be deleted at any time.
+  monai:
+    build: ../monai
+    image: medical-ai/monai-label:0.8.8
+    restart: unless-stopped
+    depends_on: [orthanc]
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${MONAI_RESEARCH_PORT:-8000}:8000"
+    command: ["--studies", "http://orthanc:8042/dicom-web", "--conf", "models", "hemorrhage_dev", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      MONAI_LABEL_DATASTORE_USERNAME: monai
+      MONAI_LABEL_DATASTORE_PASSWORD: ${RESEARCH_MONAI_PASSWORD:?run generate-env.sh}
+      MONAI_LABEL_DICOMWEB_CACHE_PATH: /cache
+      MONAI_LABEL_DICOMWEB_CACHE_EXPIRY: "30"
+      MONAI_LABEL_USE_ITK_FOR_DICOM_SEG: "false"
+      RESEARCH_ORTHANC_URL: http://orthanc:8042
+    volumes:
+      - ${DATA_ROOT}/medical-ai-research/monai-cache:/cache
+      - ${DATA_ROOT}/medical-ai-research/models:/models
+      - ${DATA_ROOT}/medical-ai-research/datasets:/datasets
+      - ${DATA_ROOT}/medical-ai-registry:/registry
+    logging: *logging
