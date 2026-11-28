@@ -87,7 +87,7 @@ window.SEQ.s1 = [
     title: "Scenario 1: annotation and model development",
     summary: "How annotators fix the AI result of each de-identified case, how a radiologist's fix joins them, and how reviewed labels become a new approved model. Not time-critical: it repeats over weeks and months.",
     groups: {
-      res: { label: "AI research · VLAN 40", color: "pink" },
+      res: { label: "AI research · server at the HCMUT lab", color: "pink" },
       clin: { label: "Clinical", color: "blue" },
       ai: { label: "AI inference · VLAN 30", color: "violet" },
       data: { label: "Research storage · VLAN 40", color: "pink" }
@@ -95,7 +95,7 @@ window.SEQ.s1 = [
     participants: [
       { id: "ann", name: "Annotator", sub: "fixes · reviews", kind: "actor", color: "pink", group: "res" },
       { id: "aui", name: "3D Slicer", sub: "MONAILabel extension", kind: "ui", color: "pink", group: "res" },
-      { id: "dev", name: "Research server", sub: "hemorrhage_dev", color: "pink", group: "res" },
+      { id: "dev", name: "Research server", sub: "HCMUT lab GPU", color: "pink", group: "res" },
       { id: "pacs", name: "PACS", sub: "dcm4chee", color: "blue", group: "clin" },
       { id: "gw", name: "Orthanc gateway", sub: "de-identify", color: "violet", group: "ai" },
       { id: "inf", name: "Inference server", sub: "hemorrhage_approved", color: "violet", group: "ai" },
@@ -111,7 +111,7 @@ window.SEQ.s1 = [
       { t: "sep", label: "Annotate" },
       { t: "loop", label: "each case in the queue" },
       { t: "msg", from: "ann", to: "aui", style: "ui", label: "Next Sample" },
-      { t: "msg", from: "aui", to: "dev", style: "res", label: "next case (active learning)", detail: "Annotators reach the research server only; it never sees identified data." },
+      { t: "msg", from: "aui", to: "dev", style: "res", label: "next case (active learning)", detail: "The research server runs hemorrhage_dev on the AI team's GPU at the HCMUT lab. It reaches the hospital over a VPN that opens only VLAN 40, so it never sees identified data." },
       { t: "msg", from: "dev", to: "s3", style: "res", label: "QIDO / WADO-RS: de-identified CT + AI SEG" },
       { t: "msg", from: "s3", to: "dev", style: "res", ret: true, label: "case and its draft" },
       { t: "msg", from: "dev", to: "aui", style: "res", ret: true, label: "CT + AI draft (training cases only)", detail: "Validation and test cases come without a draft and are labelled blind." },
@@ -128,7 +128,7 @@ window.SEQ.s1 = [
       { t: "sep", label: "Review, train, release" },
       { t: "msg", from: "ann", to: "s3", style: "ui", label: "reviewer picks one version per case" },
       { t: "msg", from: "dev", to: "s3", style: "res", label: "read the frozen dataset version", detail: "A versioned set of images and reviewed labels, so every model can be traced to the exact data it learned from." },
-      { t: "msg", from: "dev", to: "dev", style: "res", label: "train hemorrhage_dev on the training GPU", detail: "Training has its own GPU, so it never slows triage." },
+      { t: "msg", from: "dev", to: "dev", style: "res", label: "train hemorrhage_dev on the lab GPU", detail: "Training runs at the HCMUT lab, so it never touches the hospital's GPUs." },
       { t: "msg", from: "dev", to: "reg", style: "res", label: "publish candidate bundle + metrics" },
       { t: "msg", from: "ann", to: "reg", style: "ui", label: "review candidate on held-out test set", detail: "Clinicians and the AI team review the candidate. Only an approved version is marked approved." },
       { t: "alt", label: "approved" },

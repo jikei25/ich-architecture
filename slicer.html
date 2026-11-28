@@ -242,11 +242,11 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <h3 class="subh">AI blocks (D11)</h3>
 <div class="verdict">
   <div class="card c-blue"><h4>Slicer does not include MONAI</h4><p>The MONAILabel extension is only a client; the model runs on a MONAI Label server.</p></div>
-  <div class="card c-violet"><h4>One app, two servers</h4><p><code>hemorrhage_approved</code> (VLAN 30) runs on every study. <code>hemorrhage_dev</code> (VLAN 40) drafts and trains on de-identified data.</p></div>
+  <div class="card c-violet"><h4>One app, two servers</h4><p><code>hemorrhage_approved</code> (VLAN 30) runs on every study. <code>hemorrhage_dev</code> drafts and trains on de-identified data, on the AI team's GPU at the HCMUT lab.</p></div>
   <div class="card c-pink"><h4>The received diagram is Flow 3</h4><p>Its AI runs only when someone clicks Run, so it cannot replace automatic triage.</p></div>
   <div class="card c-emerald"><h4>PACS and Orthanc stay</h4><p>MONAI Label and Slicer keep images only as caches.</p></div>
 </div>
-<div class="callout"><b>Recommendation.</b> Keep the clinical and data layers. Fill the AI blocks with one MONAI Label app run as two servers, and keep de-identified copies and every label version on a research Orthanc. The approved model's result is the annotator's draft, and the model registry is the only way a trained model reaches patients. The staging PoC ran this data path end to end (section <a href="#plan">9</a>). Recorded as <a href="decisions.html#d11">D11</a>.</div>
+<div class="callout"><b>Recommendation.</b> Keep the clinical and data layers. Fill the AI blocks with one MONAI Label app run as two servers, and keep de-identified copies and every label version on a research Orthanc. The approved model's result is the annotator's draft, and the model registry is the only way a trained model reaches patients. The research server runs on the AI team's GPU at the HCMUT lab and reaches only VLAN 40 (<a href="decisions.html#d12">D12</a>). The staging PoC ran this data path end to end (section <a href="#plan">9</a>). Recorded as <a href="decisions.html#d11">D11</a>.</div>
 
 <div class="partbar" id="part-viewer"><span>Part A</span>3D Slicer as the radiologist viewer (D10)</div>
 
@@ -319,7 +319,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 
 <h2 class="sec" id="proposal"><span class="n">5</span>Proposed architecture</h2>
 <div class="figure"><div class="figscroll">
-<svg class="flowsvg wide" viewBox="0 0 900 640" role="img" aria-labelledby="mo-t mo-d"><title id="mo-t">3D Slicer and MONAI in the ICH architecture</title><desc id="mo-d">Clinical layer: the CT scanner sends studies to the dcm4chee PACS, and the radiologist reads in 3D Slicer with the ICH Triage module. Step 1: the PACS pushes each CT series once to Orthanc. Step 2: the AI worker sends a NIfTI volume to the hemorrhage_approved model on the MONAI Label server and gets a mask back. Step 3: the mask becomes a SEG that goes to the PACS. Step 4: the gateway de-identifies the CT and the AI mask with the same renaming rule and stores them on the research Orthanc, the label store; the hemorrhage_dev model on the research server hands them to annotators in 3D Slicer with the MONAILabel extension, and every saved fix goes back to the research Orthanc as a new version. Step 5, optional: a radiologist's fix is saved to the PACS, sent on to the gateway, de-identified and added to the label store. Step 6: reviewed labels train hemorrhage_dev, a new bundle goes to the model registry, and only an approved bundle is loaded into hemorrhage_approved.</desc>
+<svg class="flowsvg wide" viewBox="0 0 900 640" role="img" aria-labelledby="mo-t mo-d"><title id="mo-t">3D Slicer and MONAI in the ICH architecture</title><desc id="mo-d">Clinical layer: the CT scanner sends studies to the dcm4chee PACS, and the radiologist reads in 3D Slicer with the ICH Triage module. Step 1: the PACS pushes each CT series once to Orthanc. Step 2: the AI worker sends a NIfTI volume to the hemorrhage_approved model on the MONAI Label server and gets a mask back. Step 3: the mask becomes a SEG that goes to the PACS. Step 4: the gateway de-identifies the CT and the AI mask with the same renaming rule and stores them on the research Orthanc, the label store; the hemorrhage_dev model on the research server hands them to annotators in 3D Slicer with the MONAILabel extension, and every saved fix goes back to the research Orthanc as a new version. Step 5, optional: a radiologist's fix is saved to the PACS, sent on to the gateway, de-identified and added to the label store. Step 6: reviewed labels train hemorrhage_dev, a new bundle goes to the model registry, and only an approved bundle is loaded into hemorrhage_approved. The research server runs on the AI team's GPU at the HCMUT lab and reaches only VLAN 40 over a VPN.</desc>
 <defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <rect class="lanebx" x="10" y="16" width="880" height="132" rx="12"/><text class="lanet t-blue" x="24" y="38">CLINICAL · VLAN 10–20 · real patient data</text>
 <rect class="lanebx" x="10" y="160" width="880" height="172" rx="12"/><text class="lanet t-violet" x="24" y="182">AI INFERENCE · VLAN 30</text>
@@ -342,7 +342,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <path class="lv" d="M420 236 L486 236" marker-end="url(#ah2)"/><text class="tsv" x="443" y="228" text-anchor="middle">2 · NIfTI</text>
 <path class="lv" d="M486 266 L424 266" marker-end="url(#ah2)"/><text class="tsv" x="445" y="282" text-anchor="middle">mask</text>
 
-<rect class="grpr" x="470" y="372" width="250" height="96" rx="12"/><text class="grprt" x="595" y="390" text-anchor="middle">MONAI Label · research server</text>
+<rect class="grpr" x="470" y="372" width="250" height="96" rx="12"/><text class="grprt" x="595" y="390" text-anchor="middle">Research server · HCMUT lab GPU</text>
 <rect class="bxr" x="490" y="400" width="210" height="56" rx="8"/><text class="tt" x="595" y="423" text-anchor="middle">hemorrhage_dev</text><text class="ts" x="595" y="443" text-anchor="middle">drafts, active learning, training</text>
 <path class="cyl" d="M740 388 L740 436 A70 10 0 0 0 880 436 L880 388 A70 10 0 0 1 740 388 Z"/><ellipse class="cyl" cx="810" cy="388" rx="70" ry="10"/>
 <text class="tt" x="810" y="414" text-anchor="middle">Model registry</text><text class="ts" x="810" y="432" text-anchor="middle">versioned bundles</text>
@@ -358,7 +358,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <path class="lr" d="M650 460 L650 496" marker-start="url(#ah2)" marker-end="url(#ah2)"/><text class="tsr" x="642" y="488" text-anchor="end">next case, save label</text>
 
 <text class="ts" x="450" y="612" text-anchor="middle">Violet: automatic for every study (1–3). Pink: research work, labelling, review, training (4, 6). Dashed red: only when a radiologist fixes a mask (5).</text>
-<text class="ts" x="450" y="630" text-anchor="middle">One app, two servers. Research reads only the research Orthanc, never the gateway, so it never sees identified data.</text>
+<text class="ts" x="450" y="630" text-anchor="middle">One app, two servers. The research server runs at the HCMUT lab, reads only the research Orthanc over a VPN limited to VLAN 40, and never sees identified data.</text>
 </svg></div>
 <p class="figcap">Keycloak, HIS/RIS, SeaweedFS, PostgreSQL and backup are unchanged and not drawn.</p>
 </div>
@@ -376,7 +376,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <tr><th>Block</th><th>Proposed</th></tr>
 <tr><td class="k">Radiologist viewer</td><td>3D Slicer + ICH Triage module (D10); no MONAILabel extension on reading workstations</td></tr>
 <tr><td class="k">AI inference</td><td>AI worker + MONAI Label inference server (<code>hemorrhage_approved</code>), one per server room</td></tr>
-<tr><td class="k">Annotation and training</td><td>MONAI Label research server (<code>hemorrhage_dev</code>) + 3D Slicer with the MONAILabel extension</td></tr>
+<tr><td class="k">Annotation and training</td><td>MONAI Label research server (<code>hemorrhage_dev</code>) on the AI team's GPU at the HCMUT lab, reaching only VLAN 40 (<a href="decisions.html#d12">D12</a>), + 3D Slicer with the MONAILabel extension</td></tr>
 <tr><td class="k">Research Orthanc (new)</td><td>De-identified CT and every label version, in VLAN 40</td></tr>
 <tr><td class="k">PACS export rules</td><td>Also corrected SEGs of research studies</td></tr>
 <tr><td class="k">Model registry</td><td>Versioned bundles with metrics and approval; only an approved one serves patients</td></tr>
@@ -388,6 +388,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <p><b>Why two servers.</b> The same app runs twice with a different <code>--conf models</code>. Neither server keeps CT images, so splitting adds no storage, only a second process and a second copy of the model in memory. In exchange, identified volumes and annotators never meet in one process, and training cannot stop triage.</p>
 <div class="tbl"><table>
 <tr><th></th><th>Inference server</th><th>Research server</th></tr>
+<tr><td class="k">Runs at</td><td>The hospital, VLAN 30, inference GPU</td><td>The HCMUT lab, the AI team's GPU; a site-to-site VPN opens only VLAN 40</td></tr>
 <tr><td class="k">Model</td><td><code>hemorrhage_approved</code></td><td><code>hemorrhage_dev</code>, trainer, active learning</td></tr>
 <tr><td class="k">Called by</td><td>The AI worker only</td><td>3D Slicer with the MONAILabel extension</td></tr>
 <tr><td class="k">On its disk</td><td>Nothing: the upload is deleted after the response</td><td>A cache of de-identified cases; deleting it loses nothing</td></tr>
@@ -398,9 +399,9 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 
 <h2 class="sec" id="sites"><span class="n">7</span>Sites, data and failover</h2>
 <p>Every AI component is designed to survive the loss of one node and, with a second server room, the loss of a room. The clinical path does not depend on any of it: with the AI down, studies show "AI paused" and doctors read in normal order. This section is design only; staging runs on one machine.</p>
-<p><b>Room A</b> is today's server room. <b>Room B</b> is proposed: a second room on the campus, in another building, linked by two fibre paths. Today, losing the only room means days of restore from the cloud. A <b>third location</b> holds a small quorum witness, the <b>cloud</b> holds backups only, and in scenario 2 <b>site 2</b> adds GPUs (keep one inference server on the campus for when the link is down).</p>
+<p><b>Room A</b> is today's server room. <b>Room B</b> is proposed: a second room on the campus, in another building, linked by two fibre paths. Today, losing the only room means days of restore from the cloud. The <b>research server</b> runs on the AI team's GPU at the <b>HCMUT lab</b> and reaches only VLAN 40 over a site-to-site VPN. A <b>third location</b> holds a small quorum witness, the <b>cloud</b> holds backups only, and in scenario 2 <b>site 2</b> adds GPUs (keep one inference server on the campus for when the link is down).</p>
 <div class="figure"><div class="figscroll">
-<svg class="flowsvg wide" viewBox="0 0 900 570" role="img" aria-labelledby="st-t st-d"><title id="st-t">AI blocks across two server rooms</title><desc id="st-d">Rows are places, columns are network zones. Room A and room B each run a load balancer, Orthanc gateway nodes, an AI worker and a MONAI Label inference server with a GPU in VLAN 30. The research Orthanc and the MONAI Label research server run in room A, with a cold standby in room B. In the data zone, PostgreSQL has its primary in room A and a synchronous standby in room B, and SeaweedFS keeps one copy of every file in each room. A third location holds the quorum witness, and the cloud holds backups only.</desc>
+<svg class="flowsvg wide" viewBox="0 0 900 570" role="img" aria-labelledby="st-t st-d"><title id="st-t">AI blocks across two server rooms</title><desc id="st-d">Rows are places, columns are network zones. Room A and room B each run a load balancer, Orthanc gateway nodes, an AI worker and a MONAI Label inference server with a GPU in VLAN 30. The research Orthanc and the model registry run in room A, with a cold standby of the research Orthanc in room B; the MONAI Label research server runs at the HCMUT lab. In the data zone, PostgreSQL has its primary in room A and a synchronous standby in room B, and SeaweedFS keeps one copy of every file in each room. A third location holds the quorum witness, the cloud holds backups only, and the HCMUT lab runs the research server.</desc>
 <defs><marker id="ah3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <text class="lanet t-violet" x="122" y="30">AI INFERENCE · VLAN 30</text><text class="lanet t-pink" x="422" y="30">AI RESEARCH · VLAN 40</text><text class="lanet t-slate" x="632" y="30">DATA · VLAN 50</text>
 
@@ -412,7 +413,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <rect class="bxa" x="270" y="108" width="126" height="62" rx="8"/><text class="tt" x="333" y="130" text-anchor="middle">MONAI Label</text><text class="ts" x="333" y="148" text-anchor="middle">inference, GPU</text><text class="ts" x="333" y="163" text-anchor="middle">keeps nothing</text>
 <text class="wkt" x="122" y="200">identified: kept for days at most</text>
 <rect class="bxr" x="422" y="56" width="176" height="56" rx="8"/><text class="tt" x="510" y="79" text-anchor="middle">Research Orthanc</text><text class="ts" x="510" y="99" text-anchor="middle">label store, active</text>
-<rect class="bxr" x="422" y="122" width="176" height="56" rx="8"/><text class="tt" x="510" y="145" text-anchor="middle">MONAI Label</text><text class="ts" x="510" y="165" text-anchor="middle">research, training</text>
+<rect class="bxr" x="422" y="122" width="176" height="56" rx="8"/><text class="tt" x="510" y="145" text-anchor="middle">Model registry</text><text class="ts" x="510" y="165" text-anchor="middle">bundles, approval</text>
 <text class="tsr" x="422" y="200">de-identified only</text>
 <path class="cylk" d="M632 66 L632 176 A60 9 0 0 0 752 176 L752 66 A60 9 0 0 1 632 66 Z"/><ellipse class="cylk" cx="692" cy="66" rx="60" ry="9"/>
 <text class="tt" x="692" y="102" text-anchor="middle">PostgreSQL</text><text class="ts" x="692" y="120" text-anchor="middle">primary</text><text class="ts" x="692" y="138" text-anchor="middle">indexes, AI jobs,</text><text class="ts" x="692" y="154" text-anchor="middle">label status</text>
@@ -427,7 +428,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <rect class="bxa" x="270" y="318" width="126" height="62" rx="8"/><text class="tt" x="333" y="340" text-anchor="middle">MONAI Label</text><text class="ts" x="333" y="358" text-anchor="middle">inference, GPU</text><text class="ts" x="333" y="373" text-anchor="middle">keeps nothing</text>
 <text class="ts" x="122" y="410">each room alone carries the full load</text>
 <rect class="bxr cold" x="422" y="266" width="176" height="56" rx="8"/><text class="tt" x="510" y="289" text-anchor="middle">Research Orthanc</text><text class="ts" x="510" y="309" text-anchor="middle">cold: started if A is lost</text>
-<rect class="bxr cold" x="422" y="332" width="176" height="56" rx="8"/><text class="tt" x="510" y="355" text-anchor="middle">MONAI Label</text><text class="ts" x="510" y="375" text-anchor="middle">cold: started if A is lost</text>
+<rect class="bxr" x="422" y="332" width="176" height="56" rx="8"/><text class="tt" x="510" y="355" text-anchor="middle">Model registry</text><text class="ts" x="510" y="375" text-anchor="middle">copy in research bucket</text>
 <text class="tsr" x="422" y="410">restarts on the same data</text>
 <path class="cylk" d="M632 276 L632 386 A60 9 0 0 0 752 386 L752 276 A60 9 0 0 1 632 276 Z"/><ellipse class="cylk" cx="692" cy="276" rx="60" ry="9"/>
 <text class="tt" x="692" y="312" text-anchor="middle">PostgreSQL</text><text class="ts" x="692" y="330" text-anchor="middle">synchronous</text><text class="ts" x="692" y="346" text-anchor="middle">standby</text>
@@ -438,11 +439,22 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 
 <rect class="lanebx" x="10" y="462" width="880" height="96" rx="12"/>
 <text class="lanet t-slate" x="22" y="488">OUTSIDE</text><text class="ts" x="22" y="506">the two</text><text class="ts" x="22" y="522">rooms</text>
-<rect class="bxk" x="122" y="476" width="476" height="68" rx="8"/><text class="tt" x="360" y="499" text-anchor="middle">Cloud · backup only</text><text class="ts" x="360" y="517" text-anchor="middle">PACS bucket, research bucket, PostgreSQL WAL; encrypted, Object Lock</text><text class="ts" x="360" y="533" text-anchor="middle">a restore takes hours to days (Flow 5)</text>
+<rect class="bxk" x="122" y="476" width="290" height="68" rx="8"/><text class="tt" x="267" y="499" text-anchor="middle">Cloud · backup only</text><text class="ts" x="267" y="517" text-anchor="middle">PACS, research, PostgreSQL WAL</text><text class="ts" x="267" y="533" text-anchor="middle">encrypted, Object Lock</text>
+<rect class="bxr" x="422" y="476" width="198" height="68" rx="8"/><text class="tt" x="521" y="499" text-anchor="middle">HCMUT lab</text><text class="ts" x="521" y="517" text-anchor="middle">research server, GPU</text><text class="ts" x="521" y="533" text-anchor="middle">VPN to VLAN 40 only</text>
 <rect class="bxk" x="632" y="476" width="252" height="68" rx="8"/><text class="tt" x="758" y="499" text-anchor="middle">Quorum witness</text><text class="ts" x="758" y="517" text-anchor="middle">etcd and SeaweedFS master,</text><text class="ts" x="758" y="533" text-anchor="middle">third location, tiny server</text>
 </svg></div>
-<p class="figcap">Only the AI blocks are drawn. The PACS, OpenLDAP and Keycloak need the same two-room layout, or room A stays a single point of failure for the whole hospital.</p>
+<p class="figcap">Only the AI blocks are drawn. The PACS, OpenLDAP and Keycloak need the same two-room layout, or room A stays a single point of failure for the whole hospital. Room B is a proposal; with one room, the racks below are the whole hospital side.</p>
 </div>
+<h3 class="subh">Inside a server room</h3>
+<p>Each room has two racks on separate UPS feeds (battery-backed power) and a network rack, and every HA pair puts one node in each rack, so losing a rack, its power or its switch ports leaves one of each running. The full drawing is the <a href="index.html#physical">physical layout</a> of the architecture page.</p>
+<div class="tbl"><table>
+<tr><th>Rack A · UPS A</th><th>Rack B · UPS B</th><th>Network rack · both feeds</th></tr>
+<tr><td>Inference GPU server (MONAI Label, <code>hemorrhage_approved</code>, VLAN 30)</td><td>Research Orthanc host (label store and model registry, VLAN 40)</td><td>Core switch pair (VLAN 10–80, deny by default)</td></tr>
+<tr><td>App host A: dcm4chee 1, Orthanc 1 + AI worker, Keycloak, OpenLDAP 1, etcd 1</td><td>App host B: dcm4chee 2, Orthanc 2 + AI worker, OpenLDAP 2, etcd 2</td><td>Egress firewall pair: 443 out, IPsec VPN to the cloud and the HCMUT lab</td></tr>
+<tr><td>PostgreSQL primary (Patroni)</td><td>PostgreSQL standby</td><td>Load balancer pair: virtual IPs for dcm4chee, Orthanc, PG primary</td></tr>
+<tr><td>SeaweedFS storage nodes 1–2</td><td>SeaweedFS storage nodes 3–4, backup gateway</td><td>Storage switch (VLAN 80), witness host (third etcd and SeaweedFS master)</td></tr>
+</table></div>
+
 <h3 class="subh">Where the data lives</h3>
 <p>Two things last: the clinical record in the PACS and the labels on the research Orthanc. Research CT images are deleted once a model has been trained on them, because retraining on old images is rare and they can be fetched again from the PACS. The gateway copy is a buffer, and a frozen dataset is a list of IDs, not more images.</p>
 <div class="tbl"><table>
@@ -455,7 +467,8 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <tr><td class="k">Drafts, label versions, review status</td><td>De-identified</td><td>Research Orthanc (one per room, plus cloud)</td><td>Always</td></tr>
 <tr><td class="k">Frozen dataset</td><td>De-identified</td><td>List of CT and SEG IDs, with the de-identification rule version, in the research bucket</td><td>Always</td></tr>
 <tr><td class="k">Model bundles</td><td>No patient data</td><td>Registry in the research bucket; a local copy on each inference server</td><td>Permanently</td></tr>
-<tr><td class="k">Caches (research server, workstations)</td><td>Either</td><td>Local disk</td><td>Cleared nightly or per session</td></tr>
+<tr><td class="k">Research server cache</td><td>De-identified</td><td>Research server at the HCMUT lab</td><td>Cleared nightly; deleting it loses nothing</td></tr>
+<tr><td class="k">Workstation caches</td><td>Either</td><td>Local disk</td><td>Cleared per session</td></tr>
 </table></div>
 <p><b>Fetching an image again.</b> To retrain on a deleted case, the research server asks for it again: the PACS sends the study through the gateway, which de-identifies it with the same keyed hash, so it gets the same UIDs and its old labels still line up. This needs three things: the PACS still holds the study (10 years), the hash key never changes, and each dataset records the de-identification rule it used. Fetching many cases loads the PACS, so it runs outside reading hours.</p>
 <h3 class="subh">When something fails</h3>
@@ -467,7 +480,9 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <tr><td class="k">MONAI inference (one GPU server per room)</td><td>The other server takes the work at half capacity</td><td>Same; with both down, "AI paused"</td></tr>
 <tr><td class="k">PostgreSQL (primary / synchronous standby)</td><td>Patroni promotes the standby; no committed write lost</td><td>Same, with the witness's vote</td></tr>
 <tr><td class="k">SeaweedFS (one copy per room)</td><td>Reads go to the other copy</td><td>Every file still has a copy</td></tr>
-<tr><td class="k">Research Orthanc and server (active / cold)</td><td>Restarted in minutes; annotation waits</td><td>Started in room B on the same data</td></tr>
+<tr><td class="k">Research Orthanc (active / cold)</td><td>Restarted in minutes; annotation waits</td><td>Started in room B on the same data</td></tr>
+<tr><td class="k">Research server at the HCMUT lab, or the VPN</td><td>Annotation and training wait; triage and reading do not notice</td><td>Same</td></tr>
+<tr><td class="k">Keycloak (one instance today)</td><td>Logins stop until it is back</td><td>Same; needs a second instance in rack B or room B</td></tr>
 </table></div>
 <h3 class="subh">Orthanc as an active-active gateway</h3>
 <p>Per the Orthanc Book, several Orthanc nodes can share one PostgreSQL index (Orthanc 1.9.2 and later), and with files in SeaweedFS a node keeps nothing of its own. But each node keeps its own job list and its own "series complete" timer, and its Orthanc jobs die with it. Three rules follow:</p>
@@ -491,6 +506,10 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <tr><td class="k">Duplicate or lost AI jobs on several gateway nodes</td><td>Job table from the first slice, leases and a sweep (section <a href="#sites">7</a>)</td></tr>
 <tr><td class="k">Losing or leaking the de-identification key</td><td>Kept in VLAN 30 only, with an offline backup</td></tr>
 <tr><td class="k">Annotators copy the AI's mistakes</td><td>Drafts on training cases only; test sets labelled blind</td></tr>
+<tr><td class="k">The HCMUT lab reaches into the hospital</td><td>Site-to-site VPN that opens only the research Orthanc and registry ports in VLAN 40; no route to clinical, inference or data zones; the key stays in VLAN 30; a data-sharing agreement</td></tr>
+<tr><td class="k">A face can be rebuilt from a de-identified head CT</td><td>Deface the CT before it reaches the research Orthanc, since its images are cached at the lab</td></tr>
+<tr><td class="k">The PoC plugin lets through images with no burned-in tag, and runs with an empty key</td><td>Reject localizers, Secondary Captures and instances without the tag; refuse to start without <code>DEID_KEY</code></td></tr>
+<tr><td class="k">The PoC research server has no login</td><td>MONAI Label authentication through Keycloak before any real data; until then, test data only</td></tr>
 </table></div>
 
 <h2 class="sec" id="plan"><span class="n">9</span>PoC plan and results</h2>
@@ -516,7 +535,20 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 <tr><td>6</td><td>Only an approved version serves patients</td><td><span class="ok">Passed</span>: v1 to v2 swapped in a running server after approval</td></tr>
 <tr><td>7</td><td>Annotation reads the gateway</td><td><span class="no">Failed</span>: an identified CT leaked, so the design moved to the research Orthanc</td></tr>
 </table></div>
-<div class="callout amber"><b>Not shown by the PoC.</b> Model quality (the CPU model is poor: validation Dice 0.01), the Slicer window, two rooms and failover. Code: <a href="https://github.com/jikei25/ich-architecture/tree/main/deploy/staging">deploy/staging</a>.</div>
+<div class="callout amber"><b>Not shown by the PoC.</b> Model quality (the CPU model is poor: validation Dice 0.01), the Slicer window, more than one machine, two rooms and failover. Code: <a href="https://github.com/jikei25/ich-architecture/tree/main/deploy/staging">deploy/staging</a>.</div>
+<h3 class="subh">Still to show (not run yet)</h3>
+<p>The steps above prove that the blocks connect. These settle whether the system is usable, correct and safe. Targets marked "agree" are set with the clinicians before the run.</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Task</th><th>Passes when</th></tr>
+<tr><td>8</td><td>The AI team's model on a GPU</td><td>Sensitivity and false-negative rate on a held-out test set reach the agreed target; one segment per subtype; time per CT recorded</td></tr>
+<tr><td>9</td><td>End to end: scan finished to flag on the worklist</td><td>Median and worst time under the agreed target; StableAge, export delay, inference and return measured separately</td></tr>
+<tr><td>10</td><td>Five servers instead of one machine</td><td>An approved bundle published by the research server reaches the inference server; an unapproved one never does</td></tr>
+<tr><td>11</td><td>Research server at the HCMUT lab over the VPN</td><td>Next Sample and save work from the lab; the lab cannot reach any zone but VLAN 40; the cache holds de-identified data only</td></tr>
+<tr><td>12</td><td>Failover drills</td><td>Gateway node killed mid-job: exactly one SEG reaches the PACS. PostgreSQL primary killed: no job lost. One storage node off: reads continue</td></tr>
+<tr><td>13</td><td>Safety checks</td><td>An image without the burned-in tag is rejected; the plugin refuses to start without the key; the research server refuses an anonymous call</td></tr>
+<tr><td>14</td><td>Priority flag and radiologist fix</td><td>HL7 ORU moves the study up the RIS worklist; a fix saved in Slicer reaches the research Orthanc as "radiologist, not reviewed"</td></tr>
+<tr><td>15</td><td>Restore from the cloud</td><td>A study older than 90 days and a database point-in-time restore come back; the time is recorded</td></tr>
+</table></div>
 
 <h2 class="sec" id="refs"><span class="n">10</span>References</h2>
 <ol class="src">
