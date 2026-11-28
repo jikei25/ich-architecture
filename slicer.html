@@ -399,52 +399,7 @@ h3.subh{font-size:18px;margin:26px 0 8px}
 
 <h2 class="sec" id="sites"><span class="n">7</span>Sites, data and failover</h2>
 <p>Every AI component is designed to survive the loss of one node and, with a second server room, the loss of a room. The clinical path does not depend on any of it: with the AI down, studies show "AI paused" and doctors read in normal order. This section is design only; staging runs on one machine.</p>
-<p><b>Room A</b> is today's server room. <b>Room B</b> is proposed: a second room on the campus, in another building, linked by two fibre paths. Today, losing the only room means days of restore from the cloud. The <b>research server</b> runs on the AI team's GPU at the <b>HCMUT lab</b> and reaches only VLAN 40 over a site-to-site VPN. A <b>third location</b> holds a small quorum witness, the <b>cloud</b> holds backups only, and in scenario 2 <b>site 2</b> adds GPUs (keep one inference server on the campus for when the link is down).</p>
-<div class="figure"><div class="figscroll">
-<svg class="flowsvg wide" viewBox="0 0 900 570" role="img" aria-labelledby="st-t st-d"><title id="st-t">AI blocks across two server rooms</title><desc id="st-d">Rows are places, columns are network zones. Room A and room B each run a load balancer, Orthanc gateway nodes, an AI worker and a MONAI Label inference server with a GPU in VLAN 30. The research Orthanc and the model registry run in room A, with a cold standby of the research Orthanc in room B; the MONAI Label research server runs at the HCMUT lab. In the data zone, PostgreSQL has its primary in room A and a synchronous standby in room B, and SeaweedFS keeps one copy of every file in each room. A third location holds the quorum witness, the cloud holds backups only, and the HCMUT lab runs the research server.</desc>
-<defs><marker id="ah3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
-<text class="lanet t-violet" x="122" y="30">AI INFERENCE · VLAN 30</text><text class="lanet t-pink" x="422" y="30">AI RESEARCH · VLAN 40</text><text class="lanet t-slate" x="632" y="30">DATA · VLAN 50</text>
-
-<rect class="lanebx" x="10" y="42" width="880" height="200" rx="12"/>
-<text class="lanet t-slate" x="22" y="68">ROOM A</text><text class="ts" x="22" y="86">main</text><text class="ts" x="22" y="102">server room</text>
-<rect class="bxk" x="122" y="56" width="136" height="42" rx="8"/><text class="tt" x="190" y="76" text-anchor="middle">Load balancer</text><text class="ts" x="190" y="92" text-anchor="middle">HAProxy, active VIP</text>
-<rect class="bxa" x="122" y="108" width="136" height="56" rx="8"/><text class="tt" x="190" y="131" text-anchor="middle">Orthanc gateway</text><text class="ts" x="190" y="151" text-anchor="middle">nodes, no own state</text>
-<rect class="bxa" x="270" y="56" width="126" height="42" rx="8"/><text class="tt" x="333" y="76" text-anchor="middle">AI worker</text><text class="ts" x="333" y="92" text-anchor="middle">jobs in PostgreSQL</text>
-<rect class="bxa" x="270" y="108" width="126" height="62" rx="8"/><text class="tt" x="333" y="130" text-anchor="middle">MONAI Label</text><text class="ts" x="333" y="148" text-anchor="middle">inference, GPU</text><text class="ts" x="333" y="163" text-anchor="middle">keeps nothing</text>
-<text class="wkt" x="122" y="200">identified: kept for days at most</text>
-<rect class="bxr" x="422" y="56" width="176" height="56" rx="8"/><text class="tt" x="510" y="79" text-anchor="middle">Research Orthanc</text><text class="ts" x="510" y="99" text-anchor="middle">label store, active</text>
-<rect class="bxr" x="422" y="122" width="176" height="56" rx="8"/><text class="tt" x="510" y="145" text-anchor="middle">Model registry</text><text class="ts" x="510" y="165" text-anchor="middle">bundles, approval</text>
-<text class="tsr" x="422" y="200">de-identified only</text>
-<path class="cylk" d="M632 66 L632 176 A60 9 0 0 0 752 176 L752 66 A60 9 0 0 1 632 66 Z"/><ellipse class="cylk" cx="692" cy="66" rx="60" ry="9"/>
-<text class="tt" x="692" y="102" text-anchor="middle">PostgreSQL</text><text class="ts" x="692" y="120" text-anchor="middle">primary</text><text class="ts" x="692" y="138" text-anchor="middle">indexes, AI jobs,</text><text class="ts" x="692" y="154" text-anchor="middle">label status</text>
-<path class="cylk" d="M764 66 L764 176 A60 9 0 0 0 884 176 L884 66 A60 9 0 0 1 764 66 Z"/><ellipse class="cylk" cx="824" cy="66" rx="60" ry="9"/>
-<text class="tt" x="824" y="102" text-anchor="middle">SeaweedFS</text><text class="ts" x="824" y="120" text-anchor="middle">copy 1 of each file</text><text class="ts" x="824" y="138" text-anchor="middle">pacs, orthanc,</text><text class="ts" x="824" y="154" text-anchor="middle">research buckets</text>
-
-<rect class="lanebx" x="10" y="252" width="880" height="200" rx="12"/>
-<text class="lanet t-slate" x="22" y="278">ROOM B</text><text class="ts" x="22" y="296">second room,</text><text class="ts" x="22" y="312">proposed</text>
-<rect class="bxk" x="122" y="266" width="136" height="42" rx="8"/><text class="tt" x="190" y="286" text-anchor="middle">Load balancer</text><text class="ts" x="190" y="302" text-anchor="middle">HAProxy, standby VIP</text>
-<rect class="bxa" x="122" y="318" width="136" height="56" rx="8"/><text class="tt" x="190" y="341" text-anchor="middle">Orthanc gateway</text><text class="ts" x="190" y="361" text-anchor="middle">nodes, same config</text>
-<rect class="bxa" x="270" y="266" width="126" height="42" rx="8"/><text class="tt" x="333" y="286" text-anchor="middle">AI worker</text><text class="ts" x="333" y="302" text-anchor="middle">jobs in PostgreSQL</text>
-<rect class="bxa" x="270" y="318" width="126" height="62" rx="8"/><text class="tt" x="333" y="340" text-anchor="middle">MONAI Label</text><text class="ts" x="333" y="358" text-anchor="middle">inference, GPU</text><text class="ts" x="333" y="373" text-anchor="middle">keeps nothing</text>
-<text class="ts" x="122" y="410">each room alone carries the full load</text>
-<rect class="bxr cold" x="422" y="266" width="176" height="56" rx="8"/><text class="tt" x="510" y="289" text-anchor="middle">Research Orthanc</text><text class="ts" x="510" y="309" text-anchor="middle">cold: started if A is lost</text>
-<rect class="bxr" x="422" y="332" width="176" height="56" rx="8"/><text class="tt" x="510" y="355" text-anchor="middle">Model registry</text><text class="ts" x="510" y="375" text-anchor="middle">copy in research bucket</text>
-<text class="tsr" x="422" y="410">restarts on the same data</text>
-<path class="cylk" d="M632 276 L632 386 A60 9 0 0 0 752 386 L752 276 A60 9 0 0 1 632 276 Z"/><ellipse class="cylk" cx="692" cy="276" rx="60" ry="9"/>
-<text class="tt" x="692" y="312" text-anchor="middle">PostgreSQL</text><text class="ts" x="692" y="330" text-anchor="middle">synchronous</text><text class="ts" x="692" y="346" text-anchor="middle">standby</text>
-<path class="cylk" d="M764 276 L764 386 A60 9 0 0 0 884 386 L884 276 A60 9 0 0 1 764 276 Z"/><ellipse class="cylk" cx="824" cy="276" rx="60" ry="9"/>
-<text class="tt" x="824" y="312" text-anchor="middle">SeaweedFS</text><text class="ts" x="824" y="330" text-anchor="middle">copy 2 of each file</text>
-<path class="ln" d="M692 190 L692 262" marker-end="url(#ah3)"/><text class="ts" x="684" y="232" text-anchor="end">sync replication</text>
-<path class="ln" d="M824 190 L824 262" marker-start="url(#ah3)" marker-end="url(#ah3)"/><text class="ts" x="816" y="232" text-anchor="end">replication 100</text>
-
-<rect class="lanebx" x="10" y="462" width="880" height="96" rx="12"/>
-<text class="lanet t-slate" x="22" y="488">OUTSIDE</text><text class="ts" x="22" y="506">the two</text><text class="ts" x="22" y="522">rooms</text>
-<rect class="bxk" x="122" y="476" width="290" height="68" rx="8"/><text class="tt" x="267" y="499" text-anchor="middle">Cloud · backup only</text><text class="ts" x="267" y="517" text-anchor="middle">PACS, research, PostgreSQL WAL</text><text class="ts" x="267" y="533" text-anchor="middle">encrypted, Object Lock</text>
-<rect class="bxr" x="422" y="476" width="198" height="68" rx="8"/><text class="tt" x="521" y="499" text-anchor="middle">HCMUT lab</text><text class="ts" x="521" y="517" text-anchor="middle">research server, GPU</text><text class="ts" x="521" y="533" text-anchor="middle">VPN to VLAN 40 only</text>
-<rect class="bxk" x="632" y="476" width="252" height="68" rx="8"/><text class="tt" x="758" y="499" text-anchor="middle">Quorum witness</text><text class="ts" x="758" y="517" text-anchor="middle">etcd and SeaweedFS master,</text><text class="ts" x="758" y="533" text-anchor="middle">third location, tiny server</text>
-</svg></div>
-<p class="figcap">Only the AI blocks are drawn. The PACS, OpenLDAP and Keycloak need the same two-room layout, or room A stays a single point of failure for the whole hospital. Room B is a proposal; with one room, the racks below are the whole hospital side.</p>
-</div>
+<p><b>Room A</b> is today's server room. <b>Room B</b> is proposed: a second room on the campus, in another building, linked by two fibre paths. Today, losing the only room means days of restore from the cloud. The <b>research server</b> runs on the AI team's GPU at the <b>HCMUT lab</b> and reaches only VLAN 40 over a site-to-site VPN. A <b>third location</b> holds a small quorum witness, the <b>cloud</b> holds backups only, and in scenario 2 <b>site 2</b> adds GPUs (keep one inference server on the campus for when the link is down). With a second room, the PACS, OpenLDAP and Keycloak need the same two-room layout, or room A stays a single point of failure for the whole hospital. The <a href="index.html#physical">physical layout</a> shows where each part runs.</p>
 <h3 class="subh">Inside a server room</h3>
 <p>Each room has two racks on separate UPS feeds (battery-backed power) and a network rack, and every HA pair puts one node in each rack, so losing a rack, its power or its switch ports leaves one of each running. The full drawing is the <a href="index.html#physical">physical layout</a> of the architecture page.</p>
 <div class="tbl"><table>
