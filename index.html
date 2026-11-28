@@ -132,6 +132,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 #arch[data-focus="clinical"] .stepb[data-g="clinical"],#arch[data-focus="triage"] .stepb[data-g="triage"],#arch[data-focus="ai"] .stepb[data-g="ai"],#arch[data-focus="backup"] .stepb[data-g="backup"],#arch[data-focus="restore"] .stepb[data-g="restore"]{opacity:1}
 .f-clin{--fp:"1."}.f-tri{--fp:"2."}.f-ai{--fp:"3."}.f-bak{--fp:"4."}
 .brk{fill:none;stroke:var(--cyan);stroke-width:1.5}
+.labzone{fill:none;stroke:var(--pink);stroke-width:2;stroke-dasharray:10 6}.labt{fill:var(--pink);font-size:11.5px;font-weight:700;letter-spacing:.04em}
 #phys{display:block;width:100%;min-width:1100px;height:auto}
 .site{fill:var(--bg);stroke:var(--border);stroke-width:1.2}.sitet{fill:var(--text);font-size:14px;font-weight:700;letter-spacing:.06em}
 .room{fill:none;stroke:var(--slate);stroke-width:1.2;stroke-dasharray:6 4;opacity:.7}.roomt{fill:var(--muted);font-size:12px;font-weight:700;letter-spacing:.05em}
@@ -157,7 +158,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <header class="hero">
   <div class="eyebrow">Intracerebral hemorrhage AI system · Deployment scenario 1 · <a href="scenario2.html">see scenario 2</a></div>
   <h1>System architecture: on-premise processing, cloud for storage only</h1>
-  <p>The hospital already has the infrastructure it needs, so scanning, AI analysis, annotation, training and the databases all run on its own network. Scanners send studies straight to the PACS, which is the path doctors wait on. The PACS then pushes the series the AI needs, once, to a single gateway; the gateway serves the AI and writes de-identified copies for research, so neither ever touches the PACS directly. The cloud receives a one-way copy of studies and database backups for long-term retention (90 days to 10 years) and disaster recovery.</p>
+  <p>The hospital already has the infrastructure it needs, so scanning, AI analysis and the databases run on its own network. Annotation and training run at the HCMUT lab, on de-identified cases only. Scanners send studies straight to the PACS, which is the path doctors wait on. The PACS then pushes the series the AI needs, once, to a single gateway; the gateway serves the AI and writes de-identified copies for research, so neither ever touches the PACS directly. The cloud receives a one-way copy of studies and database backups for long-term retention (90 days to 10 years) and disaster recovery.</p>
   <div class="chips"><span>5 network layers</span><span>CT sends straight to PACS</span><span>PACS pushes to AI, AI never pulls</span><span>One door out to the cloud</span></div>
 </header>
 
@@ -187,18 +188,18 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
     <button type="button" data-f="" aria-pressed="true">All flows</button>
     <button type="button" data-f="clinical" data-sec="flow-clinical" data-desc="Red: the scanner sends straight to the PACS and the viewer reads while series arrive. This is the only path a doctor waits on." aria-pressed="false">1 · Clinical path</button>
     <button type="button" data-f="triage" data-sec="flow-triage" data-desc="Violet: the PACS pushes selected series once to the Orthanc gateway. The AI worker inside Orthanc sends a NIfTI volume to hemorrhage_approved, turns the mask into SEG + SR for the PACS and sends the priority flag. Best-effort, never on the critical path." aria-pressed="false">2 · AI triage</button>
-    <button type="button" data-f="ai" data-sec="flow-ai" data-desc="Annotators (3D Slicer + hemorrhage_dev) fix the AI draft of each de-identified study. Every saved version goes to the label store; a frozen dataset from it trains hemorrhage_dev, and only approved bundles from the registry become hemorrhage_approved." aria-pressed="false">3 · Annotation &amp; training</button>
+    <button type="button" data-f="ai" data-sec="flow-ai" data-desc="At the HCMUT lab: the gateway pushes de-identified research cases there; annotators (3D Slicer + hemorrhage_dev) fix the AI draft, every version goes to the label store, a frozen dataset trains hemorrhage_dev, and only an approved bundle comes back as hemorrhage_approved." aria-pressed="false">3 · Annotation &amp; training</button>
     <button type="button" data-f="backup" data-sec="flow-backup" data-desc="Amber: one-way copies of studies and database backups leave through the single egress firewall to Object-Locked cloud buckets." aria-pressed="false">4 · Backup &amp; replication</button>
     <button type="button" data-f="restore" data-sec="flow-restore" data-desc="Cyan: data comes back from the cloud only when needed, with approval, through the backup gateway." aria-pressed="false">5 · Restore</button>
   </div>
   <p class="focuscap" aria-live="polite"></p>
   <div class="figscroll"><svg id="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1840 1130" role="img" aria-labelledby="ttl dsc">
 <title id="ttl">ICH AI system architecture, Scenario 1</title>
-<desc id="dsc">Swimlane architecture with clinical, AI inference, AI research, data and cloud lanes. CT sends studies directly to the dcm4chee PACS, which the viewer reads while series are still arriving. The PACS pushes selected series once to the Orthanc gateway. The AI worker runs inside Orthanc as a plugin: it sends a NIfTI volume to the hemorrhage_approved model on one MONAI Label server and turns the returned mask into SEG and SR, which go back to the PACS through the gateway, plus a priority flag to HIS/RIS. Annotators in 3D Slicer use the hemorrhage_dev model on the same server; every saved label version goes to the label store, and a frozen dataset from it trains hemorrhage_dev, whose bundles reach hemorrhage_approved only through the model registry. On-premise SeaweedFS keeps the last 90 days; the cloud tiers hold the long-term archive and backups, reached only through the backup gateway and the egress firewall.</desc>
+<desc id="dsc">Swimlane architecture with clinical, AI inference, AI research, data and cloud lanes. CT sends studies directly to the dcm4chee PACS, which the viewer reads while series are still arriving. The PACS pushes selected series once to the Orthanc gateway. The AI worker runs inside Orthanc as a plugin: it sends a NIfTI volume to the hemorrhage_approved model on one MONAI Label server and turns the returned mask into SEG and SR, which go back to the PACS through the gateway, plus a priority flag to HIS/RIS. Annotation and training run at the HCMUT lab, outside the hospital: the gateway pushes de-identified research cases there, annotators in 3D Slicer use the hemorrhage_dev model, every saved label version goes to the label store, and a frozen dataset trains hemorrhage_dev. Only an approved bundle, fetched by the hospital from the lab registry, becomes hemorrhage_approved. On-premise SeaweedFS keeps the last 90 days; the cloud tiers hold the long-term archive and backups, reached only through the backup gateway and the egress firewall.</desc>
 <defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1.5 1L8.5 5L1.5 9" fill="none" stroke="context-stroke" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <rect class="bg" x="0" y="0" width="1840" height="1130"/>
 <text class="h1" x="20" y="34">Intracerebral hemorrhage AI system · Scenario 1 architecture</text>
-<text class="h2" x="20" y="58">All processing on-premise · CT goes straight to PACS · the AI worker runs inside the Orthanc gateway · the cloud holds the long-term archive and backups</text>
+<text class="h2" x="20" y="58">Inference on-premise, training at the HCMUT lab · CT goes straight to PACS · the AI worker runs inside the Orthanc gateway · the cloud holds the long-term archive</text>
 
 <rect class="lane f-blue" x="20" y="80" width="1800" height="170"/>
 <rect class="lh h-blue" x="20" y="80" width="150" height="170"/>
@@ -211,7 +212,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <rect class="lane f-pink" x="20" y="410" width="1800" height="160"/>
 <rect class="lh h-pink" x="20" y="410" width="150" height="160"/>
 <text class="lt t-pink" x="34" y="480" dominant-baseline="central">AI research</text>
-<text class="ls t-pink" x="34" y="500" dominant-baseline="central">VLAN 40</text>
+<text class="ls t-pink" x="34" y="500" dominant-baseline="central">HCMUT lab</text>
 <rect class="lane f-emerald" x="20" y="570" width="1800" height="190"/>
 <rect class="lh h-emerald" x="20" y="570" width="150" height="190"/>
 <text class="lt t-emerald" x="34" y="655" dominant-baseline="central">Data</text>
@@ -262,20 +263,24 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <rect class="bx s-violet" x="1024" y="300" width="322" height="36" rx="8"/>
 <text class="bt" x="1036" y="318" dominant-baseline="central">hemorrhage_approved</text>
 <text class="bs" x="1334" y="318" text-anchor="end" dominant-baseline="central">every study, frozen</text>
-<rect class="bx s-pink" x="1024" y="344" width="322" height="36" rx="8"/>
-<text class="bt" x="1036" y="362" dominant-baseline="central">hemorrhage_dev</text>
-<text class="bs" x="1334" y="362" text-anchor="end" dominant-baseline="central">drafts + training</text></g>
+<text class="bs" x="1036" y="362" dominant-baseline="central">hemorrhage_dev and training run at the lab</text></g>
 
-<!-- AI research lane -->
-<g><rect class="abs s-pink af-pink" x="690" y="440" width="210" height="90" rx="14"/>
-<text class="bt big" x="795" y="466" text-anchor="middle" dominant-baseline="central">Annotation</text>
-<text class="bs" x="795" y="488" text-anchor="middle" dominant-baseline="central">3D Slicer + MONAILabel ext.</text>
-<text class="bs" x="795" y="506" text-anchor="middle" dominant-baseline="central">annotators fix the AI draft</text></g>
-<g><path class="cy s-pink" d="M1145 450 L1145 520 A85 10 0 0 0 1315 520 L1315 450 A85 10 0 0 1 1145 450 Z"/>
-<ellipse class="cyt s-pink" cx="1230" cy="450" rx="85" ry="10"/>
-<text class="bt" x="1230" y="478" text-anchor="middle" dominant-baseline="central">Label store</text>
-<text class="bs" x="1230" y="496" text-anchor="middle" dominant-baseline="central">versions: who, role, time</text>
-<text class="bs" x="1230" y="512" text-anchor="middle" dominant-baseline="central">research bucket + label index</text></g>
+<!-- AI research lane: the HCMUT lab, run by the AI team -->
+<rect class="labzone" x="650" y="420" width="990" height="142" rx="12"/>
+<text class="labt" x="662" y="556">HCMUT LAB · OUTSIDE THE HOSPITAL · REACHED OVER A VPN THE HOSPITAL OPENS</text>
+<g><path class="cy s-pink" d="M690 450 L690 520 A85 10 0 0 0 860 520 L860 450 A85 10 0 0 1 690 450 Z"/>
+<ellipse class="cyt s-pink" cx="775" cy="450" rx="85" ry="10"/>
+<text class="bt" x="775" y="478" text-anchor="middle" dominant-baseline="central">Label store</text>
+<text class="bs" x="775" y="496" text-anchor="middle" dominant-baseline="central">de-identified CT + drafts</text>
+<text class="bs" x="775" y="512" text-anchor="middle" dominant-baseline="central">every label version</text></g>
+<g><rect class="abs s-pink af-pink" x="930" y="446" width="200" height="84" rx="14"/>
+<text class="bt" x="1030" y="468" text-anchor="middle" dominant-baseline="central">hemorrhage_dev</text>
+<text class="bs" x="1030" y="490" text-anchor="middle" dominant-baseline="central">MONAI Label · lab GPU</text>
+<text class="bs" x="1030" y="508" text-anchor="middle" dominant-baseline="central">drafts + trainer</text></g>
+<g><rect class="abs s-pink af-pink" x="1190" y="446" width="200" height="84" rx="14"/>
+<text class="bt" x="1290" y="468" text-anchor="middle" dominant-baseline="central">Annotation</text>
+<text class="bs" x="1290" y="490" text-anchor="middle" dominant-baseline="central">3D Slicer + MONAILabel ext.</text>
+<text class="bs" x="1290" y="508" text-anchor="middle" dominant-baseline="central">fix the AI draft</text></g>
 <g><path class="cy s-pink" d="M1450 450 L1450 520 A75 10 0 0 0 1600 520 L1600 450 A75 10 0 0 1 1450 450 Z"/>
 <ellipse class="cyt s-pink" cx="1525" cy="450" rx="75" ry="10"/>
 <text class="bt" x="1525" y="481" text-anchor="middle" dominant-baseline="central">Model registry</text>
@@ -288,16 +293,15 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <ellipse class="cyt s-emerald" cx="530.0" cy="620" rx="75.0" ry="10"/>
 <text class="bt" x="530" y="646" text-anchor="middle" dominant-baseline="central">SeaweedFS</text>
 <text class="bs" x="530" y="664" text-anchor="middle" dominant-baseline="central">PACS bucket · 90 days</text>
-<text class="bs" x="530" y="680" text-anchor="middle" dominant-baseline="central">+ research bucket</text></g>
+<text class="bs" x="530" y="680" text-anchor="middle" dominant-baseline="central">+ research outbox</text></g>
 <g><path class="cy s-emerald" d="M695 620 L695 690 A75.0 10 0 0 0 845 690 L845 620 A75.0 10 0 0 1 695 620 Z"/>
 <ellipse class="cyt s-emerald" cx="770.0" cy="620" rx="75.0" ry="10"/>
 <text class="bt" x="770" y="651" text-anchor="middle" dominant-baseline="central">OpenLDAP</text>
 <text class="bs" x="770" y="671" text-anchor="middle" dominant-baseline="central">PACS configuration</text></g>
 <g><path class="cy s-emerald" d="M935 620 L935 690 A75.0 10 0 0 0 1085 690 L1085 620 A75.0 10 0 0 1 935 620 Z"/>
 <ellipse class="cyt s-emerald" cx="1010.0" cy="620" rx="75.0" ry="10"/>
-<text class="bt" x="1010" y="646" text-anchor="middle" dominant-baseline="central">PostgreSQL primary</text>
-<text class="bs" x="1010" y="664" text-anchor="middle" dominant-baseline="central">PACS index, AI results</text>
-<text class="bs" x="1010" y="680" text-anchor="middle" dominant-baseline="central">+ label index</text></g>
+<text class="bt" x="1010" y="651" text-anchor="middle" dominant-baseline="central">PostgreSQL primary</text>
+<text class="bs" x="1010" y="671" text-anchor="middle" dominant-baseline="central">PACS index, AI results</text></g>
 <g><path class="cy s-emerald" d="M1175 620 L1175 690 A75.0 10 0 0 0 1325 690 L1325 620 A75.0 10 0 0 1 1175 620 Z"/>
 <ellipse class="cyt s-emerald" cx="1250.0" cy="620" rx="75.0" ry="10"/>
 <text class="bt" x="1250" y="651" text-anchor="middle" dominant-baseline="central">PostgreSQL standby</text>
@@ -316,10 +320,6 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <g><rect class="bx s-cyan" x="455" y="823" width="150" height="64" rx="12"/>
 <text class="bt" x="530" y="846" text-anchor="middle" dominant-baseline="central">Object Lock</text>
 <text class="bs" x="530" y="866" text-anchor="middle" dominant-baseline="central">WORM + versioning</text></g>
-<g><path class="cy s-cyan" d="M695 830 L695 900 A75.0 10 0 0 0 845 900 L845 830 A75.0 10 0 0 1 695 830 Z"/>
-<ellipse class="cyt s-cyan" cx="770.0" cy="830" rx="75.0" ry="10"/>
-<text class="bt" x="770" y="861" text-anchor="middle" dominant-baseline="central">Research copy</text>
-<text class="bs" x="770" y="881" text-anchor="middle" dominant-baseline="central">labels, frozen datasets</text></g>
 <g><path class="cy s-cyan" d="M935 830 L935 900 A75.0 10 0 0 0 1085 900 L1085 830 A75.0 10 0 0 1 935 830 Z"/>
 <ellipse class="cyt s-cyan" cx="1010.0" cy="830" rx="75.0" ry="10"/>
 <text class="bt" x="1010" y="861" text-anchor="middle" dominant-baseline="central">DICOM · Standard</text>
@@ -352,27 +352,35 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <path class="a ai" data-g="triage" d="M560 268 L560 201" marker-end="url(#ar)"/>
 <path class="a ai" data-g="triage" d="M850 288 L850 232 L1700 232 L1700 201" marker-end="url(#ar)"/>
 <path class="a flow" data-g="triage" d="M600 390 L600 577 L1010 577 L1010 606" marker-end="url(#ar)"/>
-<!-- flow 3: annotation and training -->
-<path class="a flow" data-g="ai" d="M760 394 L760 436" marker-end="url(#ar)" marker-start="url(#ar)"/>
-<path class="a flow" data-g="ai" d="M904 485 L950 485 L950 366 L1020 366" marker-end="url(#ar)" marker-start="url(#ar)"/>
-<path class="a flow" data-g="ai" d="M660 390 L660 550 L1230 550 L1230 534" marker-end="url(#ar)"/>
-<path class="a flow" data-g="ai" d="M1230 440 L1230 394" marker-end="url(#ar)"/>
-<path class="a flow" data-g="ai" d="M1340 390 L1340 480 L1446 480" marker-end="url(#ar)"/>
-<path class="a flow" data-g="ai" d="M1525 440 L1525 318 L1350 318" marker-end="url(#ar)"/>
+<!-- flow 3: annotation and training, at the lab -->
+<path class="a flow" data-g="ai" d="M775 390 L775 436" marker-end="url(#ar)"/>
+<path class="a flow" data-g="ai" d="M864 488 L926 488" marker-end="url(#ar)" marker-start="url(#ar)"/>
+<path class="a flow" data-g="ai" d="M1134 488 L1186 488" marker-end="url(#ar)" marker-start="url(#ar)"/>
+<path class="a flow" data-g="ai" d="M1100 446 L1100 428 L1525 428 L1525 436" marker-end="url(#ar)"/>
+<path class="a flow" data-g="ai" d="M1600 488 L1625 488 L1625 318 L1350 318" marker-end="url(#ar)"/>
 <!-- flow 4: backup -->
 <path class="a flow" data-g="backup" d="M1085 655 L1171 655" marker-end="url(#ar)"/>
 <path class="a bak" data-g="backup" d="M1010 700 L1010 725 L1470 725 L1470 696" marker-end="url(#ar)"/>
 <path class="a bak" data-g="backup" d="M530 700 L530 742 L1510 742 L1510 696" marker-end="url(#ar)"/>
 <path class="a bak" data-g="backup" d="M1565 670 L1700 670 L1700 724" marker-end="url(#ar)"/>
 <path class="a bak" data-g="backup" d="M1730 792 L1730 816" marker-end="url(#ar)"/>
-<path class="a bak" data-g="backup" d="M1680 792 L1680 806 L770 806 L770 816" marker-end="url(#ar)"/>
-<path class="a bak" data-g="backup" d="M1010 806 L1010 816" marker-end="url(#ar)"/>
+<path class="a bak" data-g="backup" d="M1680 792 L1680 806 L1010 806 L1010 816" marker-end="url(#ar)"/>
 <path class="a life" data-g="backup" d="M1085 865 L1171 865" marker-end="url(#ar)"/>
 <path class="a life" data-g="backup" d="M1325 865 L1411 865" marker-end="url(#ar)"/>
 <!-- flow 5: restore -->
 <path class="a rest" data-g="restore" d="M1790 728 L1790 640 L1569 640" marker-end="url(#ar)"/>
 
 <!-- labels -->
+<g data-g="ai"><rect class="pill" x="790" y="394" width="208" height="34" rx="7"/>
+<text class="lb" x="894" y="404" text-anchor="middle" dominant-baseline="central">push over VPN: de-identified CT,</text>
+<text class="lb" x="894" y="418" text-anchor="middle" dominant-baseline="central">AI SEG and PACS fixes</text></g>
+<g data-g="ai"><rect class="pill" x="862" y="458" width="66" height="20" rx="7"/>
+<text class="lb" x="895" y="468" text-anchor="middle" dominant-baseline="central">datastore</text></g>
+<g data-g="ai"><rect class="pill" x="1300" y="418" width="76" height="20" rx="7"/>
+<text class="lb" x="1338" y="428" text-anchor="middle" dominant-baseline="central">new bundle</text></g>
+<g data-g="ai"><rect class="pill" x="1560" y="352" width="128" height="34" rx="7"/>
+<text class="lb" x="1624" y="362" text-anchor="middle" dominant-baseline="central">approved only</text>
+<text class="lb" x="1624" y="376" text-anchor="middle" dominant-baseline="central">hospital fetches it</text></g>
 <g data-g="clinical"><rect class="pill" x="370" y="172" width="78" height="34" rx="7"/>
 <text class="lb" x="409" y="182" text-anchor="middle" dominant-baseline="central">C-STORE</text>
 <text class="lb" x="409" y="196" text-anchor="middle" dominant-baseline="central">:11112 direct</text></g>
@@ -400,19 +408,6 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="lb" x="1528" y="232" text-anchor="middle" dominant-baseline="central">priority flag · HL7 ORU / FHIR</text></g>
 <g data-g="triage"><rect class="pill" x="566" y="470" width="68" height="20" rx="7"/>
 <text class="lb" x="600" y="480" text-anchor="middle" dominant-baseline="central">AI results</text></g>
-<g data-g="ai"><rect class="pill" x="776" y="398" width="164" height="34" rx="7"/>
-<text class="lb" x="858" y="408" text-anchor="middle" dominant-baseline="central">DICOMweb · de-identified</text>
-<text class="lb" x="858" y="422" text-anchor="middle" dominant-baseline="central">CT + AI draft in, labels out</text></g>
-<g data-g="ai"><rect class="pill" x="960" y="418" width="150" height="20" rx="7"/>
-<text class="lb" x="1035" y="428" text-anchor="middle" dominant-baseline="central">MONAI Label API · proxy</text></g>
-<g data-g="ai"><rect class="pill" x="850" y="540" width="200" height="20" rx="7"/>
-<text class="lb" x="950" y="550" text-anchor="middle" dominant-baseline="central">every saved version + PACS fixes</text></g>
-<g data-g="ai"><rect class="pill" x="1246" y="402" width="88" height="20" rx="7"/>
-<text class="lb" x="1290" y="412" text-anchor="middle" dominant-baseline="central">frozen dataset</text></g>
-<g data-g="ai"><rect class="pill" x="1358" y="486" width="76" height="20" rx="7"/>
-<text class="lb" x="1396" y="496" text-anchor="middle" dominant-baseline="central">new bundle</text></g>
-<g data-g="ai"><rect class="pill" x="1533" y="370" width="96" height="20" rx="7"/>
-<text class="lb" x="1581" y="380" text-anchor="middle" dominant-baseline="central">approved only</text></g>
 <g data-g="backup"><rect class="pill" x="1090" y="662" width="81" height="34" rx="7"/>
 <text class="lb" x="1130" y="672" text-anchor="middle" dominant-baseline="central">streaming</text>
 <text class="lb" x="1130" y="686" text-anchor="middle" dominant-baseline="central">replication</text></g>
@@ -424,8 +419,8 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="lb" x="1631" y="670" text-anchor="middle" dominant-baseline="central">HTTPS 443 out</text></g>
 <g data-g="restore"><rect class="pill" x="1600" y="610" width="130" height="20" rx="7"/>
 <text class="lbc" x="1665" y="620" text-anchor="middle" dominant-baseline="central">restore (approved)</text></g>
-<g data-g="backup"><rect class="pill" x="1240" y="796" width="180" height="20" rx="7"/>
-<text class="lb" x="1330" y="806" text-anchor="middle" dominant-baseline="central">S3 PUT · DICOM + research</text></g>
+<g data-g="backup"><rect class="pill" x="1275" y="796" width="110" height="20" rx="7"/>
+<text class="lb" x="1330" y="806" text-anchor="middle" dominant-baseline="central">S3 PUT · DICOM</text></g>
 <g data-g="backup"><rect class="pill" x="1087" y="862" width="86" height="34" rx="7"/>
 <text class="lbc" x="1130" y="872" text-anchor="middle" dominant-baseline="central">lifecycle</text>
 <text class="lbc" x="1130" y="886" text-anchor="middle" dominant-baseline="central">after 90 days</text></g>
@@ -453,13 +448,13 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <g class="stepb sb-tri" data-g="triage"><circle cx="560" cy="207" r="11"/><text x="560" y="207"text-anchor="middle" dominant-baseline="central">2.4</text></g>
 <g class="stepb sb-tri" data-g="triage"><circle cx="1360" cy="232" r="11"/><text x="1360" y="232" text-anchor="middle" dominant-baseline="central">2.4</text></g>
 <g class="stepb sb-tri" data-g="triage"><circle cx="600" cy="520" r="11"/><text x="600" y="520" text-anchor="middle" dominant-baseline="central">2.4</text></g>
-<g class="stepb sb-ai" data-g="ai"><circle cx="760" cy="415" r="11"/><text x="760" y="415" text-anchor="middle" dominant-baseline="central">3.1</text></g>
-<g class="stepb sb-ai" data-g="ai"><circle cx="950" cy="458" r="11"/><text x="950" y="458" text-anchor="middle" dominant-baseline="central">3.2</text></g>
-<g class="stepb sb-ai" data-g="ai"><circle cx="760" cy="550" r="11"/><text x="760" y="550" text-anchor="middle" dominant-baseline="central">3.2</text></g>
-<g class="stepb sb-ai" data-g="ai"><circle cx="1230" cy="428" r="11"/><text x="1230" y="428" text-anchor="middle" dominant-baseline="central">3.3</text></g>
-<g class="stepb sb-ai" data-g="ai"><circle cx="1340" cy="440" r="11"/><text x="1340" y="440" text-anchor="middle" dominant-baseline="central">3.4</text></g>
-<g class="stepb sb-ai" data-g="ai"><circle cx="1615" cy="480" r="11"/><text x="1615" y="480" text-anchor="middle" dominant-baseline="central">3.5</text></g>
-<g class="stepb sb-ai" data-g="ai"><circle cx="1525" cy="345" r="11"/><text x="1525" y="345" text-anchor="middle" dominant-baseline="central">3.6</text></g>
+
+<g class="stepb sb-ai" data-g="ai"><circle cx="775" cy="412" r="11"/><text x="775" y="412" text-anchor="middle" dominant-baseline="central">3.1</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="1160" cy="510" r="11"/><text x="1160" y="510" text-anchor="middle" dominant-baseline="central">3.2</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="895" cy="510" r="11"/><text x="895" y="510" text-anchor="middle" dominant-baseline="central">3.3</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="1250" cy="428" r="11"/><text x="1250" y="428" text-anchor="middle" dominant-baseline="central">3.4</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="1420" cy="510" r="11"/><text x="1420" y="510" text-anchor="middle" dominant-baseline="central">3.5</text></g>
+<g class="stepb sb-ai" data-g="ai"><circle cx="1625" cy="408" r="11"/><text x="1625" y="408" text-anchor="middle" dominant-baseline="central">3.6</text></g>
 
 <!-- legend -->
 <rect class="legend" x="20" y="970" width="1800" height="140" rx="14"/>
@@ -495,7 +490,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <g class="stepb sb-tri"><circle cx="1612" cy="1072" r="11"/><text x="1612" y="1072" text-anchor="middle" dominant-baseline="central">2.3</text></g>
 <text class="lgt" x="1630" y="1072" dominant-baseline="central">Flow 2, step 3</text>
 </svg></div>
-  <p class="figcap">Numbered circles mark the steps described below: <b>2.3</b> is step 3 of Flow 2, and its colour matches the flow. Ports, products and VLAN numbers are reference values and should be replaced with the hospital's actual choices. Dashed boxes are the AI blocks; their products are proposed (MONAI, <a href="decisions.html#d11">D11</a>) and still to be confirmed by a PoC. The AI worker is drawn inside the gateway because it runs as a plugin in every Orthanc node. The label store is the research bucket on SeaweedFS plus a label index in PostgreSQL; it is drawn in the research lane because only research uses it. Monitoring, DNS, time synchronization and certificates exist on every layer but are not drawn.</p>
+  <p class="figcap">Numbered circles mark the steps described below: <b>2.3</b> is step 3 of Flow 2, and its colour matches the flow. Ports, products and VLAN numbers are reference values and should be replaced with the hospital's actual choices. Dashed boxes are the AI blocks; their products are proposed (MONAI, <a href="decisions.html#d11">D11</a>) and still to be confirmed by a PoC. The AI worker is drawn inside the gateway because it runs as a plugin in every Orthanc node. The research lane is the HCMUT lab, outside the hospital (<a href="decisions.html#d12">D12</a>): the hospital opens every connection to it over a VPN through the egress firewall, which is not drawn. Monitoring, DNS, time synchronization and certificates exist on every layer but are not drawn.</p>
 </div>
 
 <h2 class="sec" id="physical"><span class="n">2</span>Physical layout</h2>
@@ -503,11 +498,11 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <div class="figure">
   <div class="figscroll"><svg id="phys" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1840 1070" role="img" aria-labelledby="pttl pdsc">
 <title id="pttl">Physical layout, Scenario 1</title>
-<desc id="pdsc">One hospital site. The CT room, the reading room, the research office and the existing hospital IT connect through the building network to a core switch pair in the server room. The server room has rack A and rack B on separate UPS feeds and a network rack. Rack A holds the GPU server running MONAI Label with both models, app host A (dcm4chee node 1, Orthanc node 1 with the AI worker, Keycloak, OpenLDAP 1, etcd 1), the PostgreSQL primary and two SeaweedFS storage nodes. Rack B holds a reserved slot for a second GPU server, app host B (dcm4chee node 2, Orthanc node 2 with the AI worker, OpenLDAP 2, etcd 2), the PostgreSQL standby, two more SeaweedFS nodes and the backup gateway. The network rack holds the core switch pair, the egress firewall pair, the load balancer pair, the storage switch and a witness host with the third etcd member. The egress firewall reaches the cloud provider over two internet links; the cloud holds the DICOM tiers, the research copy, the database backups, KMS and Object Lock.</desc>
+<desc id="pdsc">One hospital site. The CT room, the reading room, the research office and the existing hospital IT connect through the building network to a core switch pair in the server room. The server room has rack A and rack B on separate UPS feeds and a network rack. Rack A holds the inference GPU server running MONAI Label with hemorrhage_approved, app host A (dcm4chee node 1, Orthanc node 1 with the AI worker, Keycloak, OpenLDAP 1, etcd 1), the PostgreSQL primary and two SeaweedFS storage nodes. Rack B holds free space, app host B (dcm4chee node 2, Orthanc node 2 with the AI worker, OpenLDAP 2, etcd 2), the PostgreSQL standby, two more SeaweedFS nodes and the backup gateway. The network rack holds the core switch pair, the egress firewall pair, the load balancer pair, the storage switch and a witness host with the third etcd member. The egress firewall reaches, over two internet links, the cloud provider (DICOM tiers, database backups, KMS, Object Lock) and the HCMUT lab, where the AI team runs hemorrhage_dev, the trainer, the label store and the model registry.</desc>
 <defs><marker id="arp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1.5 1L8.5 5L1.5 9" fill="none" stroke="context-stroke" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <rect class="bg" x="0" y="0" width="1840" height="1070"/>
 <text class="h1" x="20" y="34">Physical layout · Scenario 1 at the hospital (reference sizing)</text>
-<text class="h2" x="20" y="58">One server room · every HA pair split across racks A and B · one GPU server · only the network rack reaches the internet</text>
+<text class="h2" x="20" y="58">One server room · every HA pair split across racks A and B · inference GPU in the hospital, training at the HCMUT lab · only the network rack reaches the internet</text>
 
 <!-- hospital site -->
 <rect class="site" x="20" y="80" width="1390" height="930" rx="16"/>
@@ -528,10 +523,10 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="bs" x="525" y="214" text-anchor="middle" dominant-baseline="central">diagnostic displays · no GPU · VLAN 20</text></g>
 
 <rect class="room" x="710" y="118" width="330" height="150" rx="12"/>
-<text class="roomt" x="724" y="140">RESEARCH OFFICE</text>
+<text class="roomt" x="724" y="140">RESEARCH OFFICE (OPTIONAL)</text>
 <g><rect class="bx s-pink" x="735" y="156" width="280" height="76" rx="10"/>
 <text class="bt" x="875" y="178" text-anchor="middle" dominant-baseline="central">Annotator workstations</text>
-<text class="bs" x="875" y="198" text-anchor="middle" dominant-baseline="central">3D Slicer + MONAILabel extension</text>
+<text class="bs" x="875" y="198" text-anchor="middle" dominant-baseline="central">3D Slicer → lab MONAI Label (VPN)</text>
 <text class="bs" x="875" y="214" text-anchor="middle" dominant-baseline="central">de-identified data · no GPU · VLAN 40</text></g>
 
 <rect class="room" x="1060" y="118" width="330" height="150" rx="12"/>
@@ -560,8 +555,8 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <rect class="tagbg h-violet" x="446" y="398" width="48" height="18" rx="9"/>
 <text class="tagt t-violet" x="470" y="407" text-anchor="middle" dominant-baseline="central">GPU</text>
 <text class="bt" x="100" y="410" dominant-baseline="central">GPU server · MONAI Label</text>
-<text class="bs" x="100" y="432" dominant-baseline="central">hemorrhage_approved + hemorrhage_dev on one GPU</text>
-<text class="bs" x="100" y="450" dominant-baseline="central">inference first; training at low-load hours, memory cap</text>
+<text class="bs" x="100" y="432" dominant-baseline="central">hemorrhage_approved only, every study, 24/7</text>
+<text class="bs" x="100" y="450" dominant-baseline="central">no training here: that runs at the HCMUT lab</text>
 <text class="bs" x="100" y="468" dominant-baseline="central">GPU memory and model size set in the PoC · VLAN 30</text></g>
 <g><rect class="bx s-slate" x="84" y="502" width="422" height="96" rx="8"/>
 <text class="bt" x="100" y="522" dominant-baseline="central">App host A · virtual machines</text>
@@ -577,7 +572,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <text class="tagt t-emerald" x="318" y="576" text-anchor="middle" dominant-baseline="central">etcd 1</text></g>
 <g><rect class="bx s-emerald" x="84" y="612" width="422" height="56" rx="8"/>
 <text class="bt" x="100" y="632" dominant-baseline="central">DB server A · PostgreSQL primary</text>
-<text class="bs" x="100" y="652" dominant-baseline="central">Patroni · PACS index, AI results, label index</text></g>
+<text class="bs" x="100" y="652" dominant-baseline="central">Patroni · PACS index, AI results</text></g>
 <g><rect class="bx s-emerald" x="84" y="682" width="422" height="56" rx="8"/>
 <text class="bt" x="100" y="702" dominant-baseline="central">Storage node 1 · SeaweedFS</text>
 <text class="bs" x="100" y="722" dominant-baseline="central">PACS + research buckets · copy in rack B</text></g>
@@ -592,11 +587,8 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <!-- rack B -->
 <text class="rackt" x="552" y="364">Rack B · UPS feed B</text>
 <rect class="rack" x="550" y="372" width="450" height="568" rx="8"/>
-<g><rect class="slot" x="564" y="388" width="422" height="100" rx="8"/>
-<text class="bt" x="580" y="410" dominant-baseline="central">Reserved · second GPU server</text>
-<text class="bs" x="580" y="432" dominant-baseline="central">when hemorrhage_approved and hemorrhage_dev</text>
-<text class="bs" x="580" y="450" dominant-baseline="central">move to separate servers (D11): inference stays in</text>
-<text class="bs" x="580" y="468" dominant-baseline="central">VLAN 30, research gets its own GPU in VLAN 40</text></g>
+<rect class="slot" x="564" y="388" width="422" height="100" rx="8"/>
+<text class="bs" x="775" y="438" text-anchor="middle" dominant-baseline="central">free</text>
 <g><rect class="bx s-slate" x="564" y="502" width="422" height="96" rx="8"/>
 <text class="bt" x="580" y="522" dominant-baseline="central">App host B · virtual machines</text>
 <rect class="tagbg h-blue" x="580" y="538" width="120" height="20" rx="9"/>
@@ -662,7 +654,25 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <path class="a bak" d="M1560 525 L1580 525 L1580 490"/>
 <rect class="pill" x="1440" y="566" width="140" height="34" rx="7"/>
 <text class="lb" x="1510" y="576" text-anchor="middle" dominant-baseline="central">IPsec VPN</text>
-<text class="lb" x="1510" y="590" text-anchor="middle" dominant-baseline="central">HTTPS 443, outbound</text>
+<text class="lb" x="1510" y="590" text-anchor="middle" dominant-baseline="central">to the cloud and the lab</text>
+
+<!-- HCMUT lab -->
+<path class="a bak" d="M1500 600 L1500 656" marker-end="url(#arp)"/>
+<rect class="labzone" x="1425" y="660" width="160" height="300" rx="12"/>
+<text class="labt" x="1437" y="682">HCMUT LAB</text>
+<text class="bs" x="1437" y="700">run by the AI team</text>
+<g><rect class="bx s-pink" x="1437" y="714" width="136" height="88" rx="8"/>
+<text class="bt" x="1505" y="734" text-anchor="middle" dominant-baseline="central">GPU server</text>
+<text class="bs" x="1505" y="754" text-anchor="middle" dominant-baseline="central">hemorrhage_dev</text>
+<text class="bs" x="1505" y="770" text-anchor="middle" dominant-baseline="central">+ trainer</text>
+<text class="bs" x="1505" y="786" text-anchor="middle" dominant-baseline="central">MONAI Label</text></g>
+<g><rect class="bx s-pink" x="1437" y="814" width="136" height="72" rx="8"/>
+<text class="bt" x="1505" y="834" text-anchor="middle" dominant-baseline="central">Storage</text>
+<text class="bs" x="1505" y="854" text-anchor="middle" dominant-baseline="central">label store</text>
+<text class="bs" x="1505" y="870" text-anchor="middle" dominant-baseline="central">model registry</text></g>
+<text class="bs" x="1437" y="910">de-identified data only;</text>
+<text class="bs" x="1437" y="926">cannot connect into</text>
+<text class="bs" x="1437" y="942">the hospital</text>
 
 <!-- cloud -->
 <rect class="site" x="1600" y="80" width="220" height="930" rx="16"/>
@@ -683,24 +693,20 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <path class="brk" d="M1608 150 L1604 150 L1604 378 L1608 378"/>
 <g><path class="cy s-cyan" d="M1615 408 L1615 454 A95 10 0 0 0 1805 454 L1805 408 A95 10 0 0 1 1615 408 Z"/>
 <ellipse class="cyt s-cyan" cx="1710" cy="408" rx="95" ry="10"/>
-<text class="bt" x="1710" y="432" text-anchor="middle" dominant-baseline="central">Research copy</text>
-<text class="bs" x="1710" y="450" text-anchor="middle" dominant-baseline="central">labels, frozen datasets</text></g>
-<g><path class="cy s-cyan" d="M1615 494 L1615 540 A95 10 0 0 0 1805 540 L1805 494 A95 10 0 0 1 1615 494 Z"/>
-<ellipse class="cyt s-cyan" cx="1710" cy="494" rx="95" ry="10"/>
-<text class="bt" x="1710" y="518" text-anchor="middle" dominant-baseline="central">PG backups</text>
-<text class="bs" x="1710" y="536" text-anchor="middle" dominant-baseline="central">WAL + base backups · 35 days</text></g>
-<g><rect class="bx s-cyan" x="1615" y="580" width="190" height="56" rx="10"/>
-<text class="bt" x="1710" y="600" text-anchor="middle" dominant-baseline="central">KMS</text>
-<text class="bs" x="1710" y="620" text-anchor="middle" dominant-baseline="central">hospital-held keys</text></g>
-<g><rect class="bx s-cyan" x="1615" y="650" width="190" height="56" rx="10"/>
-<text class="bt" x="1710" y="670" text-anchor="middle" dominant-baseline="central">Object Lock</text>
-<text class="bs" x="1710" y="690" text-anchor="middle" dominant-baseline="central">WORM + versioning</text></g>
-<text class="btag" x="1614" y="740">Long-term archive</text>
-<text class="bs" x="1614" y="760">The three DICOM tiers hold every</text>
-<text class="bs" x="1614" y="776">study for 10 years. After 90 days</text>
-<text class="bs" x="1614" y="792">they are the only copy; the backup</text>
-<text class="bs" x="1614" y="808">gateway brings a study back when</text>
-<text class="bs" x="1614" y="824">a doctor needs it (Flow 5).</text>
+<text class="bt" x="1710" y="432" text-anchor="middle" dominant-baseline="central">PG backups</text>
+<text class="bs" x="1710" y="450" text-anchor="middle" dominant-baseline="central">WAL + base backups · 35 days</text></g>
+<g><rect class="bx s-cyan" x="1615" y="494" width="190" height="56" rx="10"/>
+<text class="bt" x="1710" y="514" text-anchor="middle" dominant-baseline="central">KMS</text>
+<text class="bs" x="1710" y="534" text-anchor="middle" dominant-baseline="central">hospital-held keys</text></g>
+<g><rect class="bx s-cyan" x="1615" y="564" width="190" height="56" rx="10"/>
+<text class="bt" x="1710" y="584" text-anchor="middle" dominant-baseline="central">Object Lock</text>
+<text class="bs" x="1710" y="604" text-anchor="middle" dominant-baseline="central">WORM + versioning</text></g>
+<text class="btag" x="1614" y="654">Long-term archive</text>
+<text class="bs" x="1614" y="674">The three DICOM tiers hold every</text>
+<text class="bs" x="1614" y="690">study for 10 years. After 90 days</text>
+<text class="bs" x="1614" y="706">they are the only copy; the backup</text>
+<text class="bs" x="1614" y="722">gateway brings a study back when</text>
+<text class="bs" x="1614" y="738">a doctor needs it (Flow 5).</text>
 
 <!-- legend -->
 <rect class="bx s-blue" x="20" y="1030" width="34" height="22" rx="6"/><text class="lgt" x="62" y="1041" dominant-baseline="central">Clinical</text>
@@ -712,12 +718,12 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <rect class="slot" x="1000" y="1030" width="34" height="22" rx="6"/><text class="lgt" x="1042" y="1041" dominant-baseline="central">Free or reserved rack space</text>
 <rect class="tagbg h-violet" x="1260" y="1031" width="60" height="20" rx="9"/><text class="lgt" x="1330" y="1041" dominant-baseline="central">Virtual machine on an app host</text>
 </svg></div>
-  <p class="figcap">Small services run as virtual machines on two app hosts. The witness host and the three etcd members are the Patroni consensus store from <a href="decisions.html#d5">D5</a>, not drawn in the architecture diagram. In <a href="scenario2.html">scenario 2</a> the GPU server moves to site 2 and everything else stays where it is.</p>
+  <p class="figcap">Small services run as virtual machines on two app hosts. The witness host and the three etcd members are the Patroni consensus store from <a href="decisions.html#d5">D5</a>, not drawn in the architecture diagram. In <a href="scenario2.html">scenario 2</a> the inference GPU server moves to site 2 and everything else stays where it is.</p>
 </div>
 <ul>
 <li>Each HA pair is split across the racks. dcm4chee, Orthanc, OpenLDAP and PostgreSQL have one node in rack A and one in rack B, so losing a rack, its UPS feed or its switch ports leaves one of each running. SeaweedFS is set to keep a copy of every volume in the other rack.</li>
 <li>Quorum needs a third place. etcd and the SeaweedFS masters need a majority, which two racks alone cannot give after a rack loss; the witness host in the network rack is the third member.</li>
-<li>There is one GPU server, with no twin. The AI is best-effort: if the server fails, triage stops and doctors read in normal order. Rack B keeps space and power for a second GPU server, for when the two MONAI models split (<a href="decisions.html#d11">D11</a>).</li>
+<li>The hospital has one GPU server, for inference only, with no twin. The AI is best-effort: if the server fails, triage stops and doctors read in normal order. Annotation and training run on the AI team's GPU at the HCMUT lab (<a href="decisions.html#d12">D12</a>), reached over a VPN that the hospital opens through the egress firewall.</li>
 <li>Desks need no GPU. Radiologists and annotators run 3D Slicer on ordinary workstations; masks are computed on the GPU server and only displayed there.</li>
 <li>The cloud is the long-term archive. SeaweedFS keeps the last 90 days of studies on-premise; older studies exist only in the cloud tiers and come back through the backup gateway (Flow 5). Losing the server room means rebuilding from the cloud, which takes days.</li>
 </ul>
@@ -727,11 +733,11 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tbody>
 <tr><td class="k">PACS</td><td>dcm4chee-arc 5.35, OpenLDAP, nginx, OHIF</td><td>8 / 16 GB / 50 GB</td><td>dcm4chee and OpenLDAP on app hosts A and B. Radiologists read in 3D Slicer (<a href="decisions.html#d10">D10</a>); OHIF is only a test viewer in staging</td></tr>
 <tr><td class="k">Gateway</td><td>Orthanc with the PostgreSQL plugin and the Python plugin (AI worker)</td><td>4 / 8 GB / 50 GB</td><td>Orthanc nodes on app hosts A and B, same plugins</td></tr>
-<tr><td class="k">Database</td><td>PostgreSQL 17, databases <code>pacsdb</code> and <code>orthanc</code></td><td>4 / 16 GB / 150 GB SSD</td><td>Primary and standby with Patroni and etcd. The AI results database and the label index are not created in staging yet</td></tr>
+<tr><td class="k">Database</td><td>PostgreSQL 17, databases <code>pacsdb</code> and <code>orthanc</code></td><td>4 / 16 GB / 150 GB SSD</td><td>Primary and standby with Patroni and etcd. The AI results database is not created in staging yet</td></tr>
 <tr><td class="k">Storage</td><td>SeaweedFS, buckets <code>pacs</code>, <code>orthanc</code>, <code>research</code></td><td>4 / 8 GB / 250 GB</td><td>Four storage nodes, each volume copied to the other rack</td></tr>
-<tr><td class="k">AI (MONAI Label, GPU)</td><td>Inference and training on the AI team's GPU server at the same lab, run by that team; not one of the four servers</td><td>n/a</td><td>GPU server in rack A</td></tr>
+<tr><td class="k">AI (MONAI Label, GPU)</td><td>Inference and training on the AI team's GPU server at the same lab, run by that team; not one of the four servers</td><td>n/a</td><td>Inference GPU in rack A; <code>hemorrhage_dev</code> and training stay at the lab (<a href="decisions.html#d12">D12</a>)</td></tr>
 </tbody></table></div>
-<p>Two links cross from our four servers to the AI team's server, both inside the lab network: the gateway calls the AI endpoint (NIfTI in, mask out), and, once annotation starts, the AI side reads de-identified studies from the gateway's DICOMweb (port 8042, read only). Staging leaves out HA, Keycloak, the backup gateway, the egress firewall and the cloud. At the hospital, if the AI team's server is not on the hospital network, the gateway must de-identify and encrypt each study before sending it, as in <a href="scenario2.html">scenario 2</a>.</p>
+<p>Two links cross from our four servers to the AI team's server, both inside the lab network: the gateway calls the AI endpoint (NIfTI in, mask out), and, once annotation starts, the AI side reads de-identified studies from the gateway's DICOMweb (port 8042, read only). Staging leaves out HA, Keycloak, the backup gateway, the egress firewall and the cloud. In the hospital deployment the lab keeps the same role for annotation and training (<a href="decisions.html#d12">D12</a>), and only de-identified research cases go there.</p>
 
 <h2 class="sec" id="sequence"><span class="n">3</span>Sequence diagrams</h2>
 <p>The architecture diagram shows <i>where</i> each part runs; these diagrams show <i>in what order</i> the parts talk to each other, including what the radiologist and the annotators see in their user interfaces (boxes tagged <span class="pilltag tc-blue">UI</span>). Pick a diagram, then click a numbered arrow or press <kbd>←</kbd> <kbd>→</kbd> to walk through it one step at a time.</p>
@@ -742,7 +748,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <div class="grid">
   <div class="card c-blue"><div class="v tc-blue">VLAN 10–20</div><h4>Clinical</h4><p>What doctors use every day: scanners, the PACS (dcm4chee), the radiologist viewer, single sign-on, and HIS/RIS. The path from scanner to viewer stays inside this layer.</p></div>
   <div class="card c-violet"><div class="v tc-violet">VLAN 30</div><h4>AI inference</h4><p>The Orthanc gateway, with the AI worker running inside each node as a plugin, and one MONAI Label server on the GPU, whose hemorrhage_approved model runs on every study. The gateway is the only receiver of PACS exports and returns a hemorrhage mask, a report and a priority flag. Runs 24/7 but is best-effort: if it stops, doctors read in normal order.</p></div>
-  <div class="card c-pink"><div class="v tc-pink">VLAN 40</div><h4>AI research</h4><p>Annotation (3D Slicer + MONAI Label <code>hemorrhage_dev</code>, reached through a proxy), the label store and the model registry. Training runs on <code>hemorrhage_dev</code> on the same GPU. Works only with de-identified data and has no path to the clinical systems.</p></div>
+  <div class="card c-pink"><div class="v tc-pink">HCMUT lab</div><h4>AI research</h4><p>At the HCMUT lab, outside the hospital, run by the AI team: annotation (3D Slicer + MONAI Label <code>hemorrhage_dev</code>), its trainer, the label store and the model registry. Works only on de-identified cases that the gateway pushes over a VPN the hospital opens; nothing at the lab can connect into the hospital (<a href="decisions.html#d12">D12</a>).</p></div>
   <div class="card c-emerald"><div class="v tc-emerald">VLAN 50 / 80</div><h4>Data</h4><p>The state behind the PACS (SeaweedFS for image files, OpenLDAP for configuration, PostgreSQL for the index), and, on the same SeaweedFS cluster, a research bucket for labels and frozen datasets, and the backup gateway. VLAN 80 carries heavy storage traffic.</p></div>
   <div class="card c-cyan"><div class="v tc-cyan">Outside the hospital</div><h4>Cloud</h4><p>Storage only: encrypted, write-protected buckets that hold studies and database backups, moving to cheaper tiers as they age.</p></div>
 </div>
@@ -758,13 +764,13 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <tr><td class="k">Identity (Keycloak)</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Single sign-on with multi-factor login</td><td>Logs users into the viewer and other clinical tools</td></tr>
 <tr><td class="k">HIS / RIS</td><td><span class="pilltag tc-blue">Clinical</span></td><td>Hospital and Radiology Information Systems: orders, patient records, worklists</td><td>Sends orders to the PACS worklist and receives the AI priority flag</td></tr>
 <tr><td class="k">HL7 / FHIR</td><td>n/a</td><td>Standards for exchanging clinical messages and records</td><td>How orders reach the PACS and how the AI flag reaches HIS/RIS</td></tr>
-<tr><td class="k">Gateway (Orthanc)</td><td><span class="pilltag tc-violet">AI inference</span></td><td>A lightweight DICOM server, run as N+1 active-active nodes behind a load balancer that share one PostgreSQL index and keep their files in SeaweedFS. Each node also runs the AI worker as a plugin</td><td>The single receiver of PACS exports and the only AI-side system that talks to the PACS: it also returns AI results to the PACS by C-STORE. Keeps series close to the GPU so the AI can read them as often as it needs, and keeps de-identified copies of selected cases and serves them to annotation over DICOMweb; it also stores the labels annotators save and copies them to the label store (fail-closed: if it cannot de-identify a study, nothing is written; instances that may carry text burned into the pixels are rejected, and pixel redaction can be added later as a plugin step)</td></tr>
+<tr><td class="k">Gateway (Orthanc)</td><td><span class="pilltag tc-violet">AI inference</span></td><td>A lightweight DICOM server, run as N+1 active-active nodes behind a load balancer that share one PostgreSQL index and keep their files in SeaweedFS. Each node also runs the AI worker as a plugin</td><td>The single receiver of PACS exports and the only AI-side system that talks to the PACS: it also returns AI results to the PACS by C-STORE. Keeps series close to the GPU so the AI can read them as often as it needs, and keeps de-identified copies of selected cases and pushes them, with the AI SEG and any radiologist fix, to the label store at the lab (fail-closed: if it cannot de-identify a study, nothing is written; instances that may carry text burned into the pixels are rejected, and pixel redaction can be added later as a plugin step)</td></tr>
 <tr><td class="k">AI worker</td><td><span class="pilltag tc-violet">AI inference</span></td><td>Our code, running inside every Orthanc node as a Python plugin (<code>ai_bridge.py</code> in staging). Every node sees the stable-study event, so jobs are deduplicated by Study Instance UID</td><td>Turns a stable series into one NIfTI volume, sends it to <code>hemorrhage_approved</code>, and turns the returned mask (one label per subtype) into a DICOM SEG, an SR with the volume of each and a priority flag</td></tr>
-<tr><td class="k">MONAI Label server</td><td><span class="pilltag tc-violet">AI inference</span></td><td>One server on the GPU with two models (proposed, <a href="decisions.html#d11">D11</a>, <a href="slicer.html#part-ai">details</a>): <code>hemorrhage_approved</code>, a frozen approved bundle, and <code>hemorrhage_dev</code>, which drafts and trains. VLAN 40 reaches only <code>hemorrhage_dev</code>, through a proxy. Run by the AI team; in staging they also host it (<a href="#staging">Staging</a>)</td><td>Returns the mask for every study; serves annotators and trains candidate bundles at low-load hours</td></tr>
-<tr><td class="k">Annotation</td><td><span class="pilltag tc-pink">AI research</span></td><td>3D Slicer with the MONAI Label extension, talking to the <code>hemorrhage_dev</code> model on the same MONAI Label server; its datastore is the gateway's de-identified DICOMweb and its drafts are the AI results (proposed, D11)</td><td>Clinicians label or correct hemorrhage regions, starting from AI-generated drafts, SAM clicks or scribbles</td></tr>
-<tr><td class="k">Label store</td><td><span class="pilltag tc-pink">AI research</span></td><td>The research bucket on SeaweedFS plus a label index in PostgreSQL. Only the gateway writes to it</td><td>Keeps every saved label version (who, role, drafting model, time), radiologists' fixes marked "not reviewed", and the frozen datasets that training reads</td></tr>
-<tr><td class="k">Model registry</td><td><span class="pilltag tc-pink">AI research</span></td><td>A versioned store of trained MONAI bundles with their metrics, dataset version and status</td><td>The only handoff between research and inference; inference loads only validated versions</td></tr>
-<tr><td class="k">SeaweedFS</td><td><span class="pilltag tc-emerald">Data</span></td><td>Self-hosted, distributed object storage with an S3-compatible interface (Apache 2.0 licence). Chosen over MinIO, whose community edition is no longer maintained</td><td>One cluster with two buckets: the PACS bucket holds the clinical image files (last 90 days on-premise); the research bucket holds labels and frozen, versioned research datasets and is writable only by the gateway. Both are copied to the cloud</td></tr>
+<tr><td class="k">MONAI Label server</td><td><span class="pilltag tc-violet">AI inference</span></td><td>Runs in two places (proposed, <a href="decisions.html#d11">D11</a>, <a href="decisions.html#d12">D12</a>): <code>hemorrhage_approved</code>, a frozen approved bundle, on the hospital GPU; <code>hemorrhage_dev</code>, which drafts and trains, on the AI team's GPU at the HCMUT lab. In staging both run at the lab (<a href="#staging">Staging</a>)</td><td>Returns the mask for every study (hospital); serves annotators and trains candidate bundles (lab)</td></tr>
+<tr><td class="k">Annotation</td><td><span class="pilltag tc-pink">AI research</span></td><td>3D Slicer with the MONAI Label extension, talking to <code>hemorrhage_dev</code> at the lab; its datastore is the label store and its drafts are the AI results (proposed, D11, D12)</td><td>The AI team and clinicians label or correct hemorrhage regions, starting from AI-generated drafts, SAM clicks or scribbles</td></tr>
+<tr><td class="k">Label store</td><td><span class="pilltag tc-pink">AI research</span></td><td>Storage at the HCMUT lab, run by the AI team. Receives only what the gateway pushes</td><td>Keeps the de-identified CT and AI drafts, every saved label version (who, role, drafting model, time), radiologists' fixes marked "not reviewed", and the frozen datasets that training reads</td></tr>
+<tr><td class="k">Model registry</td><td><span class="pilltag tc-pink">AI research</span></td><td>A versioned store of trained MONAI bundles with their metrics, dataset version and status, at the lab</td><td>The only handoff between research and inference; the hospital fetches only approved versions</td></tr>
+<tr><td class="k">SeaweedFS</td><td><span class="pilltag tc-emerald">Data</span></td><td>Self-hosted, distributed object storage with an S3-compatible interface (Apache 2.0 licence). Chosen over MinIO, whose community edition is no longer maintained</td><td>One cluster with two buckets: the PACS bucket holds the clinical image files (last 90 days on-premise); the research bucket is the gateway's outbox of de-identified copies waiting to be pushed to the lab. Only the PACS bucket is copied to the cloud</td></tr>
 <tr><td class="k">OpenLDAP</td><td><span class="pilltag tc-emerald">Data</span></td><td>Replicated directory service</td><td>Holds the dcm4chee configuration shared by all PACS nodes</td></tr>
 <tr><td class="k">PostgreSQL primary / standby</td><td><span class="pilltag tc-emerald">Data</span></td><td>Relational database in a high-availability pair (Patroni handles automatic failover). The pair protects against server failure, not against bad data, which is why cloud backups are still needed</td><td>Stores the PACS index and pending PACS work, plus label metadata and AI results in separate databases</td></tr>
 <tr><td class="k">Backup gateway</td><td><span class="pilltag tc-emerald">Data</span></td><td>Server running pgBackRest (database backups) and rclone (file copies)</td><td>Collects database backups and new studies and sends them to the cloud</td></tr>
@@ -789,7 +795,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <p>This is the path shown in violet. The PACS decides what the AI receives and pushes it; the AI never reaches into the PACS.</p>
 <ol class="flow f-tri">
 <li><b class="t">The PACS pushes the relevant series</b>An export rule in dcm4chee selects the series the AI needs and sends them to the gateway. The same rule can also send earlier studies of the same patient from the archive, not only the newest one.<br><span class="pr">DICOM C-STORE export</span></li>
-<li><b class="t">The gateway keeps a working copy</b>Orthanc stores the series (index in PostgreSQL, files in SeaweedFS), and the AI worker plugin inside it picks up the study once it is stable. For cases selected for research, it also keeps a de-identified copy and serves it to annotation (Flow 3), so the PACS exports each series only once.<br><span class="pr">DICOMweb WADO-RS · stable-study event</span></li>
+<li><b class="t">The gateway keeps a working copy</b>Orthanc stores the series (index in PostgreSQL, files in SeaweedFS), and the AI worker plugin inside it picks up the study once it is stable. For cases selected for research, it also keeps a de-identified copy and pushes it to the lab (Flow 3), so the PACS exports each series only once.<br><span class="pr">DICOMweb WADO-RS · stable-study event</span></li>
 <li><b class="t">AI analyzes the scan</b>The AI worker converts the series to one NIfTI volume and sends it to <code>hemorrhage_approved</code> on the MONAI Label server, the current approved bundle, which returns a mask with one label per subtype. The worker turns the mask into a DICOM SEG (one segment per subtype), a structured report (SR) with the volume of each, and a priority flag.<br><span class="pr">HTTP POST /infer/hemorrhage_approved · NIfTI in, mask out</span></li>
 <li><b class="t">Results go back</b>The mask (DICOM SEG) and report (SR) go back to the gateway by STOW-RS, which sends them to the PACS by C-STORE, so neither the AI worker nor MONAI ever connects to the PACS. The priority flag goes to HIS/RIS, and result details are saved in the AI results database.<br><span class="pr">STOW-RS · C-STORE · HL7 ORU / FHIR · PostgreSQL :5432</span></li>
 </ol>
@@ -814,18 +820,18 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <div class="callout"><b>What active-active requires.</b> Orthanc supports several nodes sharing one PostgreSQL index since version 1.9.2, but each node detects "stable" studies on its own, so the AI job dispatcher must ignore duplicate jobs for the same Study Instance UID. The stable-study event also waits for Orthanc's <code>StableAge</code> (default 60 s), which adds to the export scheduler delay of dcm4chee, so set both explicitly for emergency cases. The gateway files now live on the same SeaweedFS cluster as the PACS; if AI reads ever slow down clinical reads, give the gateway bucket its own disks.</div>
 
 <h2 class="sec" id="flow-ai" data-flow="ai" data-seq="1"><span class="n">9</span>Flow 3 · Annotation and model development</h2>
-<p>This is the path shown in pink. It is not time-critical and repeats over weeks and months to keep improving the model.</p>
+<p>This is the path shown in pink. It runs at the HCMUT lab, outside the hospital, is run by the AI team (<a href="decisions.html#d12">D12</a>), and repeats over weeks and months to keep improving the model.</p>
 <ol class="flow f-ai">
-<li><b class="t">De-identified data is prepared</b>For the selected cases, the gateway de-identifies the CT and its AI SEG from Flow 2 with one keyed-hash UID rule, so each mask still lines up with its CT. Annotators never see patient identity and never reach the PACS.<br><span class="pr">DICOMweb · de-identified CT + AI SEG on the gateway</span></li>
-<li><b class="t">Clinicians fix the AI result</b>Annotators use 3D Slicer with the MONAI Label extension, served by the <code>hemorrhage_dev</code> model. Each training case opens with its AI result as the draft; validation and test cases come without one. Every save is a new SEG version on the gateway, copied at once to the label store with who made it, their role, the drafting model and the time. A radiologist's fix, saved to the PACS while reading, reaches the same store through the gateway, marked "not reviewed".<br><span class="pr">DICOMweb: images in, SEG versions out · gateway copies to S3</span></li>
-<li><b class="t">A reviewed dataset is frozen</b>A reviewer picks one label version per case. The gateway exports a versioned set of images and reviewed labels to the label store, so every model can be traced to the exact data it learned from.</li>
-<li><b class="t">The model is trained and evaluated</b>The trainer of <code>hemorrhage_dev</code> produces a candidate bundle with its metrics and publishes it to the model registry. It runs at low-load hours, and triage keeps priority on the shared GPU.</li>
-<li><b class="t">The model is validated</b>Clinicians and the AI team review the candidate on a held-out test set. Only an approved version is marked validated.</li>
-<li><b class="t">Inference picks up the new model</b>Only an approved bundle is loaded as <code>hemorrhage_approved</code> for patient care. <code>hemorrhage_dev</code> keeps learning and never runs on patients.</li>
+<li><b class="t">De-identified cases are pushed to the lab</b>For the selected cases, the gateway de-identifies the CT and its AI SEG from Flow 2 with one keyed-hash UID rule (the key stays in the hospital), so each mask still lines up with its CT, and pushes them to the lab's label store over a VPN the hospital opens. A radiologist's fix, saved to the PACS while reading, follows the same path marked "not reviewed". The lab never sees patient identity and cannot connect into the hospital.<br><span class="pr">de-identify · VPN through the egress firewall · push only</span></li>
+<li><b class="t">Annotators fix the AI result</b>Annotators use 3D Slicer with the MONAI Label extension, served by <code>hemorrhage_dev</code> at the lab. Each training case opens with its AI result as the draft; validation and test cases come without one. Every save is a new SEG version in the label store, with who made it, their role, the drafting model and the time.</li>
+<li><b class="t">A reviewed dataset is frozen</b>A reviewer picks one label version per case, and the lab freezes a versioned set of images and reviewed labels, so every model can be traced to the exact data it learned from.</li>
+<li><b class="t">The model is trained and evaluated</b>The trainer of <code>hemorrhage_dev</code> on the lab GPU produces a candidate bundle with its metrics and publishes it to the model registry.</li>
+<li><b class="t">The model is validated</b>Hospital clinicians and the AI team review the candidate on a held-out test set. Only an approved version is marked validated.</li>
+<li><b class="t">The hospital fetches the new model</b>The hospital pulls the approved bundle from the lab registry (outbound HTTPS) and loads it as <code>hemorrhage_approved</code>. <code>hemorrhage_dev</code> keeps learning and never runs on patients.</li>
 </ol>
 <div class="callout amber"><b>Burned-in text.</b> Text burned into the pixels is not removed by Orthanc, which only edits DICOM tags. The gateway therefore rejects every instance that may carry it: localizers, Secondary Captures, and any instance flagged with Burned In Annotation. The model needs only axial thin-slice series, which normally carry no burned-in text. Pixel-level redaction (optical character recognition, for example Microsoft Presidio, or masking fixed regions per scanner model) can be added later as an extra step in the gateway's Python plugin, when research needs other image types.</div>
-<div class="callout amber"><b>One gateway for inference and annotation, for now.</b> To keep the system simple, annotation reads de-identified studies from the same Orthanc gateway that feeds the AI. This has known costs: annotation load competes with inference for the gateway's disk and network, the research network must be allowed to reach the gateway (DICOMweb read of de-identified studies only). A gateway node failure loses nothing, because files and index are shared. If isolation between inference and annotation becomes necessary, a separate research Orthanc storing into the research bucket can be added later without changing the PACS export rule.</div>
-<div class="callout"><b>Why research is separate from inference:</b> research changes constantly and uses heavy GPU jobs, while inference must be stable and always available for emergencies. They share nothing except the gateway that feeds both, the model registry, and the research bucket.</div>
+<div class="callout amber"><b>The gateway is the only door to the lab.</b> Research data leaves the hospital only as de-identified copies that the gateway pushes, so its de-identification (fail-closed, keyed-hash UIDs, burned-in text rejected) is what protects patients. The lab holds the label store and the registry and backs them up itself; the hospital keeps no copy of the labels. What has to be agreed with the AI team (data-sharing agreement, VPN endpoint, who may annotate from where) is listed in <a href="decisions.html#d12">D12</a>.</div>
+<div class="callout"><b>Why research is separate from inference:</b> research changes constantly and uses heavy GPU jobs, while inference must be stable and always available for emergencies. They also run in different places: research at the HCMUT lab, inference in the hospital. They share only the de-identified cases the gateway pushes and the approved bundles the hospital fetches.</div>
 
 <h2 class="sec" id="flow-backup" data-flow="backup" data-seq="2"><span class="n">10</span>Flow 4 · Backup and replication to cloud</h2>
 <p>This is the path shown in amber. It runs in the background, is one-way, and never deletes anything in the cloud.</p>
@@ -862,11 +868,11 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 <thead><tr><th>Block</th><th>Inputs</th><th>Outputs</th><th>Requirements</th><th>Proposed (D11)</th></tr></thead>
 <tbody>
 <tr><td class="k tc-violet">AI inference service</td><td>Series pushed by the PACS into the gateway; validated model from the registry</td><td>DICOM SEG + SR to the gateway, which forwards them to the PACS; priority flag to HIS/RIS; result metadata to PostgreSQL</td><td>24/7, dedicated GPU, no internet access, no PACS credentials</td><td>AI worker + MONAI Label, model <code>hemorrhage_approved</code></td></tr>
-<tr><td class="k tc-pink">Annotation</td><td>De-identified studies from the gateway over DICOMweb; draft masks from the current model</td><td>DICOM SEG labels saved to the gateway, which copies them to the label store; label records</td><td>Clinician-friendly 3D editing, versioned labels, audit of who labeled what</td><td>3D Slicer (MONAILabel extension) + <code>hemorrhage_dev</code>; AI results as drafts; versioned labels</td></tr>
+<tr><td class="k tc-pink">Annotation</td><td>De-identified studies pushed by the gateway to the lab; draft masks from the current model</td><td>DICOM SEG label versions in the label store at the lab; label records</td><td>Clinician-friendly 3D editing, versioned labels, audit of who labeled what</td><td>3D Slicer (MONAILabel extension) + <code>hemorrhage_dev</code> at the HCMUT lab; AI results as drafts; versioned labels</td></tr>
 <tr><td class="k tc-pink">Model training</td><td>A versioned labeled dataset</td><td>Candidate model, metrics and documentation to the registry</td><td>GPU access, reproducible runs, no path to clinical systems</td><td>Trainer of <code>hemorrhage_dev</code></td></tr>
 <tr><td class="k tc-pink">Model registry</td><td>Candidate models from training</td><td>Validated models to inference; latest model to annotation</td><td>Version history, approval status, traceability to the dataset</td><td>Versioned MONAI bundles with metrics and approval status</td></tr>
 </tbody></table></div>
-<div class="callout"><b>Proposed implementation: MONAI (<a href="decisions.html#d11">D11</a>).</b> One MONAI Label server holds two models. <code>hemorrhage_approved</code> is called by the AI worker for every study (<code>POST /infer/hemorrhage_approved</code> with the NIfTI volume; the worker runs inside Orthanc as a plugin, <code>ai_bridge.py</code> in staging) and is never retrained. <code>hemorrhage_dev</code> reads de-identified studies and their AI results over the gateway's DICOMweb, serves 3D Slicer with the MONAI Label extension, and trains. The server sits in VLAN 30 and VLAN 40 reaches only the <code>hemorrhage_dev</code> endpoints through a proxy. The registry stores versioned MONAI bundles, and only an approved one becomes <code>hemorrhage_approved</code>. The interfaces above do not change. See <a href="slicer.html#part-ai">Slicer + MONAI</a>.</div>
+<div class="callout"><b>Proposed implementation: MONAI (<a href="decisions.html#d11">D11</a>, <a href="decisions.html#d12">D12</a>).</b> MONAI Label runs in two places. In the hospital, <code>hemorrhage_approved</code> is called by the AI worker for every study (<code>POST /infer/hemorrhage_approved</code> with the NIfTI volume; the worker runs inside Orthanc as a plugin, <code>ai_bridge.py</code> in staging) and is never retrained. At the HCMUT lab, the AI team runs <code>hemorrhage_dev</code>, which reads the de-identified cases the gateway pushes, serves 3D Slicer with the MONAI Label extension, and trains. The registry at the lab stores versioned MONAI bundles, and only an approved one, fetched by the hospital, becomes <code>hemorrhage_approved</code>. The interfaces above do not change. See <a href="slicer.html#part-ai">Slicer + MONAI</a>.</div>
 
 <h2 class="sec" id="principles"><span class="n">13</span>Design principles</h2>
 <div class="grid">
@@ -874,7 +880,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
   <div class="card c-violet"><h4>Push, don't pull</h4><p>The PACS chooses what the AI receives. The AI has no access to the PACS at all: it reads from the gateway and hands its results back to the gateway.</p></div>
   <div class="card c-slate"><h4>Deny by default</h4><p>Each layer is its own VLAN. Only the connections drawn in the diagram are allowed through the internal firewall.</p></div>
   <div class="card c-amber"><h4>One door out</h4><p>Only the egress firewall reaches the cloud, outbound only, over an encrypted VPN. The cloud can never connect into the hospital.</p></div>
-  <div class="card c-pink"><h4>Research kept apart</h4><p>Annotation and training use de-identified data and hand over models only through the registry.</p></div>
+  <div class="card c-pink"><h4>Research kept apart</h4><p>Annotation and training run at the HCMUT lab on de-identified data and hand over models only through the registry.</p></div>
   <div class="card c-cyan"><h4>HA is not backup</h4><p>The standby handles server failure; the cloud backup handles mistakes, corruption and ransomware. Object Lock blocks deletion until retention ends.</p></div>
   <div class="card c-emerald"><h4>Restore is tested</h4><p>Restores are rehearsed regularly, because an untested backup cannot be relied on.</p></div>
 </div>
