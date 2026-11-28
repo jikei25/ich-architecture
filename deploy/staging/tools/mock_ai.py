@@ -1,12 +1,14 @@
 """Mock of the AI segmentation service for staging tests: answers with the CT-ICH ground-truth mask of the received volume.
 
-Contract: POST /segment with a gzip NIfTI CT volume; the response is a gzip NIfTI uint8 mask on the same grid.
+Contract: the MONAI Label infer call, POST /infer/<model>?output=image with multipart field `file` holding a gzip
+NIfTI CT volume; the response is a gzip NIfTI uint8 mask on the same grid, `descrip` "hemorrhage mock-ground-truth".
 The volume is matched by a hash of its voxels in RAS orientation, so only a geometrically correct DICOM to NIfTI
 conversion finds its mask (status 422 otherwise).
 
 Usage: mock_ai.py --dataset /data/CT-ICH-PhysioNet [--port 8000]
 """
 import argparse
+import email.parser
 import gzip
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -33,15 +35,23 @@ def mask_on_grid(mask_path: Path, volume):
     canonical = nib.as_closest_canonical(nib.load(mask_path))
     transform = orientations.ornt_transform(orientations.axcodes2ornt("RAS"), orientations.io_orientation(volume.affine))
     labels = (np.asanyarray(canonical.as_reoriented(transform).dataobj) > 0).astype(np.uint8)
-    return nib.Nifti1Image(labels, volume.affine)
+    mask = nib.Nifti1Image(labels, volume.affine)
+    mask.header["descrip"] = b"hemorrhage mock-ground-truth"
+    return mask
+
+
+def uploaded_file(content_type: str, body: bytes) -> bytes:
+    message = email.parser.BytesParser().parsebytes(f"Content-Type: {content_type}\r\n\r\n".encode() + body)
+    return next(part.get_payload(decode=True) for part in message.get_payload() if part.get_param("name", header="content-disposition") == "file")
 
 
 class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
-        if self.path != "/segment":
+        if not self.path.startswith("/infer/"):
             self.send_error(404)
             return
-        volume = nib.Nifti1Image.from_bytes(gzip.decompress(self.rfile.read(int(self.headers["Content-Length"]))))
+        body = self.rfile.read(int(self.headers["Content-Length"]))
+        volume = nib.Nifti1Image.from_bytes(gzip.decompress(uploaded_file(self.headers["Content-Type"], body)))
         mask_path = self.server.index.get(fingerprint(volume))
         if mask_path is None:
             self.send_error(422, "volume not found in the dataset")

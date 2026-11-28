@@ -1,7 +1,9 @@
 """Self-checks of nifti_bridge, run inside the gateway image:
 docker run --rm -v "$PWD:/staging" --entrypoint python3 medical-ai/orthanc-ai:26.9.1 /staging/gateway/plugin/test_nifti_bridge.py
 """
+import json
 import random
+import re
 import sys
 import tempfile
 import types
@@ -14,8 +16,10 @@ HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE), str(HERE.parents[1] / "tools")]
 # The loader imports pynetdicom only to send C-STORE, which these checks do not use.
 sys.modules.setdefault("pynetdicom", types.SimpleNamespace(AE=None))
+sys.modules.setdefault("orthanc", types.SimpleNamespace(LogWarning=print))
 
 from load_nifti import slices  # noqa: E402
+from ai_bridge import anonymize_request  # noqa: E402
 from nifti_bridge import mask_to_seg, series_to_nifti  # noqa: E402
 
 # Same orientation and spacing as the CT-ICH scans (LAS, 0.45 mm pixels, 5 mm slices), reduced grid.
@@ -104,6 +108,17 @@ def test_mask_on_another_grid_is_rejected(source, datasets):
         except ValueError:
             continue
         raise AssertionError("a mask on another grid was accepted")
+
+
+def test_deidentified_uids_are_stable_and_keyed(source, datasets):
+    ds = datasets[0]
+    request = anonymize_request(ds, b"key-1")
+    assert request == anonymize_request(ds, b"key-1")
+    assert request["Replace"]["SOPInstanceUID"] != anonymize_request(ds, b"key-2")["Replace"]["SOPInstanceUID"]
+    for tag in ("StudyInstanceUID", "SeriesInstanceUID", "SOPInstanceUID", "FrameOfReferenceUID"):
+        uid = request["Replace"][tag]
+        assert uid != ds.get(tag) and len(uid) <= 64 and re.fullmatch(r"2\.25\.[1-9][0-9]*", uid), uid
+    assert str(ds.PatientID) not in json.dumps(request)
 
 
 if __name__ == "__main__":

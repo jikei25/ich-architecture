@@ -40,6 +40,22 @@ services:
       ORTHANC__AWS_S3_STORAGE__VIRTUAL_ADDRESSING: "false"
       ORTHANC__PYTHON_SCRIPT: /plugin/ai_bridge.py
       AI_SEGMENT_URL: ${AI_SEGMENT_URL:-}
+      RESEARCH_URL: ${RESEARCH_URL:-}
+      RESEARCH_USER: gateway
+      RESEARCH_PASSWORD: ${RESEARCH_GATEWAY_PASSWORD:-}
+      DEID_KEY: ${DEID_KEY:-}
     volumes:
       - ${DATA_ROOT:?run generate-env.sh}/medical-ai-orthanc/db:/var/lib/orthanc/db
+    logging: *logging
+
+  # MONAI Label inference server: only hemorrhage_approved, an empty datastore, the registry read-only.
+  # No published port: only the gateway reaches it, at http://monai:8000.
+  monai:
+    build: ../monai
+    image: medical-ai/monai-label:0.8.8
+    restart: unless-stopped
+    command: ["--studies", "/studies", "--conf", "models", "hemorrhage_approved", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      # shortcut: the registry is a directory on this host; on separate servers, sync it from the research bucket.
+      - ${DATA_ROOT:?run generate-env.sh}/medical-ai-registry:/registry:ro
     logging: *logging
